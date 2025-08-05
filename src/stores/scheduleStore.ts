@@ -259,7 +259,7 @@ export const useScheduleStore = defineStore('schedule', {
       let containerWidth = document.querySelector('.week-header')?.scrollWidth || 1000
       const unitWidth = containerWidth / totalUnits
       const leftPosition = (endOffset - 36) * unitWidth
-      console.log(leftPosition)
+
       return leftPosition
     },
   },

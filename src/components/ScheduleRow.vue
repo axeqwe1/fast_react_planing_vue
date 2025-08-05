@@ -65,10 +65,11 @@ import { useScheduleStore } from '@/stores/scheduleStore'
 import type { Job, MasterData } from '@/type/types'
 import { watch, ref, onMounted, watchEffect } from 'vue'
 import { formatTimeKey } from '@/utils/formatKey'
+import { useLoadingStore } from '@/stores/LoadingStore'
 const divideLeft = ref<number[]>()
 const lines = ref()
 const store = useScheduleStore()
-const jobForLine = ref<Job[]>([])
+const { setLoading } = useLoadingStore()
 watch(
   () => store.Lines, // ✅ ต้องใช้แบบนี้เพื่อติดตาม reactive props
   (newMaster) => {
@@ -87,6 +88,9 @@ watchEffect(async () => {
   divideLeft.value = arrLeft
   console.log('divideLeft:', arrLeft)
   console.log('store WorkDuration', store.WorkDuration)
+  if (divideLeft.value.length > 0) {
+    setLoading(false)
+  }
 })
 </script>
 

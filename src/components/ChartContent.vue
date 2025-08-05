@@ -1,47 +1,60 @@
 <template>
-  <div class="flex flex-col w-fit mt-[60px]">
-    <div class="flex w-full sticky top-[60px] bg-white z-6">
-      <div
-        class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
-      >
-        <span>Capacity = 60,000 / hour</span>
-        <span>WIP. 0</span>
-      </div>
-
-      <div class="flex week-header">
+  <template v-if="LoadingRef">
+    <div class="h-screen flex items-center justify-center relative w-full">
+      <Loading />
+      <span>Loading</span>
+    </div>
+  </template>
+  <template v-else>
+    <div class="flex flex-col w-fit mt-[60px]">
+      <div class="flex w-full sticky top-[60px] bg-white z-6">
         <div
-          class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
-          v-for="(item, i) in weeks"
+          class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
         >
-          <div class="flex-1 border-r-1 min-w-[300px] pt-[5px]">
-            <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
-            <div class="flex">
-              <span
-                v-for="(day, i) in weeksDay"
-                :key="day"
-                class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
-                >{{ day }}</span
-              >
+          <span>Capacity = 60,000 / hour</span>
+          <span>WIP. 0</span>
+        </div>
+
+        <div class="flex week-header">
+          <div
+            class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
+            v-for="(item, i) in weeks"
+          >
+            <div class="flex-1 border-r-1 min-w-[300px] pt-[5px]">
+              <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
+              <div class="flex">
+                <span
+                  v-for="(day, i) in weeksDay"
+                  :key="day"
+                  class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
+                  >{{ day }}</span
+                >
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <ScheduleRow :master="master" />
     </div>
-    <ScheduleRow :master="master" />
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">
 import type { Job, Line, MasterData } from '@/type/types'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, watchEffect, nextTick } from 'vue'
 import ScheduleRow from './ScheduleRow.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
-
+import { useLoadingStore } from '@/stores/LoadingStore'
+import Loading from '@/components/LoadingComponent.vue'
+import { storeToRefs } from 'pinia'
 const weeks = ref([] as { start: Date; end: Date }[])
 const weeksDay = ref(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
 const master = ref([] as MasterData[])
 const jobs = ref([] as Job[])
-
+const loadStore = useLoadingStore()
+const { isLoading } = storeToRefs(loadStore)
+const LoadingRef = ref(isLoading)
 const store = useScheduleStore()
 const fetchTest = async () => {
   try {
@@ -65,22 +78,27 @@ const fetchTest = async () => {
     })
     store.setLine(lineMap) // Update the store with unique lines
     store.setMasters(data) // Update the store with master data
+    console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)
   }
 }
 
 onMounted(async () => {
+  loadStore.setLoading(true) // Set loading state to true
   await fetchTest()
   const CAL_WEEK = calculateWeeks(store.Jobs)
   store.setWeeks(CAL_WEEK) // Calculate weeks based on jobs
   weeks.value = store.weeks
+  await nextTick()
   if (store.weeks.length > 0) {
     // if want to cache durationwork must have weeks data
     store.cacheWorkDuration()
   }
+  loadStore.setLoading(false)
   // Mock data for jobs
 })
+
 function calculateWeeks(jobs: Job[]) {
   const minDate = new Date(Math.min(...jobs.map((job) => new Date(job.startDate).getTime())))
   const maxDate = new Date(Math.max(...jobs.map((job) => new Date(job.endDate).getTime())))
