@@ -7,11 +7,18 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [vue(), vueJsx(), vueDevTools(), tailwindcss()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+export default defineConfig(({ mode }) => {
+  return {
+    base: mode === 'production' ? '/AiPlaningWeb/' : '/', // ✅,
+    // base: "/PMD/",
+    plugins: [tailwindcss(), vue(), vueJsx(), vueDevTools()],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
     },
-  },
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : undefined,
+    },
+  }
 })

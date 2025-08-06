@@ -1,43 +1,35 @@
 <template>
-  <template v-if="LoadingRef">
-    <div class="h-screen flex items-center justify-center relative w-full">
-      <Loading />
-      <span>Loading</span>
-    </div>
-  </template>
-  <template v-else>
-    <div class="flex flex-col w-fit mt-[60px]">
-      <div class="flex w-full sticky top-[60px] bg-white z-6">
-        <div
-          class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
-        >
-          <span>Capacity = 60,000 / hour</span>
-          <span>WIP. 0</span>
-        </div>
+  <div class="flex flex-col w-fit mt-[60px]">
+    <div class="flex w-full sticky top-[60px] bg-white z-6">
+      <div
+        class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
+      >
+        <span>Capacity = 60,000 / hour</span>
+        <span>WIP. 0</span>
+      </div>
 
-        <div class="flex week-header">
-          <div
-            class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
-            v-for="(item, i) in weeks"
-          >
-            <div class="flex-1 border-r-1 min-w-[300px] pt-[5px]">
-              <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
-              <div class="flex">
-                <span
-                  v-for="(day, i) in weeksDay"
-                  :key="day"
-                  class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
-                  >{{ day }}</span
-                >
-              </div>
+      <div class="flex week-header">
+        <div
+          class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
+          v-for="(item, i) in weeks"
+        >
+          <div class="flex-1 border-r-1 min-w-[300px] pt-[5px]">
+            <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
+            <div class="flex">
+              <span
+                v-for="(day, i) in weeksDay"
+                :key="day"
+                class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
+                >{{ day }}</span
+              >
             </div>
           </div>
         </div>
       </div>
-
-      <ScheduleRow :master="master" />
     </div>
-  </template>
+
+    <ScheduleRow :master="master" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -48,6 +40,7 @@ import { useScheduleStore } from '@/stores/scheduleStore'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import Loading from '@/components/LoadingComponent.vue'
 import { storeToRefs } from 'pinia'
+import { GetMasterPlanData } from '@/lib/api/Masterplan'
 const weeks = ref([] as { start: Date; end: Date }[])
 const weeksDay = ref(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
 const master = ref([] as MasterData[])
@@ -58,18 +51,19 @@ const LoadingRef = ref(isLoading)
 const store = useScheduleStore()
 const fetchTest = async () => {
   try {
-    const res = await fetch('http://localhost:45678/Home/GetMasterPlanData')
-    const data = await res.json()
+    const res = await GetMasterPlanData()
+    const data = res
+    console.log(res)
     data.forEach((items: any) => {
       jobs.value.push({
-        line: items.Line,
-        name: items.OrderNo,
-        startDate: items.SewAssembly,
-        endDate: items.SewFinish,
+        line: items.line,
+        name: items.orderNo,
+        startDate: items.sewAssembly,
+        endDate: items.sewFinish,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
-    const filterLine = new Set(data.map((item: any) => item.Line)) // Extract unique lines
+    const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
     const arrLine = Array.from(filterLine) // Convert Set to Array
     const lineMap = arrLine.map((line: any) => {
       return {

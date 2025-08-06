@@ -15,14 +15,30 @@
           <span class="font-bold">3</span>
         </div>
       </div>
-      <div class="relative h-[70px] w-full border-b-1 border-gray-200 z-0">
+
+      <div
+        class="relative h-[70px] w-full border-b-1 border-gray-200 z-0"
+        @dragover="onDragOver"
+        @drop="(e) => onDrop(e, line.name)"
+      >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
             v-for="job in store.getJobsForLine(line.name)"
             :key="job.line + job.name"
-            :style="store.getJobStyle(job)"
+            :style="[store.getJobStyle(job), createJobDraggable(job).state?.dragStyle]"
             v-tooltip.top="'Line: ' + line.name + ' ' + job.name"
             class="schedule-bar z-5 border-r-4"
+            draggable="true"
+            @dragstart="(e) => onDragStart(e, job)"
+            @dragend="onDragEnd"
+            :ref="
+              (el) => {
+                const jobRef = createJobDraggable(job).ref
+                if (jobRef && isHTMLElement(el)) {
+                  jobRef.value = el
+                }
+              }
+            "
           >
             <span class="bg-slate-800/50 p-1 rounded-sm">
               {{ job.name }}
@@ -61,14 +77,180 @@
 </template>
 
 <script setup lang="ts">
+interface ScheduleRefs {
+  [key: string]: HTMLElement
+}
 import { useScheduleStore } from '@/stores/scheduleStore'
-import type { Job, MasterData } from '@/type/types'
-import { watch, ref, onMounted, watchEffect } from 'vue'
+import type { Job, Line, MasterData } from '@/type/types'
+import {
+  watch,
+  ref,
+  onMounted,
+  watchEffect,
+  nextTick,
+  type ComponentPublicInstance,
+  computed,
+  type Ref,
+} from 'vue'
 import { formatTimeKey } from '@/utils/formatKey'
 import { useLoadingStore } from '@/stores/LoadingStore'
+import { useDraggable, useElementBounding } from '@vueuse/core'
+
+// สร้าง Map เก็บ ref สำหรับแต่ละ job
+const jobRefs = new Map<string, Ref<HTMLElement | null>>()
+const jobStates = new Map<string, any>()
+const draggableEl = ref<HTMLElement | null>(null)
+const draggingJob = ref<Job | null>(null)
+const dragStartPosition = ref<{ x: number; y: number } | null>(null)
 const divideLeft = ref<number[]>()
-const lines = ref()
+
+const scheduleRowRefs = ref<ScheduleRefs>({})
+
+const lines = ref<Line[]>([])
 const store = useScheduleStore()
+
+function onDragStart(e: DragEvent, job: Job) {
+  if (!e.dataTransfer) return
+
+  // เก็บข้อมูล job ที่กำลังลาก
+  draggingJob.value = job
+
+  // เก็บตำแหน่งเริ่มต้น
+  dragStartPosition.value = {
+    x: e.clientX,
+    y: e.clientY,
+  }
+
+  // กำหนดรูปแบบการลาก
+  e.dataTransfer.effectAllowed = 'move'
+
+  // ถ้าต้องการแสดง ghost image ขณะลาก
+  const dragImage = document.createElement('div')
+  dragImage.textContent = job.name
+  dragImage.style.backgroundColor = '#007bff'
+  dragImage.style.padding = '5px'
+  dragImage.style.color = 'white'
+  document.body.appendChild(dragImage)
+  e.dataTransfer.setDragImage(dragImage, 0, 0)
+  setTimeout(() => document.body.removeChild(dragImage), 0)
+
+  console.log('Started dragging:', job.name)
+}
+
+function onDragOver(e: DragEvent) {
+  if (!e.currentTarget || !draggingJob.value) return
+  e.preventDefault() // สำคัญ! ต้องมีเพื่อให้สามารถ drop ได้
+
+  // แสดงตำแหน่งขณะลาก
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const x = e.clientX - rect.left
+  console.log('Dragging at position:', x)
+}
+
+function onDrop(e: DragEvent, lineName: string) {
+  e.preventDefault()
+  if (!e.currentTarget || !draggingJob.value) return
+
+  // ดึงระยะ X ที่ drop ภายใน cell
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const dropX = e.clientX - rect.left
+
+  // === CONFIG ===
+  const PIXELS_PER_INTERVAL = 43
+  const INTERVAL_MINUTES = 15
+
+  // const WEEKS_LENGHTH = store.weeks.length
+  // const TOTAL_DAY_PER_WEEK = 7
+  // const WORK_HOUR = 8
+  // const BREAK_DURATION = 1
+  // const ACT_WORK = 8
+  // const START_WORK_HOUR = 8 // เริ่มงาน 8:00 น.
+  // const WORK_TOTAL_HOUR_PER_DAY = WORK_HOUR + BREAK_DURATION + ACT_WORK - START_WORK_HOUR
+  // const INTERVEALS_MINUTES = 60 / 15 // ใน 1 ชมแบ่งช่วงละ 15 นาที
+  // const TOTAL_LOOP_CAL_INTERVEALS_MINUTES_PER_DAY = WORK_TOTAL_HOUR_PER_DAY * INTERVEALS_MINUTES + 1
+  // const SUM_TOTAL_LOOP = TOTAL_LOOP_CAL_INTERVEALS_MINUTES_PER_DAY * TOTAL_DAY_PER_WEEK
+  // const SUM_TOTAL_LOOPWEEK = SUM_TOTAL_LOOP * WEEKS_LENGHTH
+  // console.log(SUM_TOTAL_LOOPWEEK)
+  // const realX = (SUM_TOTAL_LOOPWEEK / dropX) * dropX
+  // console.log('Real X:', realX, 'test ', SUM_TOTAL_LOOPWEEK / dropX)
+  // store.timeIndexMap.forEach((value, key) => {
+  //   if (value == realX) {
+  //     console.log('Found matching time index:', key)
+  //   }
+  // })
+
+  const TOTAL_WORK_INTERVALS_PER_DAY = 15 // จำนวนช่วงเวลาจริงใน 1 วัน (36+1)
+  const PIXELS_PER_HOURS = PIXELS_PER_INTERVAL / 4 // 4 ช่วงเวลาใน 1 ชั่วโมง
+  // === คำนวณตำแหน่งเวลาตามความยาว dropX ===
+
+  const totalTimeIndex = Math.floor(dropX / PIXELS_PER_HOURS)
+  console.log('Total time index:', totalTimeIndex)
+  // **สำคัญ:** การคำนวณ dayOffset ต้องใช้ PIXELS_PER_DAY ที่ถูกต้อง
+  const dayOffset = Math.floor(dropX / PIXELS_PER_INTERVAL)
+  const xInDay = dropX % PIXELS_PER_INTERVAL
+  const intervalsInDay = Math.floor(xInDay / 1.194)
+  const hour = 8 + Math.floor(intervalsInDay / 4)
+  const minute = (intervalsInDay % 4) * 15 // 15 นาทีต่อช่วง
+  console.log('dayOffset:', dayOffset)
+  console.log('xInDay:', xInDay)
+  console.log('intervalsInDay:', intervalsInDay)
+  console.log('hour:', hour)
+  console.log('minute:', minute)
+
+  // **สำคัญ:** การคำนวณ intervalInDay ต้องใช้ TOTAL_WORK_INTERVALS_PER_DAY
+  const intervalInDay = totalTimeIndex % TOTAL_WORK_INTERVALS_PER_DAY
+
+  // === สร้างเวลาเริ่มต้น (base) จาก store.weeks[0].start
+  const baseDate = new Date(store.weeks[0].start)
+  baseDate.setHours(8, 0, 0, 0)
+
+  // === คำนวณเวลาจาก offset
+  const droppedDate = new Date(baseDate)
+  droppedDate.setDate(baseDate.getDate() + dayOffset)
+  droppedDate.setHours(hour, minute, 0, 0) // ตั้งเวลาเป็นชั่วโมงและนาทีที่คำนวณได้
+
+  // === แปลงเป็น key string
+  const key = formatTimeKey(droppedDate) // เช่น "2025-02-06 10:30"
+  const timeIndex = store.timeIndexMap.get(key)
+
+  if (timeIndex === undefined) {
+    console.warn('ไม่พบเวลาใน timeIndexMap:', key)
+    return
+  }
+
+  console.log('Dropped at:', key)
+  console.log('Mapped timeIndex:', timeIndex)
+
+  // === อัปเดต job
+  draggingJob.value.line = lineName
+  // สมมุติว่าเก็บเวลาเป็น string
+  draggingJob.value.startDate = key
+  // หรือถ้าใช้ index: draggingJob.value.timeIndex = timeIndex
+
+  // === รีเซ็ต state
+  draggingJob.value = null
+  dragStartPosition.value = null
+}
+
+function onDragEnd() {
+  draggingJob.value = null
+  dragStartPosition.value = null
+}
+
+const { isDragging, style } = useDraggable(draggableEl, {
+  initialValue: { x: 0, y: 0 },
+  // ล็อคแกน Y เพื่อให้เลื่อนได้แค่แนวนอน
+  axis: 'x',
+  // เพิ่ม event handlers
+  onStart: () => {
+    console.log('Started dragging')
+  },
+  onEnd: () => {
+    console.log('Ended dragging')
+    // คำนวณตำแหน่งใหม่
+  },
+})
+
 const { setLoading } = useLoadingStore()
 watch(
   () => store.Lines, // ✅ ต้องใช้แบบนี้เพื่อติดตาม reactive props
@@ -86,12 +268,69 @@ watchEffect(async () => {
     arrLeft.push(LEFT)
   })
   divideLeft.value = arrLeft
-  console.log('divideLeft:', arrLeft)
-  console.log('store WorkDuration', store.WorkDuration)
+  // console.log('divideLeft:', arrLeft)
+  // console.log('store WorkDuration', store.WorkDuration)
   if (divideLeft.value.length > 0) {
     setLoading(false)
   }
 })
+// รอจน component และ element render เสร็จจริงก่อนใช้ bounding
+watch(
+  () => ({ ...scheduleRowRefs.value }),
+  (refs) => {
+    Object.values(refs).forEach((el) => {
+      if (el && typeof el.getBoundingClientRect === 'function') {
+        const rect = el.getBoundingClientRect()
+        console.log('✅ Bounding Rect:', rect)
+      }
+    })
+  },
+  { immediate: true },
+)
+
+// ฟังก์ชันสร้าง ref และ state สำหรับ job
+function createJobDraggable(job: Job) {
+  const jobKey = `${job.line}-${job.name}`
+  if (!jobRefs.has(jobKey)) {
+    const el = ref<HTMLElement | null>(null)
+    jobRefs.set(jobKey, el)
+
+    const { isDragging, x } = useDraggable(el, {
+      initialValue: { x: 0, y: 0 },
+      axis: 'x',
+      onStart: () => {
+        console.log('Started dragging:', job.name)
+      },
+      onEnd: () => {
+        console.log('Ended dragging, position:', x.value)
+      },
+    })
+
+    jobStates.set(jobKey, {
+      isDragging,
+      dragStyle: computed(() => ({
+        transform: isDragging.value ? `translate(${x.value}px, 0px)` : undefined,
+      })),
+    })
+  }
+
+  return {
+    ref: jobRefs.get(jobKey),
+    state: jobStates.get(jobKey),
+  }
+}
+function isHTMLElement(el: Element | ComponentPublicInstance | null): el is HTMLElement {
+  return el instanceof HTMLElement
+}
+
+function formatDatetime(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${d} ${hh}:${mm}`
+}
 </script>
 
 <style scoped>

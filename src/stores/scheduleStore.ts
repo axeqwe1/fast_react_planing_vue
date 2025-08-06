@@ -188,6 +188,7 @@ export const useScheduleStore = defineStore('schedule', {
       const BREAK_DURATION = 1
       let actWorkHour = workHour || 8
 
+      console.log(this.weeks.length, 'weeks length', this.weeks)
       this.weeks.forEach((week, index) => {
         let current = new Date(week.start)
         let end = new Date(week.end)
@@ -220,7 +221,7 @@ export const useScheduleStore = defineStore('schedule', {
         const weekKey = formatTimeKey(week.start)
         let date = []
         for (let d = new Date(week.start); d <= week.end; d.setDate(d.getDate() + 1)) {
-          console.log(weekKey, new Date(d))
+          // console.log(weekKey, new Date(d))
 
           date.push(new Date(d))
         }
@@ -230,10 +231,10 @@ export const useScheduleStore = defineStore('schedule', {
             this.WorkDuration.set(`${weekKey}${line.name}`, WORK_HOUR)
           }
         })
-        console.log(
-          `Work duration cached for week starting ${week.start.toISOString()}:`,
-          this.cacheWeekDay,
-        )
+        // console.log(
+        //   `Work duration cached for week starting ${week.start.toISOString()}:`,
+        //   this.cacheWeekDay,
+        // )
         // End statement
       })
     },
