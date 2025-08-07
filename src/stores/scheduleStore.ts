@@ -15,6 +15,7 @@ export const useScheduleStore = defineStore('schedule', {
     timeIndexMap: new Map<string, number>(),
     WorkDuration: new Map<string, number>(), // ใช้สำหรับเก็บข้อมูลการทำงาน
     cacheWeekDay: new Map<string, Date[]>(), // ใช้สำหรับเก็บวันในแต่ละสัปดาห์
+    headerWidth: 0,
   }),
   actions: {
     setLine(line: Line[]) {

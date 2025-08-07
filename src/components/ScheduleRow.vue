@@ -50,7 +50,8 @@
             </span>
           </div>
         </template>
-        <template
+
+        <!-- <template
           v-if="store.WorkDuration.size > 0 && store.weeks.length > 0"
           v-for="week in store.weeks"
         >
@@ -64,18 +65,15 @@
               {{ store.getDayDuration(day, line.name) }}
             </div>
           </div>
-          <!-- <div
-            v-if="store.WorkDuration.has(`${formatTimeKey(week.start)}${line.name}`)"
-            class="hour-of-day z-5"
-          >
-            {{ store.WorkDuration.get(`${formatTimeKey(week.start)}${line.name}`) }}
-          </div> -->
         </template>
         <div
           class="week-break-background border-r-3 border-r-red-700 z-4"
           v-for="i in divideLeft"
           :style="{ left: i + 'px' }"
-        ></div>
+        ></div> -->
+        <template v-if="divideLeft">
+          <viewCanvas :divide-left="divideLeft" />
+        </template>
       </div>
     </div>
   </div>
@@ -85,6 +83,7 @@
 interface ScheduleRefs {
   [key: string]: HTMLElement
 }
+
 import { useScheduleStore } from '@/stores/scheduleStore'
 import type { Job, Line, MasterData } from '@/type/types'
 import {
@@ -101,7 +100,7 @@ import {
 import { formatTimeKey } from '@/utils/formatKey'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import { useDraggable, useElementBounding } from '@vueuse/core'
-
+import viewCanvas from '@/components/viewCanvas.vue'
 // สร้าง Map เก็บ ref สำหรับแต่ละ job
 const jobRefs = new Map<string, Ref<HTMLElement | null>>()
 const jobStates = new Map<string, any>()
@@ -110,6 +109,7 @@ const draggableEl = ref<Record<string, HTMLElement>>({})
 const draggingJob = ref<Job | null>(null)
 const dragStartPosition = ref<{ x: number; y: number } | null>(null)
 const divideLeft = ref<number[]>()
+const offsetWidth = ref<number>(0)
 const dragContext = {
   scrollLeftAtStart: 0,
   containerRect: null as DOMRect | null,
@@ -292,7 +292,7 @@ function isHTMLElement(el: Element | ComponentPublicInstance | null): el is HTML
   left: 0;
   width: 43px;
   height: 100%;
-  background-color: rgb(77, 168, 218, 0.5); /* สีพื้นหลังโปร่งแสง */
+  background-color: #4da8da80; /* สีพื้นหลังโปร่งแสง */
 }
 
 .schedule-bar {

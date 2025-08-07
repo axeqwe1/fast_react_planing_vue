@@ -8,7 +8,7 @@
         <span>WIP. 0</span>
       </div>
 
-      <div class="flex week-header">
+      <div class="flex week-header" ref="headerRef">
         <div
           class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
           v-for="(item, i) in weeks"
@@ -48,6 +48,7 @@ const jobs = ref([] as Job[])
 const loadStore = useLoadingStore()
 const { isLoading } = storeToRefs(loadStore)
 const LoadingRef = ref(isLoading)
+const headerRef = ref<HTMLElement | null>(null)
 const store = useScheduleStore()
 const fetchTest = async () => {
   try {
@@ -84,7 +85,13 @@ onMounted(async () => {
   const CAL_WEEK = calculateWeeks(store.Jobs)
   store.setWeeks(CAL_WEEK) // Calculate weeks based on jobs
   weeks.value = store.weeks
-  await nextTick()
+  await nextTick(() => {
+    if (headerRef.value) {
+      store.headerWidth = headerRef.value.scrollWidth
+      console.log(headerRef.value.scrollWidth)
+    }
+  })
+  store.headerWidth = headerRef.value?.scrollWidth || 0 // Set header width for the store
   if (store.weeks.length > 0) {
     // if want to cache durationwork must have weeks data
     store.cacheWorkDuration()
