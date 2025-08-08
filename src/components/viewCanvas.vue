@@ -73,7 +73,7 @@ function drawTimeline(): void {
 watchEffect(() => {
   if (store.headerWidth) {
     canvasWidth.value = store.headerWidth
-    console.log('canvasWidth set from week-header:', canvasWidth.value)
+    // console.log('canvasWidth set from week-header:', canvasWidth.value)
     drawTimeline()
   }
 })

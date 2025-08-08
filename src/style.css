@@ -1,1 +1,28 @@
 @import 'tailwindcss';
+
+/* .job {
+  transition: transform 0.3s ease;
+}
+.job.moved {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-10px);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+} */
+
+.job-preview {
+  position: absolute;
+  width: 50px; /* ปรับตามขนาด job */
+  height: 30px;
+  background-color: rgba(0, 123, 255, 0.3);
+  border: 1px dashed #007bff;
+  pointer-events: none; /* ป้องกันการรบกวน event */
+}

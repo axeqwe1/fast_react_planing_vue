@@ -61,7 +61,7 @@ export const useScheduleStore = defineStore('schedule', {
       const endKey = formatTimeKey(endDate)
 
       if (!timeIndexMap.has(startKey) || !timeIndexMap.has(endKey)) {
-        console.warn('Not found:', startKey, endKey)
+        // console.warn('Not found:', startKey, endKey)
         return { display: 'none' }
       }
 
@@ -69,7 +69,7 @@ export const useScheduleStore = defineStore('schedule', {
       let endOffset = timeIndexMap.get(endKey)
       let totalUnit = timeIndexMap.size // ✅ Map ใช้ `.size` แทน `.length`
       if (startOffset === undefined || endOffset === undefined) {
-        console.warn(`No time index found for keys: ${startKey}, ${endKey}`)
+        // console.warn(`No time index found for keys: ${startKey}, ${endKey}`)
         return { display: 'none' }
       }
 
@@ -132,12 +132,6 @@ export const useScheduleStore = defineStore('schedule', {
         if (dayStart < dayEnd) {
           let minutesInDay = (dayEnd.getTime() - dayStart.getTime()) / (1000 * 60)
           totalMinutes += minutesInDay
-
-          //console.log(`Date: ${currentDate.toDateString()}`);
-          //console.log(`  Day start: ${dayStart.toTimeString()}`);
-          //console.log(`  Day end: ${dayEnd.toTimeString()}`);
-          //console.log(`  Minutes in day: ${minutesInDay}`);
-          //console.log(`  Total minutes so far: ${totalMinutes}`);
         }
 
         currentDate.setDate(currentDate.getDate() + 1)
@@ -153,9 +147,9 @@ export const useScheduleStore = defineStore('schedule', {
       let width = finalDurationUnits * unitWidth
       return {
         left: left + 'px',
-        width: Math.max(width, 10) + 'px', // minimum width 10px
+        width: Math.max(width, 1.16) + 'px', // minimum width 10px
         backgroundColor: '#007bff',
-        minWidth: '10px',
+        minWidth: '1.16px',
       }
     },
     getDevideStyle(endDate: Date) {
@@ -203,7 +197,7 @@ export const useScheduleStore = defineStore('schedule', {
           for (let hour = startHour; hour <= endHour; hour++) {
             for (let minute = 0; minute < 60; minute += 15) {
               if (hour === 17 && minute > 0) break
-              let timeKey = `${hour}:${minute.toString().padStart(2, '0')}`
+              let timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
               let key = `${dateKey} ${timeKey}`
 
               if (!timeIndexMap.has(key)) {

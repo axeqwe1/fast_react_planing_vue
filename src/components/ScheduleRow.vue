@@ -23,27 +23,19 @@
             if (el) setElementContainer(el, line.name)
           }
         "
-        @dragover="onDragOver"
+        @dragover="onDragOver(line.name, $event)"
         @drop="(e) => onDrop(e, line.name)"
       >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
-            v-for="job in store.getJobsForLine(line.name)"
+            v-for="(job, jIndex) in store.getJobsForLine(line.name)"
             :key="job.line + job.name"
-            :style="[store.getJobStyle(job), createJobDraggable(job).state?.dragStyle]"
+            :style="[store.getJobStyle(job)]"
             v-tooltip.top="'Line: ' + line.name + ' ' + job.name"
             class="schedule-bar z-5 border-r-4"
             draggable="true"
             @dragstart="(e) => onDragStart(e, job)"
             @dragend="onDragEnd"
-            :ref="
-              (el) => {
-                const jobRef = createJobDraggable(job).ref
-                if (jobRef && isHTMLElement(el)) {
-                  jobRef.value = el
-                }
-              }
-            "
           >
             <span class="bg-slate-800/50 p-1 rounded-sm">
               {{ job.name }}
@@ -51,26 +43,6 @@
           </div>
         </template>
 
-        <!-- <template
-          v-if="store.WorkDuration.size > 0 && store.weeks.length > 0"
-          v-for="week in store.weeks"
-        >
-          <div
-            v-for="(day, index) in store.cacheWeekDay.get(formatTimeKey(week.start))"
-            :key="index"
-            class="hour-of-day flex flex-row-reverse items-end px-2 border-r-1 border-gray-300 z-3"
-            :style="{ left: `${store.getDurationStyle(formatTimeKey(week.start), day)}px` }"
-          >
-            <div class="">
-              {{ store.getDayDuration(day, line.name) }}
-            </div>
-          </div>
-        </template>
-        <div
-          class="week-break-background border-r-3 border-r-red-700 z-4"
-          v-for="i in divideLeft"
-          :style="{ left: i + 'px' }"
-        ></div> -->
         <template v-if="divideLeft">
           <viewCanvas :divide-left="divideLeft" />
         </template>
@@ -96,36 +68,43 @@ import {
   computed,
   type Ref,
   onBeforeUnmount,
+  type CSSProperties,
+  reactive,
 } from 'vue'
 import { formatTimeKey } from '@/utils/formatKey'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import { useDraggable, useElementBounding } from '@vueuse/core'
 import viewCanvas from '@/components/viewCanvas.vue'
-// สร้าง Map เก็บ ref สำหรับแต่ละ job
-const jobRefs = new Map<string, Ref<HTMLElement | null>>()
-const jobStates = new Map<string, any>()
+import throttle from 'lodash/throttle'
+import { useMouseEvent } from '@/composables/useMouseEvent'
+import { useTime } from '@/composables/useTime'
+
 const draggableEl = ref<Record<string, HTMLElement>>({})
 
 const draggingJob = ref<Job | null>(null)
 const dragStartPosition = ref<{ x: number; y: number } | null>(null)
 const divideLeft = ref<number[]>()
-const offsetWidth = ref<number>(0)
 const dragContext = {
   scrollLeftAtStart: 0,
   containerRect: null as DOMRect | null,
   clientXStart: 0,
 }
+const insertIndexByLine = ref<Record<string, number>>({})
 const { setLoading } = useLoadingStore()
 const scheduleRowRefs = ref<ScheduleRefs>({})
 
 const lines = ref<Line[]>([])
 const store = useScheduleStore()
-
-function setElementContainer(el: Element | ComponentPublicInstance, lineName: string) {
-  if (el instanceof HTMLElement) {
-    draggableEl.value[lineName] = el
+const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
+const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
+const timeIndexReverseMap = computed(() => {
+  const rMap = new Map<number, string>()
+  for (const [k, v] of store.timeIndexMap.entries()) {
+    rMap.set(v, k)
   }
-}
+  return rMap
+})
+// Drag and Drop Handlers
 function onDragStart(e: DragEvent, job: Job) {
   if (!e.dataTransfer) return
 
@@ -141,11 +120,11 @@ function onDragStart(e: DragEvent, job: Job) {
   if (container) {
     dragContext.scrollLeftAtStart = container.scrollLeft
     dragContext.containerRect = container.getBoundingClientRect()
-    console.log('Container rect:', dragContext.containerRect)
-    console.log('Scroll left at start:', dragContext.scrollLeftAtStart)
-    console.log('Offset Width', container.offsetWidth)
-    console.log(store.timeIndexMap.size, 'timeIndexMap size')
-    console.log('unitWidth:', container.offsetWidth / store.timeIndexMap.size)
+    // console.log('Container rect:', dragContext.containerRect)
+    // console.log('Scroll left at start:', dragContext.scrollLeftAtStart)
+    // console.log('Offset Width', container.offsetWidth)
+    // console.log(store.timeIndexMap.size, 'timeIndexMap size')
+    // console.log('unitWidth:', container.offsetWidth / store.timeIndexMap.size)
   }
   // กำหนดรูปแบบการลาก
   e.dataTransfer.effectAllowed = 'move'
@@ -154,26 +133,19 @@ function onDragStart(e: DragEvent, job: Job) {
   const dragImage = document.createElement('div')
   dragImage.textContent = job.name
   dragImage.style.backgroundColor = '#007bff'
-  dragImage.style.padding = '5px'
+  dragImage.style.padding = '4px 12px'
   dragImage.style.color = 'white'
+  dragImage.style.borderRadius = '4px'
+  // dragImage.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)'
+  dragImage.style.fontWeight = 'bold'
   document.body.appendChild(dragImage)
-  e.dataTransfer.setDragImage(dragImage, 0, 0)
+  e.dataTransfer.setDragImage(dragImage, 0, 10) // offset เล็กน้อยเพื่อความสวยงาม
   setTimeout(() => document.body.removeChild(dragImage), 0)
 }
 
-function getRelativeX(container: HTMLElement, event: MouseEvent) {
-  const containerRect = container.getBoundingClientRect()
-  return event.clientX - containerRect.left + container.scrollLeft
-}
-
-function onDragOver(e: DragEvent) {
-  if (!e.currentTarget || !draggingJob.value) return
+function onDragOver(linename: string, e: DragEvent) {
   e.preventDefault() // สำคัญ! ต้องมีเพื่อให้สามารถ drop ได้
-
-  // แสดงตำแหน่งขณะลาก
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  const x = e.clientX - rect.left
-  console.log('Dragging at position:', x)
+  // throttleDragOver(linename, e)
 }
 
 // ฟังก์ชันช่วยสำหรับ debug การคำนวณ
@@ -189,7 +161,6 @@ function onDrop(e: DragEvent, lineName: string) {
   const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
   if (!timeKey) return
 
-  const newStart = new Date(timeKey)
   console.table({
     'Relative X': relativeX.toFixed(2),
     'Unit Width': unitWidth.toFixed(2),
@@ -197,11 +168,7 @@ function onDrop(e: DragEvent, lineName: string) {
     'Time Key': timeKey,
   })
 
-  //   draggingJob.value.line = lineName
-
-  draggingJob.value.line = lineName
-  draggingJob.value.startDate = timeKey
-  // หรือถ้าใช้ index: draggingJob.value.timeIndex = timeIndex
+  throttledUpdate(lineName, e) // ใช้ฟังก์ชันที่ถูก throttle เพื่ออัปเดตตำแหน่ง
 
   // === รีเซ็ต state ===
   draggingJob.value = null
@@ -249,40 +216,116 @@ watch(
   { immediate: true },
 )
 
-// ฟังก์ชันสร้าง ref และ state สำหรับ job
-function createJobDraggable(job: Job) {
-  const jobKey = `${job.line}-${job.name}`
-  if (!jobRefs.has(jobKey)) {
-    const el = ref<HTMLElement | null>(null)
-    jobRefs.set(jobKey, el)
-
-    const { isDragging, x } = useDraggable(el, {
-      initialValue: { x: 0, y: 0 },
-      axis: 'x',
-      onStart: () => {
-        console.log('Started dragging:', job.name)
-      },
-      onEnd: () => {
-        console.log('Ended dragging, position:', x.value)
-      },
-    })
-
-    jobStates.set(jobKey, {
-      isDragging,
-      dragStyle: computed(() => ({
-        transform: isDragging.value ? `translate(${x.value}px, 0px)` : undefined,
-      })),
-    })
-  }
-
-  return {
-    ref: jobRefs.get(jobKey),
-    state: jobStates.get(jobKey),
+function setElementContainer(el: Element | ComponentPublicInstance, lineName: string) {
+  if (el instanceof HTMLElement) {
+    draggableEl.value[lineName] = el
   }
 }
-function isHTMLElement(el: Element | ComponentPublicInstance | null): el is HTMLElement {
-  return el instanceof HTMLElement
-}
+const throttleDragOver = throttle((linename: string, e: DragEvent) => {
+  const container = draggableEl.value[linename] || null
+  if (!e.currentTarget || !draggingJob.value) return
+  const target = e.currentTarget as HTMLElement
+  target.classList.add('drag-over')
+
+  const filterJobs = store.Jobs.filter((job) => {
+    return !(job.id === draggingJob.value?.id) && job.line === linename
+  }).map((job) => {
+    const startDate = new Date(job.startDate)
+    const endDate = new Date(job.endDate)
+    const { startHour, startMinute, endHour, endMinute } = adjustTimeForIndex(
+      startDate,
+      endDate,
+      1,
+      8,
+    )
+
+    startDate.setHours(startHour, startMinute, 0, 0)
+    endDate.setHours(endHour, endMinute, 0, 0)
+
+    return {
+      ...job,
+      startKey: formatTimeKey(startDate),
+      endKey: formatTimeKey(endDate),
+    }
+  })
+
+  const validJobs = filterJobs.filter(
+    (job) => store.timeIndexMap.has(job.startKey) && store.timeIndexMap.has(job.endKey),
+  )
+  const relativeX = getRelativeX(container, e) // ใช้ clientX
+  const unitWidth = container.offsetWidth / store.timeIndexMap.size
+  const index = Math.floor(relativeX / unitWidth)
+
+  const timeKey = timeIndexReverseMap.value.get(index)
+  if (!timeKey) return
+  const time = new Date(timeKey)
+
+  const beforeJobs = validJobs
+    .filter((job) => {
+      const start = new Date(job.startKey)
+      return time <= start
+    })
+    .sort((a, b) => new Date(a.startKey).getTime() - new Date(b.startKey).getTime())
+  const afterJobs = validJobs
+    .filter((job) => {
+      const end = new Date(job.endKey)
+      return time >= end
+    })
+    .sort((a, b) => new Date(a.startKey).getTime() - new Date(b.startKey).getTime())
+
+  // console.table({
+  //   beforeJobs: beforeJobs.map((job) => job),
+  //   afterJobs: afterJobs.map((job) => job),
+  // })
+  if (!draggingJob.value) return
+  const indexOfAfterJob = [...store.timeIndexMap.entries()].find(
+    ([k, v]) => k === afterJobs[afterJobs.length - 1]?.endKey,
+  )?.[1]
+
+  if (indexOfAfterJob === undefined) return
+  const insertTimeIndex = [...store.timeIndexMap.entries()].find(
+    ([k, v]) => v === indexOfAfterJob + 1,
+  )?.[0]
+
+  if (!insertTimeIndex) return
+  const newStart = new Date(insertTimeIndex)
+  const duration =
+    new Date(draggingJob.value.endDate).getTime() - new Date(draggingJob.value.startDate).getTime()
+  const newEnd = new Date(newStart.getTime() + duration)
+  console.log(newStart, newEnd)
+  console.log(draggingJob.value)
+
+  draggingJob.value.startDate = formatTimeKey(newStart)
+  draggingJob.value.endDate = formatTimeKey(newEnd)
+  // if (insertTimeIndex) {
+  //   draggingJob.value.endDate = formatTimeKey(newEnd)
+  // }
+  // draggingJob.value.endDate = formatTimeKey(newEnd)
+  draggingJob.value.line = linename
+}, 160)
+const throttledUpdate = throttle((linename: string, e: DragEvent) => {
+  if (!e.currentTarget || !draggingJob.value) return
+  const container = draggableEl.value[linename] || null
+  const index = getInsertIndexInLine(container, e)
+  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+  if (!timeKey) return
+
+  insertIndexByLine.value = {
+    ...insertIndexByLine.value,
+    [linename]: index,
+  }
+
+  const newStart = adjustToWorkingHours(new Date(timeKey))
+
+  const duration =
+    new Date(draggingJob.value.endDate).getTime() - new Date(draggingJob.value.startDate).getTime()
+  const newEnd = adjustToWorkingHours(new Date(newStart.getTime() + duration))
+  draggingJob.value.startDate = formatTimeKey(newStart)
+  draggingJob.value.endDate = formatTimeKey(newEnd)
+
+  draggingJob.value.line = linename
+  console.log(draggingJob.value)
+}, 20) // 16ms = ~60fps
 </script>
 
 <style scoped>
@@ -311,6 +354,11 @@ function isHTMLElement(el: Element | ComponentPublicInstance | null): el is HTML
   border-right: 2px solid #000; /* กำหนดเส้นขอบด้านขวาให้หนา */
   font-size: 12px; /* ปรับขนาดตัวอักษรให้เล็กลงถ้าจำเป็น */
   font-weight: bold;
+
+  transition:
+    left 0.2s ease-out,
+    top 0.2s ease-out;
+  will-change: left, top;
 }
 
 .hour-of-day {

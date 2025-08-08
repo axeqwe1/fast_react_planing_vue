@@ -55,8 +55,9 @@ const fetchTest = async () => {
     const res = await GetMasterPlanData()
     const data = res
     console.log(res)
-    data.forEach((items: any) => {
+    data.forEach((items: any, index: number) => {
       jobs.value.push({
+        id: index, // Assuming each item has a unique id
         line: items.line,
         name: items.orderNo,
         startDate: items.sewAssembly,
