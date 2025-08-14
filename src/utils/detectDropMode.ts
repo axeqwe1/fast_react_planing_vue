@@ -23,7 +23,7 @@ export function detectDropMode({
     const jobEnd = new Date(job.endDate)
 
     // ถ้าทับช่วงเวลา job อื่น
-    if (newStart >= jobStart && newStart < jobEnd) {
+    if (newStart >= jobStart && newStart <= jobEnd) {
       return 'insert'
     }
 

@@ -1,6 +1,8 @@
+import { useTime } from '@/composables/useTime'
 import type { Job, Line, MasterData } from '@/type/types'
 import { isSameDay } from '@/utils/detectDropMode'
 import { formatTimeKey } from '@/utils/formatKey'
+import { get } from 'lodash'
 import { defineStore } from 'pinia'
 
 export const useScheduleStore = defineStore('schedule', {
@@ -320,13 +322,40 @@ export const useScheduleStore = defineStore('schedule', {
       this.computeAllJobStyles()
     },
     insertAndPushJobs(lineId: string, start: Date, end: Date, movingJobId: number) {
+      const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
       // update job ที่ลากมาก่อน
-      const startDate = formatTimeKey(start)
-      const endDate = formatTimeKey(end)
-      this.updateJob(movingJobId, lineId, startDate, endDate)
+      const startAdj = adjustToWorkingHours(start)
+      const endAdj = adjustToWorkingHours(end)
+
+      // ปรับเวลาให้ตรงกับช่วงเวลาที่มีใน timeIndexMap
+      let startDate = formatTimeKey(startAdj)
+      let endDate = formatTimeKey(endAdj)
+      // this.updateJob(movingJobId, lineId, startDate, endDate)
 
       // chain push
       let currentStart = endDate
+      let jobinLine = this.Jobs.filter((j) => j.line === lineId && j.id !== movingJobId).sort(
+        (a, b) => toDate(a.startDate).getTime() - toDate(b.startDate).getTime(),
+      )
+      for (let i of jobinLine) {
+        if (toDate(startDate) >= toDate(i.startDate) && toDate(startDate) <= toDate(i.endDate)) {
+          console.warn('Job already exists at this time, skipping insert')
+          let dur = this.getDuration(startDate, endDate)
+          startDate = formatTimeKey(new Date(i.startDate))
+          endDate = formatTimeKey(this.addTime(toDate(startDate), dur))
+
+          currentStart = formatTimeKey(adjustToWorkingHours(new Date(endDate)))
+          this.updateJob(movingJobId, lineId, startDate, endDate)
+
+          let dur2 = this.getDuration(i.startDate, i.endDate)
+
+          i.startDate = currentStart
+          i.endDate = formatTimeKey(
+            adjustToWorkingHours(new Date(toDate(i.startDate).getTime() + dur2)),
+            // เพิ่ม duration ของ job ที่ลากมา
+          )
+        }
+      }
       let jobsToPush = this.Jobs.filter(
         (j) =>
           j.line === lineId && j.id !== movingJobId && toDate(j.startDate) >= toDate(startDate),
@@ -334,6 +363,7 @@ export const useScheduleStore = defineStore('schedule', {
       console.log(jobsToPush, 'jobs to push after insert')
       for (let j of jobsToPush) {
         let dur = this.getDuration(j.startDate, j.endDate)
+
         j.startDate = currentStart
         j.endDate = formatTimeKey(this.addTime(toDate(currentStart), dur))
         currentStart = j.endDate
