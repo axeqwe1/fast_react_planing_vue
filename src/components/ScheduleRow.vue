@@ -30,7 +30,7 @@
           <div
             v-for="(job, jIndex) in store.getJobsForLine(line.name)"
             :key="job.line + job.name"
-            :style="[store.getJobStyle(job)]"
+            :style="[store.getJobStyleFromCache(job)] as StyleValue"
             v-tooltip.top="'Line: ' + line.name + ' ' + job.name"
             class="schedule-bar z-5 border-r-4"
             draggable="true"
@@ -44,7 +44,7 @@
         </template>
 
         <template v-if="divideLeft">
-          <viewCanvas :divide-left="divideLeft" />
+          <viewCanvas />
         </template>
       </div>
     </div>
@@ -70,6 +70,7 @@ import {
   onBeforeUnmount,
   type CSSProperties,
   reactive,
+  type StyleValue,
 } from 'vue'
 import { formatTimeKey } from '@/utils/formatKey'
 import { useLoadingStore } from '@/stores/LoadingStore'
@@ -78,12 +79,13 @@ import viewCanvas from '@/components/viewCanvas.vue'
 import throttle from 'lodash/throttle'
 import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
-
+import { detectDropMode } from '@/utils/detectDropMode'
+const store = useScheduleStore()
 const draggableEl = ref<Record<string, HTMLElement>>({})
-
+const draggableElBar = ref<Record<string, HTMLElement>>({})
 const draggingJob = ref<Job | null>(null)
 const dragStartPosition = ref<{ x: number; y: number } | null>(null)
-const divideLeft = ref<number[]>()
+const divideLeft = ref<number[]>(store.divideCache)
 const dragContext = {
   scrollLeftAtStart: 0,
   containerRect: null as DOMRect | null,
@@ -94,7 +96,7 @@ const { setLoading } = useLoadingStore()
 const scheduleRowRefs = ref<ScheduleRefs>({})
 
 const lines = ref<Line[]>([])
-const store = useScheduleStore()
+
 const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 const timeIndexReverseMap = computed(() => {
@@ -136,6 +138,8 @@ function onDragStart(e: DragEvent, job: Job) {
   dragImage.style.padding = '4px 12px'
   dragImage.style.color = 'white'
   dragImage.style.borderRadius = '4px'
+  dragImage.style.width = store.getJobStyleFromCache(job).width || 'auto' // ใช้ width จาก style ที่คำนวณไว้
+
   // dragImage.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)'
   dragImage.style.fontWeight = 'bold'
   document.body.appendChild(dragImage)
@@ -144,33 +148,33 @@ function onDragStart(e: DragEvent, job: Job) {
 }
 
 function onDragOver(linename: string, e: DragEvent) {
-  e.preventDefault() // สำคัญ! ต้องมีเพื่อให้สามารถ drop ได้
-  // throttleDragOver(linename, e)
+  e.preventDefault()
 }
 
 // ฟังก์ชันช่วยสำหรับ debug การคำนวณ
 function onDrop(e: DragEvent, lineName: string) {
-  const container = draggableEl.value[lineName] || null
-  e.preventDefault() // ป้องกันการกระทำเริ่มต้นของ drop
+  e.preventDefault()
+  if (!draggingJob.value) return
+  const container = draggableEl.value[lineName]
   if (!container) return
-  if (!e.currentTarget || !draggingJob.value) return
-  const relativeX = getRelativeX(container, e) // ใช้ clientX
+
+  const relativeX = getRelativeX(container, e)
   const unitWidth = container.offsetWidth / store.timeIndexMap.size
   const index = Math.floor(relativeX / unitWidth)
-
   const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
   if (!timeKey) return
 
-  console.table({
-    'Relative X': relativeX.toFixed(2),
-    'Unit Width': unitWidth.toFixed(2),
-    Index: index,
-    'Time Key': timeKey,
+  const newStart = adjustToWorkingHours(new Date(timeKey))
+  const dropMode = detectDropMode({
+    targetLineId: lineName,
+    newStart,
+    jobs: store.Jobs,
+    holidays: store.holidays,
   })
+  console.log(dropMode)
+  store.moveJob(draggingJob.value.id, lineName, newStart, dropMode)
 
-  throttledUpdate(lineName, e) // ใช้ฟังก์ชันที่ถูก throttle เพื่ออัปเดตตำแหน่ง
-
-  // === รีเซ็ต state ===
+  // รีเซ็ต state
   draggingJob.value = null
   dragStartPosition.value = null
 }
@@ -188,20 +192,16 @@ watch(
   },
   { immediate: true }, // เรียกทันทีตอน mounted
 )
-watchEffect(async () => {
-  store.getDayIndex(8)
-  let arrLeft: number[] = []
-  store.weeks.forEach((item, index) => {
-    const LEFT = store.getDevideStyle(item.end)
-    arrLeft.push(LEFT)
-  })
-  divideLeft.value = arrLeft
-  // console.log('divideLeft:', arrLeft)
-  // console.log('store WorkDuration', store.WorkDuration)
-  if (divideLeft.value.length > 0) {
+watch(
+  () => [store.weeks],
+  () => {
+    store.getDayIndex(8)
+    store.computeAllJobStyles()
+    store.computeDivideStyle()
     setLoading(false)
-  }
-})
+  },
+  { immediate: true },
+)
 // รอจน component และ element render เสร็จจริงก่อนใช้ bounding
 watch(
   () => ({ ...scheduleRowRefs.value }),
@@ -221,6 +221,7 @@ function setElementContainer(el: Element | ComponentPublicInstance, lineName: st
     draggableEl.value[lineName] = el
   }
 }
+
 const throttleDragOver = throttle((linename: string, e: DragEvent) => {
   const container = draggableEl.value[linename] || null
   if (!e.currentTarget || !draggingJob.value) return
@@ -232,15 +233,6 @@ const throttleDragOver = throttle((linename: string, e: DragEvent) => {
   }).map((job) => {
     const startDate = new Date(job.startDate)
     const endDate = new Date(job.endDate)
-    const { startHour, startMinute, endHour, endMinute } = adjustTimeForIndex(
-      startDate,
-      endDate,
-      1,
-      8,
-    )
-
-    startDate.setHours(startHour, startMinute, 0, 0)
-    endDate.setHours(endHour, endMinute, 0, 0)
 
     return {
       ...job,
@@ -258,62 +250,6 @@ const throttleDragOver = throttle((linename: string, e: DragEvent) => {
 
   const timeKey = timeIndexReverseMap.value.get(index)
   if (!timeKey) return
-  const time = new Date(timeKey)
-
-  const beforeJobs = validJobs
-    .filter((job) => {
-      const start = new Date(job.startKey)
-      return time <= start
-    })
-    .sort((a, b) => new Date(a.startKey).getTime() - new Date(b.startKey).getTime())
-  const afterJobs = validJobs
-    .filter((job) => {
-      const end = new Date(job.endKey)
-      return time >= end
-    })
-    .sort((a, b) => new Date(a.startKey).getTime() - new Date(b.startKey).getTime())
-
-  // console.table({
-  //   beforeJobs: beforeJobs.map((job) => job),
-  //   afterJobs: afterJobs.map((job) => job),
-  // })
-  if (!draggingJob.value) return
-  const indexOfAfterJob = [...store.timeIndexMap.entries()].find(
-    ([k, v]) => k === afterJobs[afterJobs.length - 1]?.endKey,
-  )?.[1]
-
-  if (indexOfAfterJob === undefined) return
-  const insertTimeIndex = [...store.timeIndexMap.entries()].find(
-    ([k, v]) => v === indexOfAfterJob + 1,
-  )?.[0]
-
-  if (!insertTimeIndex) return
-  const newStart = new Date(insertTimeIndex)
-  const duration =
-    new Date(draggingJob.value.endDate).getTime() - new Date(draggingJob.value.startDate).getTime()
-  const newEnd = new Date(newStart.getTime() + duration)
-  console.log(newStart, newEnd)
-  console.log(draggingJob.value)
-
-  draggingJob.value.startDate = formatTimeKey(newStart)
-  draggingJob.value.endDate = formatTimeKey(newEnd)
-  // if (insertTimeIndex) {
-  //   draggingJob.value.endDate = formatTimeKey(newEnd)
-  // }
-  // draggingJob.value.endDate = formatTimeKey(newEnd)
-  draggingJob.value.line = linename
-}, 160)
-const throttledUpdate = throttle((linename: string, e: DragEvent) => {
-  if (!e.currentTarget || !draggingJob.value) return
-  const container = draggableEl.value[linename] || null
-  const index = getInsertIndexInLine(container, e)
-  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
-  if (!timeKey) return
-
-  insertIndexByLine.value = {
-    ...insertIndexByLine.value,
-    [linename]: index,
-  }
 
   const newStart = adjustToWorkingHours(new Date(timeKey))
 
@@ -324,8 +260,53 @@ const throttledUpdate = throttle((linename: string, e: DragEvent) => {
   draggingJob.value.endDate = formatTimeKey(newEnd)
 
   draggingJob.value.line = linename
-  console.log(draggingJob.value)
-}, 20) // 16ms = ~60fps
+  // if (insertTimeIndex) {
+  //   draggingJob.value.endDate = formatTimeKey(newEnd)
+  // }
+  // draggingJob.value.endDate = formatTimeKey(newEnd)
+}, 16)
+const throttledUpdate = throttle((linename: string, e: DragEvent) => {
+  if (!e.currentTarget || !draggingJob.value) return
+  const container = draggableEl.value[linename] || null
+  const filterJobs = store.Jobs.filter((job) => {
+    return job.line == linename && !(job.id === draggingJob.value?.id)
+  })
+
+  const index = getInsertIndexInLine(container, e)
+  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+  if (!timeKey) return
+
+  const newStart = adjustToWorkingHours(new Date(timeKey))
+
+  const duration =
+    new Date(draggingJob.value.endDate).getTime() - new Date(draggingJob.value.startDate).getTime()
+  const newEnd = adjustToWorkingHours(new Date(newStart.getTime() + duration))
+
+  let replace = false
+  filterJobs.forEach((job) => {
+    const startDate = new Date(job.startDate)
+    const endDate = new Date(job.endDate)
+    const startKey = formatTimeKey(startDate)
+    const endKey = formatTimeKey(endDate)
+
+    if (newStart >= startDate && newStart <= endDate) {
+      console.log('a', job)
+      // ถ้า job นี้อยู่ในช่วงเวลาใหม่ที่ลากมา
+      // ไม่ต้องทำอะไร
+    } else if (newEnd >= startDate && newEnd <= endDate) {
+      console.log('b', job)
+    }
+  })
+
+  // if (!replace) {
+  //   draggingJob.value!.startDate = formatTimeKey(newStart)
+  //   draggingJob.value!.endDate = formatTimeKey(newEnd)
+  // }
+
+  draggingJob.value.line = linename
+  // console.log(draggingJob.value)
+  store.computeAllJobStyles()
+}, 16) // 16ms = ~60fps
 </script>
 
 <style scoped>

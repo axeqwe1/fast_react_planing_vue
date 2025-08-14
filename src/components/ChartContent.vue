@@ -59,6 +59,7 @@ const fetchTest = async () => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
         line: items.line,
+
         name: items.orderNo,
         startDate: items.sewAssembly,
         endDate: items.sewFinish,
@@ -74,6 +75,7 @@ const fetchTest = async () => {
     })
     store.setLine(lineMap) // Update the store with unique lines
     store.setMasters(data) // Update the store with master data
+
     console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)

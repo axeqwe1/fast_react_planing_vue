@@ -47,6 +47,15 @@ export interface MasterData {
   sewDate: Date
 }
 
+export type DropMode = 'insert' | 'merge' | 'normal' | 'skip'
+
+export interface DetectDropModeParams {
+  targetLineId: string | number
+  newStart: Date
+  jobs: Job[]
+  holidays?: Date[] // optional
+}
+
 type WorkCalendarMap = Record<string, number>
 // หรือแบบนี้ก็ได้ถ้าอยากใช้ Date object
 type WorkCalendarMapDate = Record<string /* ISO Date */, number /* hours */>

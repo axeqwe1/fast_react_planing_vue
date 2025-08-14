@@ -1,4 +1,5 @@
 import type { Job, Line, MasterData } from '@/type/types'
+import { isSameDay } from '@/utils/detectDropMode'
 import { formatTimeKey } from '@/utils/formatKey'
 import { defineStore } from 'pinia'
 
@@ -15,7 +16,11 @@ export const useScheduleStore = defineStore('schedule', {
     timeIndexMap: new Map<string, number>(),
     WorkDuration: new Map<string, number>(), // ใช้สำหรับเก็บข้อมูลการทำงาน
     cacheWeekDay: new Map<string, Date[]>(), // ใช้สำหรับเก็บวันในแต่ละสัปดาห์
+    jobStyleCache: new Map<number, Partial<CSSStyleDeclaration>>(), // cache job styles
+    divideCache: [] as number[], // cache divide styles
     headerWidth: 0,
+    holidays: [] as Date[], // วันหยุดทั้งหมด
+    workHours: { start: '08:00', end: '17:00' }, // ชั่วโมงทำงาน
   }),
   actions: {
     setLine(line: Line[]) {
@@ -30,10 +35,36 @@ export const useScheduleStore = defineStore('schedule', {
     setWeeks(weeks: { start: Date; end: Date }[]) {
       this.weeks = weeks
     },
+
+    computeDivideStyle() {
+      this.divideCache = []
+      this.weeks.forEach((week) => {
+        const style = this.getDevideStyle(week.end)
+        this.divideCache.push(style)
+      })
+      console.log(this.getDivideCache(), 'divide cache computed')
+    },
+
+    computeAllJobStyles() {
+      this.Jobs.forEach((job) => {
+        this.jobStyleCache.set(job.id, this.getJobStyle(job))
+      })
+      console.log('Computed')
+    },
+
+    getJobStyleFromCache(job: Job) {
+      return this.jobStyleCache.get(job.id) || {}
+    },
+
+    getDivideCache() {
+      return this.divideCache
+    },
+
     getJobsForLine(line: string) {
       //   console.log(this.Jobs.filter((job) => job.line === line))
       return this.Jobs.filter((job) => job.line === line)
     },
+    // determine style for job bar
     getJobStyle(job: Job) {
       let workHour = 8
       const BREAK_DURATION = 1 // ชั่วโมงพัก
@@ -45,10 +76,11 @@ export const useScheduleStore = defineStore('schedule', {
 
       // adjust hour and minute
       let startHour = Math.max(8, startDate.getHours())
-      let startMinute = Math.floor(startDate.getMinutes() / 15) * 15
+      // let startMinute = Math.floor(startDate.getMinutes() / 1) * 1
+      let startMinute = Math.floor(startDate.getMinutes())
       if (startHour === 8 && startMinute === 0) startMinute = 0
       let endHour = Math.min(17, endDate.getHours())
-      let endMinute = Math.floor(endDate.getMinutes() / 15) * 15
+      let endMinute = Math.floor(endDate.getMinutes())
       if (endHour === 8 + workHour + BREAK_DURATION && endMinute > 0)
         endHour = 8 + workHour + BREAK_DURATION
 
@@ -93,8 +125,8 @@ export const useScheduleStore = defineStore('schedule', {
       let finalDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
 
       while (currentDate <= finalDate) {
-        let isStartDay = currentDate.toDateString() === startDate.toDateString()
-        let isEndDay = currentDate.toDateString() === endDate.toDateString()
+        let isStartDay = currentDate.toISOString() === startDate.toISOString()
+        let isEndDay = currentDate.toISOString() === endDate.toISOString()
 
         let dayStart, dayEnd
 
@@ -141,10 +173,11 @@ export const useScheduleStore = defineStore('schedule', {
       let totalDurationUnits = Math.max(1, endOffset - startOffset + 1)
 
       // ใช้วิธีที่ให้ผลลพธ์มากกว่า
-      let finalDurationUnits = Math.max(totalMinutes / 15, totalDurationUnits)
+      let finalDurationUnits = Math.max(totalMinutes / 1, totalDurationUnits)
 
       let left = startOffset * unitWidth
-      let width = finalDurationUnits * unitWidth
+      // let width = finalDurationUnits * unitWidth // 15 min
+      const width = (endOffset - startOffset + 1) * unitWidth // 1 min
       return {
         left: left + 'px',
         width: Math.max(width, 1.16) + 'px', // minimum width 10px
@@ -152,6 +185,7 @@ export const useScheduleStore = defineStore('schedule', {
         minWidth: '1.16px',
       }
     },
+    //determine style to divide line
     getDevideStyle(endDate: Date) {
       const END_DATE = new Date(endDate)
       // แก้เวลาเป็นเวลาเลิกงาน (เช่น 17:00)
@@ -177,6 +211,7 @@ export const useScheduleStore = defineStore('schedule', {
 
       return leftPosition - 42.72
     },
+    // Important create timeindex
     getDayIndex(workHour: number) {
       const timeIndexMap = new Map<string, number>()
       let totalUnits = 0
@@ -195,7 +230,7 @@ export const useScheduleStore = defineStore('schedule', {
           let dateKey = current.toISOString().split('T')[0]
 
           for (let hour = startHour; hour <= endHour; hour++) {
-            for (let minute = 0; minute < 60; minute += 15) {
+            for (let minute = 0; minute < 60; minute += 1) {
               if (hour === 17 && minute > 0) break
               let timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
               let key = `${dateKey} ${timeKey}`
@@ -217,7 +252,7 @@ export const useScheduleStore = defineStore('schedule', {
         let date = []
         for (let d = new Date(week.start); d <= week.end; d.setDate(d.getDate() + 1)) {
           // console.log(weekKey, new Date(d))
-
+          d.setHours(0, 0, 0, 0) // Set time to midnight for consistency
           date.push(new Date(d))
         }
         this.cacheWeekDay.set(weekKey, date)
@@ -239,7 +274,7 @@ export const useScheduleStore = defineStore('schedule', {
     },
     getDurationStyle(weekKey: string, day: Date) {
       const endDate = new Date(
-        this.cacheWeekDay.get(weekKey)?.find((d) => d.toDateString() === day.toDateString()) || day,
+        this.cacheWeekDay.get(weekKey)?.find((d) => d.toISOString() === day.toISOString()) || day,
       )
 
       endDate.setHours(17, 0, 0, 0)
@@ -254,9 +289,144 @@ export const useScheduleStore = defineStore('schedule', {
 
       let containerWidth = document.querySelector('.week-header')?.scrollWidth || 1000
       const unitWidth = containerWidth / totalUnits
-      const leftPosition = (endOffset - 36) * unitWidth
+      const leftPosition = endOffset * unitWidth
 
       return leftPosition
     },
+
+    moveJob(jobId: number, targetLineId: string, newStart: Date, dropMode: string) {
+      let job = findJobById(jobId)
+      if (!job) return
+
+      // 1. ปรับวันหยุดถ้า mode = skip หรือ newStart ตกวันหยุด
+      if (dropMode === 'skip' || this.isHoliday(newStart)) {
+        newStart = this.getNextWorkingDay(newStart)
+      }
+
+      let duration = this.getDuration(job.startDate, job.endDate)
+      let newEnd = this.addTime(newStart, duration)
+      switch (dropMode) {
+        case 'insert':
+          this.insertAndPushJobs(targetLineId, newStart, newEnd, jobId)
+          break
+        case 'merge':
+          this.pushJobForward(targetLineId, jobId, newStart, newEnd)
+          break
+        case 'normal':
+        default:
+          this.updateJob(jobId, targetLineId, formatTimeKey(newStart), formatTimeKey(newEnd))
+          break
+      }
+      this.computeAllJobStyles()
+    },
+    insertAndPushJobs(lineId: string, start: Date, end: Date, movingJobId: number) {
+      // update job ที่ลากมาก่อน
+      const startDate = formatTimeKey(start)
+      const endDate = formatTimeKey(end)
+      this.updateJob(movingJobId, lineId, startDate, endDate)
+
+      // chain push
+      let currentStart = endDate
+      let jobsToPush = this.Jobs.filter(
+        (j) =>
+          j.line === lineId && j.id !== movingJobId && toDate(j.startDate) >= toDate(startDate),
+      ).sort((a, b) => toDate(a.startDate).getTime() - toDate(b.startDate).getTime())
+      console.log(jobsToPush, 'jobs to push after insert')
+      for (let j of jobsToPush) {
+        let dur = this.getDuration(j.startDate, j.endDate)
+        j.startDate = currentStart
+        j.endDate = formatTimeKey(this.addTime(toDate(currentStart), dur))
+        currentStart = j.endDate
+      }
+    },
+    pushJobForward(lineId: string, movingJobId: number, newStart: Date, newEnd: Date) {
+      // เอา jobs ทั้งหมดของ line เดียวกัน ยกเว้น job ที่กำลังลาก
+      let lineJobs = this.Jobs.filter((j) => j.line === lineId && j.id !== movingJobId).sort(
+        (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      )
+
+      // อัปเดตตำแหน่ง job ที่กำลังลาก
+      this.updateJob(movingJobId, lineId, newStart.toISOString(), newEnd.toISOString())
+
+      // ตรวจ plan อื่นที่ startDate < newEnd (แสดงว่าชนหรือทับ)
+      for (let i = 0; i < lineJobs.length; i++) {
+        let job = lineJobs[i]
+        if (toDate(job.startDate) < newEnd) {
+          // หา offset ว่าชนกันกี่ ms
+          let offset = newEnd.getTime() - toDate(job.startDate).getTime()
+          if (offset > 0) {
+            let newStartDate = new Date(toDate(job.startDate).getTime() + offset)
+            newStartDate = this.getNextWorkingDay(newStartDate)
+
+            let dur = this.getDuration(job.startDate, job.endDate)
+            job.startDate = newStartDate.toISOString()
+            job.endDate = this.addTime(newStartDate, dur).toISOString()
+            newEnd = toDate(job.endDate)
+          }
+        }
+      }
+    },
+    // Helper Functuion
+    isHoliday(date: Date): boolean {
+      return this.holidays.some((h) => isSameDay(h, date))
+    },
+    getNextWorkingDay(date: Date) {
+      let next = addDays(date, 1)
+      console.log('getNextWorkingDay called with:', date, 'next:', next)
+      while (this.isHoliday(next)) {
+        next = addDays(next, 1)
+      }
+      return setTime(next, this.workHours.start) // เริ่มทำงานตอนเช้า
+    },
+    updateJob(jobId: string | number, lineId: string, start: string, end: string) {
+      let job = findJobById(jobId)
+      job.line = lineId
+      job.startDate = start
+      job.endDate = end
+
+      console.log(job, 'job updated in store')
+    },
+
+    getDuration(start: Date | string, end: Date | string): number {
+      const startDate = toDate(start)
+      const endDate = toDate(end)
+
+      const duration = new Date(endDate.getTime() - startDate.getTime()).getTime()
+
+      return duration
+    },
+
+    addTime(start: Date, duration: number): Date {
+      const newEnd = new Date(start.getTime() + duration) // duration in minutes
+      if (newEnd.getHours() > 17 || (newEnd.getHours() === 17 && newEnd.getMinutes() > 0)) {
+        newEnd.setDate(newEnd.getDate() + 1) // ถ้าเลยเวลาเลิกงาน ให้ข้ามไปวันถัดไป
+        newEnd.setHours(8, 0, 0, 0) // ตั้งเวลาเริ่มงานใหม่เป็น 08:00
+      } else if (newEnd.getHours() < 8 || (newEnd.getHours() === 8 && newEnd.getMinutes() > 0)) {
+        newEnd.setHours(8, 0, 0, 0) // ตั้งเวลาเริ่มงานใหม่เป็น 08:00
+      }
+      return newEnd
+    },
   },
 })
+
+function findJobById(jobId: string | number): Job {
+  const store = useScheduleStore()
+  return store.Jobs.filter((job) => job.id === jobId)[0]
+}
+
+function addDays(date: Date, days: number): Date {
+  const newDate = new Date(date)
+  newDate.setDate(newDate.getDate() + days)
+  return newDate
+}
+
+function setTime(date: Date | string, day: string): Date {
+  const [hour, minute] = day.split(':').map(Number)
+  const newDate = new Date(date)
+  newDate.setHours(hour, minute, 0, 0)
+  return newDate
+}
+
+function toDate(d: Date | string): Date {
+  return d instanceof Date ? d : new Date(d)
+}

@@ -7,11 +7,10 @@ import { onMounted, watch, ref, type Ref, watchEffect, nextTick } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { formatTimeKey } from '@/utils/formatKey'
 
-const props = defineProps<{ divideLeft: number[] }>()
 const store = useScheduleStore()
 const canvasWidth = ref<number>(0)
 const timelineCanvas: Ref<HTMLCanvasElement | null> = ref(null)
-
+const divideCache = ref<number[]>(store.divideCache)
 const canvasHeight = 70
 
 const lineName = 'LINE_1'
@@ -26,26 +25,25 @@ function drawTimeline(): void {
   ctx.clearRect(0, 0, canvasWidth.value, canvasHeight)
   ctx.font = '12px Arial'
 
-  ctx.textBaseline = 'middle'
-  // ตัวอย่างวาดเส้นแบ่ง
-
-  ctx.strokeStyle = 'black'
-
   ctx.lineWidth = 0.15
-  store.weeks.forEach((week) => {
+  store.weeks.forEach((week, weekIndex) => {
+    // console.log(week.start, 'to', week.end)
     const key = formatTimeKey(week.start)
     const days = store.cacheWeekDay.get(key)
+    // if (weekIndex === 0) {
+    //   console.log(`Drawing week: ${key}, days:`, days)
+    // }
     if (!days) return
 
     days.forEach((day) => {
       const left = store.getDurationStyle(key, day)
       const durationText = store.getDayDuration(day, lineName)
-
+      // console.log(day, 'duration', left)
       ctx.fillStyle = '#eee' // สีปกติ
-      ctx.fillRect(left, 80, 40, 70)
-
+      ctx.fillRect(0, 80, 40, 70)
       ctx.fillStyle = '#000'
-      ctx.fillText(durationText.toString(), left + 25, 60)
+
+      ctx.fillText(durationText.toString(), left - 12, 60)
 
       ctx.beginPath()
       ctx.moveTo(left, 0)
@@ -55,7 +53,8 @@ function drawTimeline(): void {
   })
   ctx.strokeStyle = 'red'
   ctx.lineWidth = 2
-  const divideLeft: number[] = props.divideLeft // แก้ตามจริง
+  const divideLeft: number[] = divideCache.value // แก้ตามจริง
+
   divideLeft.forEach((pos) => {
     ctx.fillStyle = '#4da8da80' // สีปกติ
     ctx.fillRect(pos, 0, 42.72, 70)
@@ -70,17 +69,27 @@ function drawTimeline(): void {
 // onMounted(() => {
 //   drawTimeline()
 // })
-watchEffect(() => {
-  if (store.headerWidth) {
-    canvasWidth.value = store.headerWidth
-    // console.log('canvasWidth set from week-header:', canvasWidth.value)
-    drawTimeline()
-  }
-})
 watch(
-  () => [store.weeks, store.cacheWeekDay],
+  () => [store.headerWidth, store.cacheWeekDay, store.divideCache],
   () => {
-    drawTimeline()
+    // console.log('watchEffect triggered', store.divideCache)
+    const width = store.headerWidth // reactive
+    if (width) {
+      divideCache.value = store.getDivideCache()
+      canvasWidth.value = store.headerWidth
+      console.log('canvasWidth set from week-header:', canvasWidth.value)
+      drawTimeline()
+    }
+  },
+  { immediate: true },
+)
+watch(
+  () => [store.weeks, store.cacheWeekDay, store.divideCache],
+  () => {
+    if (divideCache.value.length > 0) {
+      drawTimeline()
+      divideCache.value = store.getDivideCache()
+    }
   },
   { deep: true },
 )

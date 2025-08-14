@@ -10,7 +10,6 @@ export function useMouseEvent() {
   }
 
   const getInsertIndexInLine = (container: HTMLElement, event: MouseEvent): number => {
-    const context = container
     const relativeX = getRelativeX(container, event) // ใช้ clientX
     const unitWidth = container.offsetWidth / store.timeIndexMap.size
     const index = Math.floor(relativeX / unitWidth)
