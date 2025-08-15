@@ -52,6 +52,7 @@ export type DropMode = 'insert' | 'merge' | 'normal' | 'skip'
 export interface DetectDropModeParams {
   targetLineId: string | number
   newStart: Date
+  newEnd: Date
   jobs: Job[]
   holidays?: Date[] // optional
 }

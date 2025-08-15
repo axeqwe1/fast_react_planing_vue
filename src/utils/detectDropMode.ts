@@ -3,6 +3,7 @@ import type { DetectDropModeParams, DropMode } from '@/type/types'
 export function detectDropMode({
   targetLineId,
   newStart,
+  newEnd,
   jobs,
   holidays = [],
 }: DetectDropModeParams): DropMode {
@@ -28,7 +29,7 @@ export function detectDropMode({
     }
 
     // ถ้า newStart ตรงกับ endDate พอดี → ต่อท้าย
-    if (newStart.getTime() === jobEnd.getTime()) {
+    if (newStart < jobStart && newEnd >= jobStart) {
       return 'merge'
     }
   }

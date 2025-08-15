@@ -164,15 +164,19 @@ function onDrop(e: DragEvent, lineName: string) {
   const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
   if (!timeKey) return
 
+  const st = draggingJob.value.startDate
+  const dur = new Date(draggingJob.value.endDate).getTime() - new Date(st).getTime()
+  const newEnd = adjustToWorkingHours(new Date(new Date(timeKey).getTime() + dur))
   const newStart = adjustToWorkingHours(new Date(timeKey))
   const dropMode = detectDropMode({
     targetLineId: lineName,
     newStart,
+    newEnd,
     jobs: store.Jobs,
     holidays: store.holidays,
   })
   console.log(dropMode)
-  store.moveJob(draggingJob.value.id, lineName, newStart, dropMode)
+  store.moveJob(draggingJob.value.id, lineName, container, e, newStart, dropMode)
 
   // รีเซ็ต state
   draggingJob.value = null

@@ -1,8 +1,10 @@
+import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
 import type { Job, Line, MasterData } from '@/type/types'
 import { isSameDay } from '@/utils/detectDropMode'
 import { formatTimeKey } from '@/utils/formatKey'
 import { get } from 'lodash'
+import { time } from 'motion-v'
 import { defineStore } from 'pinia'
 
 export const useScheduleStore = defineStore('schedule', {
@@ -296,7 +298,14 @@ export const useScheduleStore = defineStore('schedule', {
       return leftPosition
     },
 
-    moveJob(jobId: number, targetLineId: string, newStart: Date, dropMode: string) {
+    moveJob(
+      jobId: number,
+      targetLineId: string,
+      container: HTMLElement,
+      e: MouseEvent,
+      newStart: Date,
+      dropMode: string,
+    ) {
       let job = findJobById(jobId)
       if (!job) return
 
@@ -309,10 +318,10 @@ export const useScheduleStore = defineStore('schedule', {
       let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
         case 'insert':
-          this.insertAndPushJobs(targetLineId, newStart, newEnd, jobId)
+          this.insertAndPushJobs(targetLineId, container, e, newStart, newEnd, jobId)
           break
         case 'merge':
-          this.pushJobForward(targetLineId, jobId, newStart, newEnd)
+          this.pushJobForward(targetLineId, container, e, newStart, newEnd, jobId)
           break
         case 'normal':
         default:
@@ -321,8 +330,16 @@ export const useScheduleStore = defineStore('schedule', {
       }
       this.computeAllJobStyles()
     },
-    insertAndPushJobs(lineId: string, start: Date, end: Date, movingJobId: number) {
+    insertAndPushJobs(
+      lineId: string,
+      container: HTMLElement,
+      e: MouseEvent,
+      start: Date,
+      end: Date,
+      movingJobId: number,
+    ) {
       const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
+      const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
       // update job ที่ลากมาก่อน
       const startAdj = adjustToWorkingHours(start)
       const endAdj = adjustToWorkingHours(end)
@@ -331,70 +348,108 @@ export const useScheduleStore = defineStore('schedule', {
       let startDate = formatTimeKey(startAdj)
       let endDate = formatTimeKey(endAdj)
       // this.updateJob(movingJobId, lineId, startDate, endDate)
+      const index = getInsertIndexInLine(container, e)
+      const timeKey = [...this.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+      if (!timeKey) return
+      console.log(timeKey, 'timeIndex compare start', startDate, 'end', endDate)
 
+      const newStart = new Date(timeKey)
+      const dur = this.getDuration(newStart, endDate)
+      const newEnd = new Date(newStart.getTime() + dur)
+
+      console.log(newStart, newEnd)
       // chain push
-      let currentStart = endDate
       let jobinLine = this.Jobs.filter((j) => j.line === lineId && j.id !== movingJobId).sort(
         (a, b) => toDate(a.startDate).getTime() - toDate(b.startDate).getTime(),
       )
-      for (let i of jobinLine) {
-        if (toDate(startDate) >= toDate(i.startDate) && toDate(startDate) <= toDate(i.endDate)) {
-          console.warn('Job already exists at this time, skipping insert')
-          let dur = this.getDuration(startDate, endDate)
-          startDate = formatTimeKey(new Date(i.startDate))
-          endDate = formatTimeKey(this.addTime(toDate(startDate), dur))
 
-          currentStart = formatTimeKey(adjustToWorkingHours(new Date(endDate)))
-          this.updateJob(movingJobId, lineId, startDate, endDate)
+      this.updateJob(movingJobId, lineId, startDate, endDate)
 
-          let dur2 = this.getDuration(i.startDate, i.endDate)
-
-          i.startDate = currentStart
-          i.endDate = formatTimeKey(
-            adjustToWorkingHours(new Date(toDate(i.startDate).getTime() + dur2)),
-            // เพิ่ม duration ของ job ที่ลากมา
-          )
-        }
-      }
-      let jobsToPush = this.Jobs.filter(
-        (j) =>
-          j.line === lineId && j.id !== movingJobId && toDate(j.startDate) >= toDate(startDate),
-      ).sort((a, b) => toDate(a.startDate).getTime() - toDate(b.startDate).getTime())
-      console.log(jobsToPush, 'jobs to push after insert')
-      for (let j of jobsToPush) {
-        let dur = this.getDuration(j.startDate, j.endDate)
-
-        j.startDate = currentStart
-        j.endDate = formatTimeKey(this.addTime(toDate(currentStart), dur))
-        currentStart = j.endDate
-      }
+      this.moveAndShift(lineId, movingJobId, startDate, endDate)
     },
-    pushJobForward(lineId: string, movingJobId: number, newStart: Date, newEnd: Date) {
-      // เอา jobs ทั้งหมดของ line เดียวกัน ยกเว้น job ที่กำลังลาก
-      let lineJobs = this.Jobs.filter((j) => j.line === lineId && j.id !== movingJobId).sort(
-        (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+    moveAndShift(lineId: string, movingJobId: number, pivotStart: string, pivotEnd: string) {
+      let pivotStartDate = toDate(pivotStart)
+      let pivotEndDate = toDate(pivotEnd)
+
+      const jobs = this.getJobsForLine(lineId).sort(
+        (a, b) => toDate(a.startDate).getTime() - toDate(b.startDate).getTime(),
       )
 
-      // อัปเดตตำแหน่ง job ที่กำลังลาก
-      this.updateJob(movingJobId, lineId, newStart.toISOString(), newEnd.toISOString())
+      // Check Left
+      const jobLeft = jobs.filter(
+        (j) => toDate(j.startDate) < pivotStartDate && j.id !== movingJobId,
+      )
+      // console.log('jobLeft', jobLeft, 'pivotStartDate', pivotStartDate)
+      for (let j of jobLeft) {
+        const jobStart = toDate(j.startDate)
+        const jobEnd = toDate(j.endDate)
+        if (jobEnd > pivotStartDate) {
+          // ถ้า job นั้นชนกับ job ที่กำลังลาก
+          const duration = this.getDuration(pivotStartDate, pivotEndDate)
+          const newStart = new Date(j.endDate)
+          const newEnd = this.addTime(newStart, duration)
+          pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
+          pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
+          this.updateJob(movingJobId, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
+        }
+      }
+      // Check Right
+      const jobRight = jobs.filter(
+        (j) => toDate(j.startDate) >= pivotStartDate && j.id !== movingJobId,
+      )
+      // 1) Chain push ทางขวา
+      for (let job of jobRight) {
+        const jobStart = toDate(job.startDate)
+        const jobEnd = toDate(job.endDate)
 
-      // ตรวจ plan อื่นที่ startDate < newEnd (แสดงว่าชนหรือทับ)
-      for (let i = 0; i < lineJobs.length; i++) {
-        let job = lineJobs[i]
-        if (toDate(job.startDate) < newEnd) {
-          // หา offset ว่าชนกันกี่ ms
-          let offset = newEnd.getTime() - toDate(job.startDate).getTime()
+        if (jobStart < pivotEndDate) {
+          // มีการชน
+          const offset = pivotEndDate.getTime() - jobStart.getTime()
+          console.log('Offset:', offset, 'Job Start:', jobStart, 'Pivot End:', pivotEndDate)
           if (offset > 0) {
-            let newStartDate = new Date(toDate(job.startDate).getTime() + offset)
-            newStartDate = this.getNextWorkingDay(newStartDate)
+            const newStart = new Date(jobStart.getTime() + offset)
+            const newEnd = this.addTime(newStart, this.getDuration(job.startDate, job.endDate))
+            this.updateJob(job.id, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
 
-            let dur = this.getDuration(job.startDate, job.endDate)
-            job.startDate = newStartDate.toISOString()
-            job.endDate = this.addTime(newStartDate, dur).toISOString()
-            newEnd = toDate(job.endDate)
+            // อัปเดต pivot เป็น job ที่เพิ่งเลื่อน
+            pivotStartDate = newStart
+            pivotEndDate = newEnd
           }
         }
       }
+    },
+    pushJobForward(
+      lineId: string,
+      container: HTMLElement,
+      e: MouseEvent,
+      start: Date,
+      end: Date,
+      movingJobId: number,
+    ) {
+      const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
+      const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
+      // update job ที่ลากมาก่อน
+      const startAdj = adjustToWorkingHours(start)
+      const endAdj = adjustToWorkingHours(end)
+
+      // ปรับเวลาให้ตรงกับช่วงเวลาที่มีใน timeIndexMap
+      let startDate = formatTimeKey(startAdj)
+      let endDate = formatTimeKey(endAdj)
+      // this.updateJob(movingJobId, lineId, startDate, endDate)
+      const index = getInsertIndexInLine(container, e)
+      const timeKey = [...this.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+      if (!timeKey) return
+      console.log(timeKey, 'timeIndex compare start', startDate, 'end', endDate)
+
+      const newStart = new Date(timeKey)
+      const dur = this.getDuration(newStart, endDate)
+      const newEnd = new Date(newStart.getTime() + dur)
+
+      console.log(newStart, newEnd)
+
+      this.updateJob(movingJobId, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
+
+      this.moveAndShift(lineId, movingJobId, formatTimeKey(newStart), formatTimeKey(newEnd))
     },
     // Helper Functuion
     isHoliday(date: Date): boolean {
