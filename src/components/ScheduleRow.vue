@@ -197,7 +197,7 @@ watch(
   { immediate: true }, // เรียกทันทีตอน mounted
 )
 watch(
-  () => [store.weeks],
+  () => [store.weeks, store.minWidthHeader],
   () => {
     store.getDayIndex(8)
     store.computeAllJobStyles()

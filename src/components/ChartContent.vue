@@ -13,13 +13,22 @@
           class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
           v-for="(item, i) in weeks"
         >
-          <div class="flex-1 border-r-1 min-w-[300px] pt-[5px]">
+          <div
+            class="flex-1 border-r-1 min-w-[300px] pt-[5px]"
+            :style="{ minWidth: `${minWidthHeader}px` }"
+            :key="i"
+          >
             <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
             <div class="flex">
               <span
                 v-for="(day, i) in weeksDay"
                 :key="day"
                 class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
+                :ref="
+                  (el) => {
+                    if (el) setMinHeadRef(el, i)
+                  }
+                "
                 >{{ day }}</span
               >
             </div>
@@ -34,7 +43,7 @@
 
 <script setup lang="ts">
 import type { Job, Line, MasterData } from '@/type/types'
-import { ref, onMounted, watch, watchEffect, nextTick } from 'vue'
+import { ref, onMounted, watch, watchEffect, nextTick, type ComponentPublicInstance } from 'vue'
 import ScheduleRow from './ScheduleRow.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useLoadingStore } from '@/stores/LoadingStore'
@@ -49,7 +58,19 @@ const loadStore = useLoadingStore()
 const { isLoading } = storeToRefs(loadStore)
 const LoadingRef = ref(isLoading)
 const headerRef = ref<HTMLElement | null>(null)
+const minHeadRef = ref<HTMLElement[]>([])
 const store = useScheduleStore()
+const minWidthHeader = ref(store.minWidthHeader || 300)
+watchEffect(() => {
+  minWidthHeader.value = store.minWidthHeader || 300
+  store.headerWidth = headerRef.value?.scrollWidth || 0 // Set header width for the store
+})
+
+function setMinHeadRef(el: Element | ComponentPublicInstance, i: number) {
+  if (el instanceof HTMLElement) {
+    minHeadRef.value[i] = el
+  }
+}
 const fetchTest = async () => {
   try {
     const res = await GetMasterPlanData()
@@ -107,10 +128,14 @@ function calculateWeeks(jobs: Job[]) {
   const minDate = new Date(Math.min(...jobs.map((job) => new Date(job.startDate).getTime())))
   const maxDate = new Date(Math.max(...jobs.map((job) => new Date(job.endDate).getTime())))
 
+  const extendedMaxDate = new Date(maxDate)
+  extendedMaxDate.setMonth(extendedMaxDate.getMonth() + 5)
+
   let startWeek = getStartOfWeek(minDate)
+
   // console.log(maxDate) // ดีบักเพื่อดูวันที่เริ่มต้นและสิ้นสุด)
   let weeks = []
-  while (startWeek <= maxDate) {
+  while (startWeek <= extendedMaxDate) {
     weeks.push({ start: new Date(startWeek), end: getEndOfWeek(startWeek) })
     startWeek.setDate(startWeek.getDate() + 7)
   }

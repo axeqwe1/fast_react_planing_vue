@@ -1,97 +1,177 @@
 <template>
-  <canvas ref="timelineCanvas" :width="canvasWidth" :height="canvasHeight" />
+  <div class="timeline-container" @scroll="handleScroll" ref="container">
+    <!-- Timeline Grid -->
+
+    <!-- Divide bars overlay -->
+    <div class="divide-overlay">
+      <div
+        v-for="pos in visibleDivides"
+        :key="pos"
+        class="divide-bar"
+        :style="{
+          left: `${pos - store.minWidthHeader / 7}px`,
+          width: `${store.minWidthHeader / 7}px`,
+        }"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch, ref, type Ref, watchEffect, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { formatTimeKey } from '@/utils/formatKey'
 
 const store = useScheduleStore()
-const canvasWidth = ref<number>(0)
-const timelineCanvas: Ref<HTMLCanvasElement | null> = ref(null)
-const divideCache = ref<number[]>(store.divideCache)
-const canvasHeight = 70
+const container = ref<HTMLElement>()
+const scrollX = ref(0)
+const viewportWidth = ref(1920)
 
 const lineName = 'LINE_1'
+const cellWidth = 40
+const canvasHeight = 70
 
-function drawTimeline(): void {
-  const canvas = timelineCanvas.value
-  if (!canvas) return
+// คำนวณ total width
+const totalWidth = computed(() => store.headerWidth || 0)
 
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
+// สร้าง grid template (ไม่ต้องใช้แล้ว เปลี่ยนเป็น absolute positioning)
+const gridTemplate = computed(() => {
+  return 'none' // ไม่ใช้ grid แล้ว
+})
 
-  ctx.clearRect(0, 0, canvasWidth.value, canvasHeight)
-  ctx.font = '12px Arial'
+// สร้างข้อมูล cells (วน loop เดียว)
+const timelineCells = computed(() => {
+  const cells: Array<{
+    key: string
+    text: string
+    className: string
+    style: Record<string, any>
+  }> = []
 
-  ctx.lineWidth = 0.15
+  // วน weeks เดียว
   store.weeks.forEach((week, weekIndex) => {
-    // console.log(week.start, 'to', week.end)
     const key = formatTimeKey(week.start)
     const days = store.cacheWeekDay.get(key)
-    // if (weekIndex === 0) {
-    //   console.log(`Drawing week: ${key}, days:`, days)
-    // }
     if (!days) return
 
+    // วน days เดียว
     days.forEach((day) => {
-      const left = store.getDurationStyle(key, day)
-      const durationText = store.getDayDuration(day, lineName)
-      // console.log(day, 'duration', left)
-      ctx.fillStyle = '#eee' // สีปกติ
-      ctx.fillRect(0, 80, 40, 70)
-      ctx.fillStyle = '#000'
+      const duration = store.getDayDuration(day, lineName)
+      const isWeekend = day.getDay() === 0 || day.getDay() === 6
 
-      ctx.fillText(durationText.toString(), left - 12, 60)
+      // ใช้ตำแหน่งจริงจาก store แทน cellIndex
+      const leftPosition = store.getDurationStyle(key, day)
 
-      ctx.beginPath()
-      ctx.moveTo(left, 0)
-      ctx.lineTo(left, canvasHeight)
-      ctx.stroke()
+      cells.push({
+        key: `${key}-${day.getTime()}`,
+        text: duration.toString(),
+        className: isWeekend ? 'weekend' : '',
+        style: {
+          position: 'absolute',
+          left: `${leftPosition - store.minWidthHeader / 7}px`,
+          width: `${store.minWidthHeader / 7}px`,
+          height: '70px',
+          background: isWeekend ? '#f0f8ff' : '#eee',
+        },
+      })
     })
   })
-  ctx.strokeStyle = 'red'
-  ctx.lineWidth = 2
-  const divideLeft: number[] = divideCache.value // แก้ตามจริง
 
-  divideLeft.forEach((pos) => {
-    ctx.fillStyle = '#4da8da80' // สีปกติ
-    ctx.fillRect(pos, 0, 42.72, 70)
+  return cells
+})
 
-    ctx.beginPath()
-    ctx.moveTo(pos + 42.72, 0)
-    ctx.lineTo(pos + 42.72, canvasHeight)
-    ctx.stroke()
-  })
+// คำนวณ visible divides (กรองเฉพาะที่เห็น)
+const visibleDivides = computed(() => {
+  return store.divideCache
+})
+
+function handleScroll(): void {
+  if (!container.value) return
+  scrollX.value = container.value.scrollLeft
 }
 
-// onMounted(() => {
-//   drawTimeline()
-// })
-watch(
-  () => [store.headerWidth, store.cacheWeekDay, store.divideCache],
-  () => {
-    // console.log('watchEffect triggered', store.divideCache)
-    const width = store.headerWidth // reactive
-    if (width) {
-      divideCache.value = store.getDivideCache()
-      canvasWidth.value = store.headerWidth
-      console.log('canvasWidth set from week-header:', canvasWidth.value)
-      drawTimeline()
-    }
-  },
-  { immediate: true },
-)
-watch(
-  () => [store.weeks, store.cacheWeekDay, store.divideCache],
-  () => {
-    if (divideCache.value.length > 0) {
-      drawTimeline()
-      divideCache.value = store.getDivideCache()
-    }
-  },
-  { deep: true },
-)
+function updateViewportWidth(): void {
+  if (typeof window !== 'undefined') {
+    viewportWidth.value = Math.min(window.innerWidth, 1920)
+  }
+}
+
+onMounted(() => {
+  updateViewportWidth()
+  window.addEventListener('resize', updateViewportWidth)
+})
 </script>
-<style scoped></style>
+
+<style scoped>
+.timeline-container {
+  width: 100%;
+  height: 70px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  background: #fff;
+}
+
+.timeline-grid {
+  height: 70px;
+  will-change: transform;
+  position: relative;
+  /* เปลี่ยนจาก grid เป็น relative positioning */
+}
+
+.timeline-cell {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  background: #eee;
+  box-sizing: border-box;
+}
+
+.timeline-cell.weekend {
+  background: #f0f8ff !important;
+}
+
+.cell-text {
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  color: #000;
+  pointer-events: none;
+}
+
+.divide-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.divide-bar {
+  position: absolute;
+  height: 70px;
+  background: rgba(77, 168, 218, 0.5);
+  border-right: 2px solid red;
+}
+
+/* Scrollbar styling */
+.timeline-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+</style>

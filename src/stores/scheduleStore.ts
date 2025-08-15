@@ -25,6 +25,7 @@ export const useScheduleStore = defineStore('schedule', {
     headerWidth: 0,
     holidays: [] as Date[], // วันหยุดทั้งหมด
     workHours: { start: '08:00', end: '17:00' }, // ชั่วโมงทำงาน
+    minWidthHeader: 300,
   }),
   actions: {
     setLine(line: Line[]) {
@@ -213,7 +214,7 @@ export const useScheduleStore = defineStore('schedule', {
 
       const leftPosition = (endOffset + 1) * unitWidth
 
-      return leftPosition - 42.72
+      return leftPosition
     },
     // Important create timeindex
     getDayIndex(workHour: number) {
