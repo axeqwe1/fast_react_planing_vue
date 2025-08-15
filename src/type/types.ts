@@ -1,6 +1,10 @@
 export interface Job {
   id: number
   name: string
+  qty: number
+  style: string
+  color: string
+  typeName: string
   startDate: string
   endDate: string
   line: string

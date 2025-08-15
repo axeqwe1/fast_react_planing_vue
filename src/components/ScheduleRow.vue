@@ -30,12 +30,46 @@
           <div
             v-for="(job, jIndex) in store.getJobsForLine(line.name)"
             :key="job.line + job.name"
-            :style="[store.getJobStyleFromCache(job)] as StyleValue"
-            v-tooltip.top="'Line: ' + line.name + ' ' + job.name"
+            v-tooltip.top="{
+              content: `
+                <table style='border-collapse: collapse; font-size: 12px;'>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>Line</b></td>
+                    <td>${line.name}</td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>Order</b></td>
+                    <td>${job.name}</td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>Start</b></td>
+                    <td>${formatTimeKey(new Date(job.startDate))}</td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>End</b></td>
+                    <td>${formatTimeKey(new Date(job.endDate))}</td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>Style</b></td>
+                    <td>${job.style}</td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>Color</b></td>
+                    <td>${job.color}</td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 2px 6px;'><b>TypeName</b></td>
+                    <td>${job.typeName}</td>
+                  </tr>
+                </table>
+              `,
+              html: true,
+            }"
             class="schedule-bar z-5 border-r-4"
             draggable="true"
             @dragstart="(e) => onDragStart(e, job)"
             @dragend="onDragEnd"
+            :style="[store.getJobStyleFromCache(job)] as StyleValue"
           >
             <span class="bg-slate-800/50 p-1 rounded-sm">
               {{ job.name }}

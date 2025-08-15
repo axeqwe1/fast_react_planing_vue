@@ -80,7 +80,10 @@ const fetchTest = async () => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
         line: items.line,
-
+        qty: items.qty,
+        style: items.style,
+        color: items.color,
+        typeName: items.typeName,
         name: items.orderNo,
         startDate: items.sewAssembly,
         endDate: items.sewFinish,
