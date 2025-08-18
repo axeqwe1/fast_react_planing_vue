@@ -7,14 +7,25 @@
     </div>
     <div class="flex items-center space-x-4">
       <button
-        class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-700 hover:text-white cursor-pointer"
+        class="px-4 py-2 rounded cursor-pointer"
         @click="decreaseWidth"
+        :class="
+          width === 300
+            ? 'bg-gray-300 opacity-20 cursor-not-allowed'
+            : 'bg-gray-300 hover:bg-gray-700 hover:text-white'
+        "
       >
         <IconZoomOut />
       </button>
+
       <button
-        class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-700 hover:text-white cursor-pointer"
+        class="px-4 py-2 rounded cursor-pointer"
         @click="increaseWidth"
+        :class="
+          width === 3000
+            ? 'bg-gray-300 opacity-20 cursor-not-allowed'
+            : 'bg-gray-300 hover:bg-gray-700 hover:text-white'
+        "
       >
         <IconZoomIn />
       </button>

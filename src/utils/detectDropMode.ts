@@ -8,10 +8,10 @@ export function detectDropMode({
   holidays = [],
 }: DetectDropModeParams): DropMode {
   // 1. Check holiday
-  const isHoliday = holidays.some((h) => isSameDay(h, newStart))
-  if (isHoliday) {
-    return 'skip'
-  }
+  // const isHoliday = holidays.some((h) => isSameDay(h, newStart))
+  // if (isHoliday) {
+  //   return 'skip'
+  // }
 
   // 2. Filter jobs in target line and sort by startDate
   const lineJobs = jobs

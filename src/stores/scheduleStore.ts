@@ -39,6 +39,9 @@ export const useScheduleStore = defineStore('schedule', {
     },
     setWeeks(weeks: { start: Date; end: Date }[]) {
       this.weeks = weeks
+      weeks.forEach((week) => {
+        this.holidays.push(week.end)
+      })
     },
 
     computeDivideStyle() {
@@ -76,6 +79,12 @@ export const useScheduleStore = defineStore('schedule', {
       let timeIndexMap = this.timeIndexMap
       const startDate = new Date(job.startDate)
       const endDate = new Date(job.endDate)
+      this.isHoliday(endDate)
+      console.log(this.isHoliday(endDate))
+      if (this.isHoliday(endDate)) {
+        console.log(job)
+      }
+      // console.log(endIsHoliday)
       //   const endDate = new Date(startDate.getTime()) // clone เพื่อไม่แก้ต้นฉบับ
       //   endDate.setHours(startDate.getHours() + workHour)
 
@@ -310,10 +319,10 @@ export const useScheduleStore = defineStore('schedule', {
       let job = findJobById(jobId)
       if (!job) return
 
-      // 1. ปรับวันหยุดถ้า mode = skip หรือ newStart ตกวันหยุด
-      if (dropMode === 'skip' || this.isHoliday(newStart)) {
-        newStart = this.getNextWorkingDay(newStart)
-      }
+      // // 1. ปรับวันหยุดถ้า mode = skip หรือ newStart ตกวันหยุด
+      // if (dropMode === 'skip' || this.isHoliday(newStart)) {
+      //   newStart = this.getNextWorkingDay(newStart)
+      // }
 
       let duration = this.getDuration(job.startDate, job.endDate)
       let newEnd = this.addTime(newStart, duration)
@@ -468,7 +477,22 @@ export const useScheduleStore = defineStore('schedule', {
       let job = findJobById(jobId)
       job.line = lineId
       job.startDate = start
-      job.endDate = end
+      if (this.isHoliday(new Date(start))) {
+        const newStart = new Date(start)
+        newStart.setDate(newStart.getDate() + 1)
+        newStart.setHours(8, 0, 0, 0)
+        job.startDate = formatTimeKey(newStart)
+      } else {
+        job.startDate = start
+      }
+      if (this.isHoliday(new Date(end))) {
+        const newEnd = new Date(end)
+        newEnd.setDate(newEnd.getDate() + 1)
+        newEnd.setHours(9, 0, 0, 0)
+        job.endDate = formatTimeKey(newEnd)
+      } else {
+        job.endDate = end
+      }
 
       console.log(job, 'job updated in store')
     },
@@ -491,6 +515,44 @@ export const useScheduleStore = defineStore('schedule', {
         newEnd.setHours(8, 0, 0, 0) // ตั้งเวลาเริ่มงานใหม่เป็น 08:00
       }
       return newEnd
+    },
+    calculateWorkDuration(startDate: Date, endDate: Date): number {
+      const workStartHour = 8
+      const workEndHour = 17
+
+      let current = new Date(startDate)
+      let end = new Date(endDate)
+      let totalWorkMinute = 0
+
+      while (current < end) {
+        if (this.isHoliday(current)) {
+          current.setDate(current.getDate() + 1)
+          current.setHours(workStartHour, 0, 0, 0)
+          continue
+        }
+
+        if (current.getHours() < workStartHour) {
+          current.setHours(workStartHour, 0, 0, 0)
+        }
+        if (current.getHours() > workEndHour) {
+          current.setDate(current.getDate() + 1)
+          current.setHours(workStartHour, 0, 0, 0)
+          continue
+        }
+
+        let endOfDay = new Date(current)
+        endOfDay.setHours(workEndHour, 0, 0, 0)
+
+        let endTime = end < endOfDay ? end : endOfDay
+
+        let minutes = (endTime.getTime() - current.getTime()) / (1000 * 60)
+        totalWorkMinute += minutes
+
+        current.setDate(current.getDate() + 1)
+        current.setHours(workStartHour, 0, 0, 0)
+      }
+
+      return totalWorkMinute
     },
   },
 })
