@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col relative">
-    <div class="flex z-0" v-for="(line, i) in lines">
+    <div class="flex z-0 border-b-1 border-gray-500" v-for="(line, i) in lines">
       <div
         class="flex flex-col w-full border-1 border-gray-400 p-2 sticky left-0 max-w-[200px] bg-slate-200 z-8"
       >

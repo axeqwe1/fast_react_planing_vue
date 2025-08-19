@@ -51,6 +51,14 @@ export interface MasterData {
   sewDate: Date
 }
 
+export interface MasterHoliday {
+  dateHoliday: Date
+  eventName: string
+  eventName_ENG: string
+  userCreate: string
+  createDate: Date
+}
+
 export type DropMode = 'insert' | 'merge' | 'normal' | 'skip'
 
 export interface DetectDropModeParams {

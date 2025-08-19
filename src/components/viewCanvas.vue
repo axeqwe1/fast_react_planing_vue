@@ -13,6 +13,7 @@
           width: `${store.minWidthHeader / 7}px`,
         }"
       />
+      <div v-for="cell in timelineCells" :class="cell.className" :style="cell.style"></div>
     </div>
   </div>
 </template>
@@ -57,7 +58,7 @@ const timelineCells = computed(() => {
     // วน days เดียว
     days.forEach((day) => {
       const duration = store.getDayDuration(day, lineName)
-      const isWeekend = day.getDay() === 0 || day.getDay() === 6
+      const isWeekend = store.isHoliday(day)
 
       // ใช้ตำแหน่งจริงจาก store แทน cellIndex
       const leftPosition = store.getDurationStyle(key, day)
@@ -71,7 +72,7 @@ const timelineCells = computed(() => {
           left: `${leftPosition - store.minWidthHeader / 7}px`,
           width: `${store.minWidthHeader / 7}px`,
           height: '70px',
-          background: isWeekend ? '#f0f8ff' : '#eee',
+          background: isWeekend ? '#4da8da80' : '#eee',
         },
       })
     })
@@ -153,7 +154,7 @@ onMounted(() => {
 .divide-bar {
   position: absolute;
   height: 70px;
-  background: rgba(77, 168, 218, 0.5);
+  /* background: #4da8da80; */
   border-right: 2px solid red;
 }
 

@@ -21,6 +21,7 @@ import { motion } from 'motion-v'
   border-radius: 50%;
   border: 7px solid;
   border-top-color: #072cff;
+  background-color: #eee;
   will-change: transform;
   position: absolute;
 }

@@ -26,6 +26,12 @@ export const useScheduleStore = defineStore('schedule', {
     holidays: [] as Date[], // วันหยุดทั้งหมด
     workHours: { start: '08:00', end: '17:00' }, // ชั่วโมงทำงาน
     minWidthHeader: 300,
+    holidayCell: [] as Array<{
+      key: string
+      className: string
+      style: Record<string, any>
+    }>,
+    holidayCellReady: false,
   }),
   actions: {
     setLine(line: Line[]) {
@@ -375,7 +381,7 @@ export const useScheduleStore = defineStore('schedule', {
 
       this.updateJob(movingJobId, lineId, startDate, endDate)
 
-      this.moveAndShift(lineId, movingJobId, startDate, endDate)
+      // this.moveAndShift(lineId, movingJobId, startDate, endDate)
     },
     moveAndShift(lineId: string, movingJobId: number, pivotStart: string, pivotEnd: string) {
       let pivotStartDate = toDate(pivotStart)
@@ -459,7 +465,7 @@ export const useScheduleStore = defineStore('schedule', {
 
       this.updateJob(movingJobId, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
 
-      this.moveAndShift(lineId, movingJobId, formatTimeKey(newStart), formatTimeKey(newEnd))
+      // this.moveAndShift(lineId, movingJobId, formatTimeKey(newStart), formatTimeKey(newEnd))
     },
     // Helper Functuion
     isHoliday(date: Date): boolean {
@@ -473,28 +479,40 @@ export const useScheduleStore = defineStore('schedule', {
       }
       return setTime(next, this.workHours.start) // เริ่มทำงานตอนเช้า
     },
-    updateJob(jobId: string | number, lineId: string, start: string, end: string) {
+    updateJob(jobId: number, lineId: string, start: string, end: string) {
       let job = findJobById(jobId)
       job.line = lineId
       job.startDate = start
-      if (this.isHoliday(new Date(start))) {
-        const newStart = new Date(start)
-        newStart.setDate(newStart.getDate() + 1)
-        newStart.setHours(8, 0, 0, 0)
-        job.startDate = formatTimeKey(newStart)
-      } else {
-        job.startDate = start
+
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+
+      // ข้ามวันหยุดให้ startDate
+      let isSkipStart = false
+      while (this.isHoliday(startDate)) {
+        startDate.setDate(startDate.getDate() + 1)
+        startDate.setHours(8, 0, 0, 0)
+        isSkipStart = true
       }
-      if (this.isHoliday(new Date(end))) {
-        const newEnd = new Date(end)
-        newEnd.setDate(newEnd.getDate() + 1)
-        newEnd.setHours(9, 0, 0, 0)
-        job.endDate = formatTimeKey(newEnd)
-      } else {
-        job.endDate = end
+      job.startDate = formatTimeKey(startDate)
+
+      // ข้ามวันหยุดให้ endDate
+      while (this.isHoliday(endDate)) {
+        endDate.setDate(endDate.getDate() + 1)
+        endDate.setHours(9, 0, 0, 0)
       }
 
-      console.log(job, 'job updated in store')
+      if (isSkipStart) {
+        // this.moveAndShift(lineId, jobId, formatTimeKey(startDate), formatTimeKey(endDate))
+        const newEnd = new Date(startDate.setDate(startDate.getDate() + 1))
+        newEnd.setHours(8, 0, 0, 0)
+        job.endDate = formatTimeKey(newEnd)
+        isSkipStart = false
+      } else {
+        job.endDate = formatTimeKey(endDate)
+      }
+      this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
+      console.log(this.isHoliday(new Date(end)), 'end is ', end)
     },
 
     getDuration(start: Date | string, end: Date | string): number {
@@ -553,6 +571,35 @@ export const useScheduleStore = defineStore('schedule', {
       }
 
       return totalWorkMinute
+    },
+    buildHolidayCell() {
+      // วน weeks เดียว
+      this.weeks.forEach((week, weekIndex) => {
+        const key = formatTimeKey(week.start)
+        const days = this.cacheWeekDay.get(key)
+        if (!days) return
+
+        // วน days เดียว
+        days.forEach((day) => {
+          // const duration = this.getDayDuration(day, '')
+          const isWeekend = this.isHoliday(day)
+
+          // ใช้ตำแหน่งจริงจาก store แทน cellIndex
+          const leftPosition = this.getDurationStyle(key, day)
+
+          this.holidayCell.push({
+            key: `${key}-${day.getTime()}`,
+            className: isWeekend ? 'weekend' : '',
+            style: {
+              position: 'absolute',
+              left: `${leftPosition - this.minWidthHeader / 7}px`,
+              width: `${this.minWidthHeader / 7}px`,
+              height: '70px',
+              background: isWeekend ? '#4da8da80' : '#eee',
+            },
+          })
+        })
+      })
     },
   },
 })

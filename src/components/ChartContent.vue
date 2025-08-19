@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-fit mt-[60px]">
+  <div class="flex flex-col w-fit mt-[60px]" v-if="weeks.length > 0">
     <div class="flex w-full sticky top-[60px] bg-white z-6">
       <div
         class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
@@ -36,20 +36,29 @@
         </div>
       </div>
     </div>
-
-    <ScheduleRow :master="master" />
+    <template v-if="LoadingRef && weeks.length > 0">
+      <div>Loading...</div>
+    </template>
+    <template v-else>
+      <ScheduleRow :master="master" />
+    </template>
+  </div>
+  <div class="h-screen flex justify-center items-center w-full" v-if="weeks.length < 1">
+    <LoadingComponent />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Job, Line, MasterData } from '@/type/types'
+import type { Job, Line, MasterData, MasterHoliday } from '@/type/types'
 import { ref, onMounted, watch, watchEffect, nextTick, type ComponentPublicInstance } from 'vue'
 import ScheduleRow from './ScheduleRow.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import Loading from '@/components/LoadingComponent.vue'
 import { storeToRefs } from 'pinia'
-import { GetMasterPlanData } from '@/lib/api/Masterplan'
+import { GetMasterHoliday, GetMasterPlanData } from '@/lib/api/Masterplan'
+import { template } from 'lodash'
+import LoadingComponent from '@/components/LoadingComponent.vue'
 const weeks = ref([] as { start: Date; end: Date }[])
 const weeksDay = ref(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
 const master = ref([] as MasterData[])
@@ -71,7 +80,7 @@ function setMinHeadRef(el: Element | ComponentPublicInstance, i: number) {
     minHeadRef.value[i] = el
   }
 }
-const fetchTest = async () => {
+const fetchMasterPlan = async () => {
   try {
     const res = await GetMasterPlanData()
     const data = res
@@ -105,13 +114,23 @@ const fetchTest = async () => {
     console.error('Error fetching test data:', err)
   }
 }
-
+const fetchMasterHoliday = async () => {
+  try {
+    const res = await GetMasterHoliday()
+    res.forEach((item: MasterHoliday) => {
+      store.holidays.push(new Date(item.dateHoliday))
+    })
+  } catch (err: any) {
+    console.error(err)
+  }
+}
 onMounted(async () => {
   loadStore.setLoading(true) // Set loading state to true
-  await fetchTest()
+  await fetchMasterPlan()
   const CAL_WEEK = calculateWeeks(store.Jobs)
   store.setWeeks(CAL_WEEK) // Calculate weeks based on jobs
   weeks.value = store.weeks
+  await fetchMasterHoliday()
   await nextTick(() => {
     if (headerRef.value) {
       store.headerWidth = headerRef.value.scrollWidth
@@ -123,6 +142,7 @@ onMounted(async () => {
     // if want to cache durationwork must have weeks data
     store.cacheWorkDuration()
   }
+  store.buildHolidayCell()
   loadStore.setLoading(false)
   // Mock data for jobs
 })
