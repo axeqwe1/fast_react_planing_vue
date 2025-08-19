@@ -483,10 +483,11 @@ export const useScheduleStore = defineStore('schedule', {
       return d
     },
     updateJob(jobId: number, lineId: string, start: string, end: string) {
+      const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       let job = findJobById(jobId)
       job.line = lineId
       const holidayStart = this.getNextWorkingDate(new Date(start), 8)
-      const holidayEnd = this.getNextWorkingDate(new Date(end), 8)
+      const holidayEnd = this.getNextWorkingDate(addWorkingDuration(holidayStart, job.duration), 8)
 
       if (holidayStart == holidayEnd) {
         console.log('trigger')
@@ -517,7 +518,7 @@ export const useScheduleStore = defineStore('schedule', {
       //   const newEnd = new Date(startDate.setDate(startDate.getDate() + 1))
       //   newEnd.setHours(8, 0, 0, 0)
       //   job.endDate = formatTimeKey(newEnd)
-      //   this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
+      this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
       //   isSkipStart = false
       // }
 
