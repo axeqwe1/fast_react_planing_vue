@@ -16,6 +16,35 @@ export function useTime() {
     return { startHour, startMinute, endHour, endMinute }
   }
 
+  function addWorkingDuration(start: Date, durationHours: number): Date {
+    const WORK_START_HOUR = 8
+    const WORK_END_HOUR = 17
+    const MS_PER_HOUR = 1000 * 60 * 60
+    const MS_PER_MINUTE = 1000 * 60
+
+    let current = adjustToWorkingHours(start)
+    let remaining = durationHours * MS_PER_HOUR // ✅ แปลงเป็น ms
+
+    while (remaining > 0) {
+      let workEndToday = new Date(current)
+      workEndToday.setHours(WORK_END_HOUR, 0, 0, 0)
+
+      let availableToday = workEndToday.getTime() - current.getTime() // ms ที่เหลือในวันทำงาน
+
+      if (remaining <= availableToday) {
+        // ✅ บวก ms ได้ละเอียดถึงนาที/วินาที
+        return new Date(current.getTime() + remaining)
+      } else {
+        remaining -= availableToday
+        current = new Date(workEndToday)
+        current.setDate(current.getDate() + 1)
+        current.setHours(WORK_START_HOUR, 0, 0, 0)
+      }
+    }
+
+    return current
+  }
+
   function adjustToWorkingHours(date: Date): Date {
     const WORK_START_HOUR = 8
     const WORK_END_HOUR = 17
@@ -37,5 +66,5 @@ export function useTime() {
 
     return results
   }
-  return { adjustTimeForIndex, adjustToWorkingHours }
+  return { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration }
 }

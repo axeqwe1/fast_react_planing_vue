@@ -88,18 +88,19 @@ const fetchMasterPlan = async () => {
     data.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
-        line: items.line,
-        qty: items.qty,
-        style: items.style,
-        color: items.color,
-        typeName: items.typeName,
-        name: items.orderNo,
-        startDate: items.sewAssembly,
-        endDate: items.sewFinish,
+        line: items.data.line,
+        qty: items.data.qty,
+        style: items.data.style,
+        color: items.data.color,
+        typeName: items.data.typeName,
+        name: items.data.orderNo,
+        startDate: items.data.sewAssembly,
+        endDate: items.data.sewFinish,
+        duration: items.duration,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
-    const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
+    const filterLine = new Set(data.map((item: any) => item.data.line)) // Extract unique lines
     const arrLine = Array.from(filterLine) // Convert Set to Array
     const lineMap = arrLine.map((line: any) => {
       return {
@@ -107,7 +108,7 @@ const fetchMasterPlan = async () => {
       } as Line
     })
     store.setLine(lineMap) // Update the store with unique lines
-    store.setMasters(data) // Update the store with master data
+    store.setMasters(data.data) // Update the store with master data
 
     console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {

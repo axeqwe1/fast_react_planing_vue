@@ -210,7 +210,15 @@ function onDrop(e: DragEvent, lineName: string) {
     holidays: store.holidays,
   })
   console.log(dropMode)
-  store.moveJob(draggingJob.value.id, lineName, container, e, newStart, dropMode)
+  store.moveJob(
+    draggingJob.value.id,
+    lineName,
+    container,
+    e,
+    newStart,
+    dropMode,
+    draggingJob.value.duration,
+  )
 
   // รีเซ็ต state
   draggingJob.value = null

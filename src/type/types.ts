@@ -8,6 +8,7 @@ export interface Job {
   startDate: string
   endDate: string
   line: string
+  duration: number
 }
 
 export interface Line {
