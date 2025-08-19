@@ -501,15 +501,13 @@ export const useScheduleStore = defineStore('schedule', {
         endDate.setDate(endDate.getDate() + 1)
         endDate.setHours(9, 0, 0, 0)
       }
-
+      job.endDate = formatTimeKey(endDate)
       if (isSkipStart) {
-        // this.moveAndShift(lineId, jobId, formatTimeKey(startDate), formatTimeKey(endDate))
         const newEnd = new Date(startDate.setDate(startDate.getDate() + 1))
         newEnd.setHours(8, 0, 0, 0)
         job.endDate = formatTimeKey(newEnd)
+        this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
         isSkipStart = false
-      } else {
-        job.endDate = formatTimeKey(endDate)
       }
       this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
       console.log(this.isHoliday(new Date(end)), 'end is ', end)
