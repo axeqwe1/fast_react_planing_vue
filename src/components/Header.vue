@@ -8,6 +8,17 @@
     <div class="flex items-center space-x-4">
       <button
         class="px-4 py-2 rounded cursor-pointer"
+        @click="showModal = true"
+        :class="
+          store.jobUpdate.length > 0
+            ? 'bg-green-400 hover:bg-green-400/70 text-black cursor-not-allowed'
+            : 'hidden'
+        "
+      >
+        <span class="flex justify-center items-center"><IconCheck /> Save</span>
+      </button>
+      <button
+        class="px-4 py-2 rounded cursor-pointer"
         @click="decreaseWidth"
         :class="
           width === 300
@@ -37,15 +48,58 @@
       </button>
     </div>
   </div>
+
+  <!-- Custom Modal -->
+  <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
+    <template #header>
+      <h2 class="text-2xl font-bold">Update Plan</h2>
+    </template>
+
+    <p>Custom content</p>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="UpdatePlans"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] bg-green-500 text-white hover:bg-transparent hover:text-gray-900 hover:border-green-500 hover:border-3 text-xl transition-all ease-in duration-100"
+        >
+          Confirm
+        </button>
+        <button
+          @click="showModal = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { useScheduleStore } from '@/stores/scheduleStore'
-import { IconZoomIn, IconZoomOut } from '@tabler/icons-vue'
+import { IconCheck, IconZoomIn, IconZoomOut } from '@tabler/icons-vue'
 import { ref, watch } from 'vue'
-
+import Modal from './Modal.vue'
+import { GetMasterPlanData, UpdatePlan } from '@/lib/api/Masterplan'
+import type { Job, Line } from '@/type/types'
+import { useLoadingStore } from '@/stores/LoadingStore'
+const { setLoading } = useLoadingStore()
+const showModal = ref(false)
+const showConfirmModal = ref(false)
+const showCustomModal = ref(false)
 const store = useScheduleStore()
 const width = ref(store.minWidthHeader || 300)
+const jobs = ref([] as Job[])
+
+const UpdatePlans = async () => {
+  const res = await UpdatePlan(store.jobUpdate)
+
+  store.jobUpdate = []
+  await fetchMasterPlan()
+
+  showModal.value = false
+}
 
 function increaseWidth() {
   width.value += 600
@@ -53,6 +107,14 @@ function increaseWidth() {
 
 function decreaseWidth() {
   width.value -= 600
+}
+const handleConfirm = () => {
+  console.log('Confirmed!')
+  showConfirmModal.value = false
+}
+
+const handleClose = () => {
+  console.log('Modal closed')
 }
 watch(width, (newWidth) => {
   if (newWidth) {
@@ -68,6 +130,41 @@ watch(width, (newWidth) => {
     console.log('New width:', store.minWidthHeader)
   }
 })
+const fetchMasterPlan = async () => {
+  try {
+    const res = await GetMasterPlanData()
+    const data = res
+    console.log(res)
+    data.forEach((items: any, index: number) => {
+      jobs.value.push({
+        id: index, // Assuming each item has a unique id
+        line: items.data.line,
+        qty: items.data.qty,
+        style: items.data.style,
+        color: items.data.color,
+        typeName: items.data.typeName,
+        name: items.data.orderNo,
+        startDate: items.data.sewAssembly,
+        endDate: items.data.sewFinish,
+        duration: items.duration,
+      })
+    })
+    store.setJobs(jobs.value) // Update the store with fetched jobs
+    const filterLine = new Set(data.map((item: any) => item.data.line)) // Extract unique lines
+    const arrLine = Array.from(filterLine) // Convert Set to Array
+    const lineMap = arrLine.map((line: any) => {
+      return {
+        name: line,
+      } as Line
+    })
+    store.setLine(lineMap) // Update the store with unique lines
+    store.setMasters(data.data) // Update the store with master data
+
+    console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
+  } catch (err: any) {
+    console.error('Error fetching test data:', err)
+  }
+}
 </script>
 
 <style scoped></style>

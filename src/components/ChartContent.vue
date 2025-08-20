@@ -37,7 +37,7 @@
       </div>
     </div>
     <template v-if="LoadingRef && weeks.length > 0">
-      <div>Loading...</div>
+      <div class="text-6xl font-bold">Loading...</div>
     </template>
     <template v-else>
       <ScheduleRow :master="master" />

@@ -63,18 +63,20 @@ const timelineCells = computed(() => {
       // ใช้ตำแหน่งจริงจาก store แทน cellIndex
       const leftPosition = store.getDurationStyle(key, day)
 
-      cells.push({
-        key: `${key}-${day.getTime()}`,
-        text: duration.toString(),
-        className: isWeekend ? 'weekend' : '',
-        style: {
-          position: 'absolute',
-          left: `${leftPosition - store.minWidthHeader / 7}px`,
-          width: `${store.minWidthHeader / 7}px`,
-          height: '70px',
-          background: isWeekend ? '#4da8da80' : '#eee',
-        },
-      })
+      if (isWeekend) {
+        cells.push({
+          key: `${key}-${day.getTime()}`,
+          text: duration.toString(),
+          className: isWeekend ? 'weekend' : '',
+          style: {
+            position: 'absolute',
+            left: `${leftPosition - store.minWidthHeader / 7}px`,
+            width: `${store.minWidthHeader / 7}px`,
+            height: '70px',
+            background: isWeekend ? '#4da8da80' : '#eee',
+          },
+        })
+      }
     })
   })
 

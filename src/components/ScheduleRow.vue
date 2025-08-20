@@ -239,7 +239,7 @@ watch(
   { immediate: true }, // เรียกทันทีตอน mounted
 )
 watch(
-  () => [store.weeks, store.minWidthHeader],
+  () => [store.weeks, store.minWidthHeader, store.Jobs],
   () => {
     store.getDayIndex(8)
     store.computeAllJobStyles()
@@ -353,6 +353,8 @@ const throttledUpdate = throttle((linename: string, e: DragEvent) => {
   // console.log(draggingJob.value)
   store.computeAllJobStyles()
 }, 16) // 16ms = ~60fps
+
+// จัดการ Right Click
 </script>
 
 <style scoped>

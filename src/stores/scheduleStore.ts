@@ -32,6 +32,7 @@ export const useScheduleStore = defineStore('schedule', {
       style: Record<string, any>
     }>,
     holidayCellReady: false,
+    jobUpdate: [] as Job[],
   }),
   actions: {
     setLine(line: Line[]) {
@@ -365,7 +366,7 @@ export const useScheduleStore = defineStore('schedule', {
       // คำนวณ end ตาม duration ของ job
       const endAdj = addWorkingDuration(startAdj, duration)
 
-      const startDate = formatTimeKey(startAdj)
+      const startDate = formatTimeKey(this.getNextWorkingDate(new Date(startAdj)))
       const endDate = formatTimeKey(endAdj)
       console.log(startDate, '##############', endDate)
       // update job ก่อน moveAndShift
@@ -376,7 +377,9 @@ export const useScheduleStore = defineStore('schedule', {
     },
     moveAndShift(lineId: string, movingJobId: number, pivotStart: string, pivotEnd: string) {
       let pivotStartDate = toDate(pivotStart)
+
       let pivotEndDate = toDate(pivotEnd)
+      console.log(pivotStartDate, 'AAAAAAAAAAAAAA', pivotEndDate)
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const jobs = this.getJobsForLine(lineId).sort(
         (a, b) => toDate(a.startDate).getTime() - toDate(b.startDate).getTime(),
@@ -400,7 +403,7 @@ export const useScheduleStore = defineStore('schedule', {
             this.Jobs.filter((i) => i.id === movingJobId).map((i) => i.duration)[0],
           )
           newEnd = this.getNextWorkingDate(newEnd) // ✅ normalize
-
+          // this.jobUpdate.push(j)
           pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
           pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
           console.log('pushforward#######################')
@@ -413,7 +416,7 @@ export const useScheduleStore = defineStore('schedule', {
       )
       // 1) Chain push ทางขวา
       for (let job of jobRight) {
-        const jobStart = toDate(job.startDate)
+        const jobStart = this.getNextWorkingDate(toDate(job.startDate), 8)
         const jobEnd = toDate(job.endDate)
 
         if (jobStart < pivotEndDate) {
@@ -422,9 +425,9 @@ export const useScheduleStore = defineStore('schedule', {
           console.log('Offset:', offset, 'Job Start:', jobStart, 'Pivot End:', pivotEndDate)
           if (offset > 0) {
             let newStart = new Date(jobStart.getTime() + offset)
-            newStart = this.getNextWorkingDate(newStart, 8)
+            // newStart = this.getNextWorkingDate(newStart, 8)
             let newEnd = addWorkingDuration(newStart, job.duration)
-            newEnd = this.getNextWorkingDate(newEnd, 8)
+            // newEnd = this.getNextWorkingDate(newEnd, 8)
             console.log('Chainnnnnnpushhhhh#######################')
             this.updateJob(job.id, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
 
@@ -496,6 +499,17 @@ export const useScheduleStore = defineStore('schedule', {
 
       job.startDate = formatTimeKey(holidayStart)
       job.endDate = formatTimeKey(holidayEnd)
+
+      // ตรวจสอบว่ามี job.id ซ้ำใน jobUpdate หรือไม่
+      const existingIndex = this.jobUpdate.findIndex((existingJob) => existingJob.id === jobId)
+      console.log(existingIndex)
+      if (existingIndex !== -1) {
+        // ถ้าเจอ job.id ซ้ำ ให้แทนที่ด้วยข้อมูลใหม่
+        this.jobUpdate[existingIndex] = job
+      } else {
+        // ถ้าไม่ซ้ำ ให้เพิ่มเข้าไป
+        this.jobUpdate.push(job)
+      }
       // const startDate = new Date(start)
       // const endDate = new Date(end)
 
@@ -518,11 +532,12 @@ export const useScheduleStore = defineStore('schedule', {
       //   const newEnd = new Date(startDate.setDate(startDate.getDate() + 1))
       //   newEnd.setHours(8, 0, 0, 0)
       //   job.endDate = formatTimeKey(newEnd)
-      this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
+      // this.moveAndShift(lineId, job.id, job.startDate, job.endDate)
       //   isSkipStart = false
       // }
 
       console.log(this.isHoliday(new Date(end)), 'end is ', end)
+      console.log(this.jobUpdate)
     },
 
     getDuration(start: Date | string, end: Date | string): number {
