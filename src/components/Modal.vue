@@ -151,6 +151,7 @@ const confirmModal = () => {
 }
 
 const handleOverlayClick = () => {
+  console.log('close')
   if (props.closeOnOverlay) {
     closeModal()
   }

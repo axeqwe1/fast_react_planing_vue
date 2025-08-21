@@ -118,8 +118,9 @@ const fetchMasterPlan = async () => {
 const fetchMasterHoliday = async () => {
   try {
     const res = await GetMasterHoliday()
+    console.log(res)
     res.forEach((item: MasterHoliday) => {
-      store.holidays.push(new Date(item.dateHoliday))
+      store.holidays.push(new Date(item.holidayDate))
     })
   } catch (err: any) {
     console.error(err)

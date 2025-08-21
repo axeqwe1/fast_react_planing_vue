@@ -33,3 +33,14 @@ export const UpdatePlan = async (data: Job[]) => {
     throw err
   }
 }
+
+export const GetMasterLineData = async () => {
+  try {
+    const API_PATH = 'api/Masterplan/GetMasterLine'
+    const res = await apiService.get(`${API_PATH}`)
+    return res.data
+  } catch (err: any) {
+    console.error(err)
+    throw err
+  }
+}

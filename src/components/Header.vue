@@ -40,17 +40,50 @@
       >
         <IconZoomIn />
       </button>
-      <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer">
+      <button
+        @click="refresh"
+        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
+      >
         Refresh
       </button>
-      <button class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 cursor-pointer">
-        Settings
-      </button>
+      <div class="drawer drawer-end">
+        <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content">
+          <!-- Page content here -->
+          <label for="my-drawer" class="btn btn-primary drawer-button">Settings</label>
+        </div>
+        <div class="drawer-side">
+          <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+          <ul class="menu bg-base-200 text-base-content min-h-full w-80 p-4 gap-4">
+            <!-- Sidebar content here -->
+            <li>
+              <button @click="showSettingMasterLine = true" class="btn btn-accent rounded-2xl">
+                Master Line
+              </button>
+            </li>
+            <li>
+              <button @click="showModal = true" class="btn btn-accent rounded-2xl">
+                Master Holiday
+              </button>
+            </li>
+            <li>
+              <button @click="showModal = true" class="btn btn-accent rounded-2xl">
+                Master Workday
+              </button>
+            </li>
+            <li>
+              <button @click="showModal = true" class="btn btn-accent rounded-2xl">
+                Master Efficiency
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Custom Modal -->
-  <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
+  <Modal :modelValue="showModal" :size="'large'" @update:modelValue="(val) => (showModal = val)">
     <template #header>
       <h2 class="text-2xl font-bold">Update Plan</h2>
     </template>
@@ -97,24 +130,63 @@
       </div>
     </template>
   </Modal>
+
+  <Modal
+    :modelValue="showSettingMasterLine"
+    :size="'full'"
+    @update:modelValue="(val) => (showSettingMasterLine = val)"
+  >
+    <template #header>
+      <h2 class="text-2xl font-bold">Masterline Setting</h2>
+    </template>
+
+    <div class="h-full">
+      <FormMasterLine />
+    </div>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="UpdatePlans"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] bg-green-500 text-white hover:bg-transparent hover:text-gray-900 hover:border-green-500 hover:border-3 text-xl transition-all ease-in duration-100"
+        >
+          Confirm
+        </button>
+        <button
+          @click="showSettingMasterLine = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { IconCheck, IconZoomIn, IconZoomOut } from '@tabler/icons-vue'
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import Modal from './Modal.vue'
 import { GetMasterPlanData, UpdatePlan } from '@/lib/api/Masterplan'
 import type { Job, Line } from '@/type/types'
 import { useLoadingStore } from '@/stores/LoadingStore'
+import FormMasterLine from './form/FormMasterLine.vue'
+import { useMaster } from '@/stores/masterStore'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
+const showSettingMasterLine = ref(false)
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)
 const store = useScheduleStore()
 const width = ref(store.minWidthHeader || 300)
 const jobs = ref([] as Job[])
-
+const STORE_MASTER = useMaster()
+const refresh = async () => {
+  store.Jobs = []
+  store.jobUpdate = []
+  await fetchMasterPlan()
+}
 const UpdatePlans = async () => {
   const res = await UpdatePlan(store.jobUpdate)
 
@@ -157,6 +229,7 @@ const fetchMasterPlan = async () => {
   try {
     const res = await GetMasterPlanData()
     const data = res
+    jobs.value = []
     console.log(res)
     data.forEach((items: any, index: number) => {
       jobs.value.push({
@@ -188,6 +261,10 @@ const fetchMasterPlan = async () => {
     console.error('Error fetching test data:', err)
   }
 }
+
+onMounted(() => {
+  STORE_MASTER.getMasterLine()
+})
 </script>
 
 <style scoped></style>

@@ -53,11 +53,29 @@ export interface MasterData {
 }
 
 export interface MasterHoliday {
-  dateHoliday: Date
-  eventName: string
-  eventName_ENG: string
-  userCreate: string
+  holidayDate: Date
+  holidayName: string
+  dayOfWeek: string
+  isNational: boolean
+  isWeekend: boolean
+  holidayId: number
+}
+
+export interface MasterLine {
+  id: number
+  lineCode: string
+  lineName: string
+  lineType: string
+  factoryCode: string
+  capacityMP: number
+  defaultHours: number
+  isActive: boolean
+  status: number
+  remark: string
+  createBy: string
   createDate: Date
+  updateBy: string
+  updateDate: Date
 }
 
 export type DropMode = 'insert' | 'merge' | 'normal' | 'skip'
