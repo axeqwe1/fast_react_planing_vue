@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-
+@plugin "daisyui";
 /* .job {
   transition: transform 0.3s ease;
 }

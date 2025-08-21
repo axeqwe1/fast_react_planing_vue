@@ -24,7 +24,7 @@ export const useScheduleStore = defineStore('schedule', {
     divideCache: [] as number[], // cache divide styles
     headerWidth: 0,
     holidays: [] as Date[], // วันหยุดทั้งหมด
-    workHours: { start: '08:00', end: '17:00' }, // ชั่วโมงทำงาน
+    workHours: { start: '08:00', end: '16:00' }, // ชั่วโมงทำงาน
     minWidthHeader: 300,
     holidayCell: [] as Array<{
       key: string
@@ -82,7 +82,7 @@ export const useScheduleStore = defineStore('schedule', {
     // determine style for job bar
     getJobStyle(job: Job) {
       let workHour = 8
-      const BREAK_DURATION = 1 // ชั่วโมงพัก
+      const BREAK_DURATION = 0 // ชั่วโมงพัก
       let timeIndexMap = this.timeIndexMap
       const startDate = new Date(job.startDate)
       const endDate = new Date(job.endDate)
@@ -100,7 +100,7 @@ export const useScheduleStore = defineStore('schedule', {
       // let startMinute = Math.floor(startDate.getMinutes() / 1) * 1
       let startMinute = Math.floor(startDate.getMinutes())
       if (startHour === 8 && startMinute === 0) startMinute = 0
-      let endHour = Math.min(17, endDate.getHours())
+      let endHour = Math.min(16, endDate.getHours())
       let endMinute = Math.floor(endDate.getMinutes())
       if (endHour === 8 + workHour + BREAK_DURATION && endMinute > 0)
         endHour = 8 + workHour + BREAK_DURATION
@@ -159,7 +159,7 @@ export const useScheduleStore = defineStore('schedule', {
           // Start day
           dayStart = new Date(startDate)
           dayEnd = new Date(currentDate)
-          dayEnd.setHours(17, 0, 0, 0)
+          dayEnd.setHours(16, 0, 0, 0)
         } else if (isEndDay) {
           // End day
           dayStart = new Date(currentDate)
@@ -170,14 +170,14 @@ export const useScheduleStore = defineStore('schedule', {
           dayStart = new Date(currentDate)
           dayStart.setHours(8, 0, 0, 0)
           dayEnd = new Date(currentDate)
-          dayEnd.setHours(17, 0, 0, 0)
+          dayEnd.setHours(16, 0, 0, 0)
         }
 
         // ตรวจสอบว่าอยู่ในช่วงเวลาทำงาน
         let workStart = new Date(currentDate)
         workStart.setHours(8, 0, 0, 0)
         let workEnd = new Date(currentDate)
-        workEnd.setHours(17, 0, 0, 0)
+        workEnd.setHours(16, 0, 0, 0)
 
         dayStart = new Date(Math.max(dayStart.getTime(), workStart.getTime()))
         dayEnd = new Date(Math.min(dayEnd.getTime(), workEnd.getTime()))
@@ -210,7 +210,7 @@ export const useScheduleStore = defineStore('schedule', {
     getDevideStyle(endDate: Date) {
       const END_DATE = new Date(endDate)
       // แก้เวลาเป็นเวลาเลิกงาน (เช่น 17:00)
-      END_DATE.setHours(17, 0, 0, 0)
+      END_DATE.setHours(16, 0, 0, 0)
 
       const datePart = END_DATE.toISOString().split('T')[0]
       const timePart = END_DATE.toTimeString().split(' ')[0].substring(0, 5) // "HH:mm:00"
@@ -236,7 +236,7 @@ export const useScheduleStore = defineStore('schedule', {
     getDayIndex(workHour: number) {
       const timeIndexMap = new Map<string, number>()
       let totalUnits = 0
-      const BREAK_DURATION = 1
+      const BREAK_DURATION = 0
       let actWorkHour = workHour || 8
 
       console.log(this.weeks.length, 'weeks length', this.weeks)
@@ -252,7 +252,7 @@ export const useScheduleStore = defineStore('schedule', {
 
           for (let hour = startHour; hour <= endHour; hour++) {
             for (let minute = 0; minute < 60; minute += 1) {
-              if (hour === 17 && minute > 0) break
+              if (hour === 16 && minute > 0) break
               let timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
               let key = `${dateKey} ${timeKey}`
 
@@ -298,7 +298,7 @@ export const useScheduleStore = defineStore('schedule', {
         this.cacheWeekDay.get(weekKey)?.find((d) => d.toISOString() === day.toISOString()) || day,
       )
 
-      endDate.setHours(17, 0, 0, 0)
+      endDate.setHours(16, 0, 0, 0)
       const key = formatTimeKey(endDate)
 
       const timeIndexMap = this.timeIndexMap
@@ -551,7 +551,7 @@ export const useScheduleStore = defineStore('schedule', {
 
     addTime(start: Date, duration: number): Date {
       const newEnd = new Date(start.getTime() + duration) // duration in minutes
-      if (newEnd.getHours() > 17 || (newEnd.getHours() === 17 && newEnd.getMinutes() > 0)) {
+      if (newEnd.getHours() > 16 || (newEnd.getHours() === 16 && newEnd.getMinutes() > 0)) {
         newEnd.setDate(newEnd.getDate() + 1) // ถ้าเลยเวลาเลิกงาน ให้ข้ามไปวันถัดไป
         newEnd.setHours(8, 0, 0, 0) // ตั้งเวลาเริ่มงานใหม่เป็น 08:00
       } else if (newEnd.getHours() < 8 || (newEnd.getHours() === 8 && newEnd.getMinutes() > 0)) {
@@ -561,7 +561,7 @@ export const useScheduleStore = defineStore('schedule', {
     },
     calculateWorkDuration(startDate: Date, endDate: Date): number {
       const workStartHour = 8
-      const workEndHour = 17
+      const workEndHour = 16
 
       let current = new Date(startDate)
       let end = new Date(endDate)

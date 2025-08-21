@@ -55,7 +55,30 @@
       <h2 class="text-2xl font-bold">Update Plan</h2>
     </template>
 
-    <p>Custom content</p>
+    <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>OrderNo</th>
+            <th>Line</th>
+            <th>Color</th>
+            <th>START - END</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in store.jobUpdate.sort(
+              (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+            )"
+          >
+            <td>{{ item.name }}</td>
+            <td>{{ item.line }}</td>
+            <td>{{ item.color }}</td>
+            <td>{{ item.startDate }} - {{ item.endDate }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <template #footer>
       <div class="flex flex-row-reverse gap-2">

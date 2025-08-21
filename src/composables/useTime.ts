@@ -6,10 +6,10 @@ export function useTime() {
     workHour: number,
   ) => {
     let startHour = Math.max(8, startDate.getHours())
-    let startMinute = Math.floor(startDate.getMinutes() / 15) * 15
+    let startMinute = Math.floor(startDate.getMinutes() / 1) * 1
     if (startHour === 8 && startMinute === 0) startMinute = 0
-    let endHour = Math.min(17, endDate.getHours())
-    let endMinute = Math.floor(endDate.getMinutes() / 15) * 15
+    let endHour = Math.min(16, endDate.getHours())
+    let endMinute = Math.floor(endDate.getMinutes() / 1) * 1
     if (endHour === 8 + workHour + BREAK_DURATION && endMinute > 0)
       endHour = 8 + workHour + BREAK_DURATION
 
@@ -18,7 +18,7 @@ export function useTime() {
 
   function addWorkingDuration(start: Date, durationHours: number): Date {
     const WORK_START_HOUR = 8
-    const WORK_END_HOUR = 17
+    const WORK_END_HOUR = 16
     const MS_PER_HOUR = 1000 * 60 * 60
     const MS_PER_MINUTE = 1000 * 60
 
@@ -47,7 +47,7 @@ export function useTime() {
 
   function adjustToWorkingHours(date: Date): Date {
     const WORK_START_HOUR = 8
-    const WORK_END_HOUR = 17
+    const WORK_END_HOUR = 16
     const WORK_DAY_DURATION_MS = (WORK_END_HOUR - WORK_START_HOUR) * 60 * 60 * 1000
 
     let current = new Date(date)

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-fit mt-[60px]" v-if="weeks.length > 0">
+  <div class="flex flex-col w-fit mt-[60px] containerY" v-if="weeks.length > 0">
     <div class="flex w-full sticky top-[60px] bg-white z-6">
       <div
         class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
