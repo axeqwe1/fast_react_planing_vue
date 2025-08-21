@@ -62,9 +62,9 @@
                     <td style='padding: 2px 6px;'><b>TypeName</b></td>
                     <td>${job.typeName}</td>
                   </tr>
-                                    <tr>
+                  <tr>
                     <td style='padding: 2px 6px;'><b>QTY</b></td>
-                    <td><b>${job.qty}</b></td>
+                    <td style=''><b>${job.qty}</b></td>
                   </tr>
                 </table>
               `,
@@ -98,6 +98,49 @@
       :x="menus.menuX"
       :y="menus.menuY"
     />
+
+    <!-- Custom Modal -->
+    <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
+      <template #header>
+        <h2 class="text-2xl font-bold">Update Plan</h2>
+      </template>
+
+      <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>OrderNo</th>
+              <th>Line</th>
+              <th>Color</th>
+              <th>START - END</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in store.jobUpdate.sort(
+                (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+              )"
+            >
+              <td>{{ item.name }}</td>
+              <td>{{ item.line }}</td>
+              <td>{{ item.color }}</td>
+              <td>{{ item.startDate }} - {{ item.endDate }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <template #footer>
+        <div class="flex flex-row-reverse gap-2">
+          <button
+            @click="showModal = false"
+            class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+          >
+            Close
+          </button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -129,6 +172,7 @@ import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
 import { detectDropMode } from '@/utils/detectDropMode'
 import ContextMenu from './ContextMenu.vue'
+import Modal from './Modal.vue'
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
 const store = useScheduleStore()
@@ -141,6 +185,7 @@ const dragContext = {
   containerRect: null as DOMRect | null,
   clientXStart: 0,
 }
+const showModal = ref<boolean>(false)
 const { setLoading } = useLoadingStore()
 const scheduleRowRefs = ref<ScheduleRefs>({})
 const lines = ref<Line[]>([])
@@ -169,6 +214,8 @@ function handleActionClick(action: any) {
   switch (action) {
     case 'viewplan': {
       console.log('found action')
+      showModal.value = true
+      if (showModal.value) showMenu.value = false
       break
     }
     default: {
