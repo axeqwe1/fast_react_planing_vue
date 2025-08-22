@@ -54,8 +54,10 @@
         </div>
         <div class="drawer-side">
           <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+
           <ul class="menu bg-base-200 text-base-content min-h-full w-80 p-4 gap-4">
             <!-- Sidebar content here -->
+            <label class="text-3xl text-center">Settings</label>
             <li>
               <button @click="showSettingMasterLine = true" class="btn btn-accent rounded-2xl">
                 Master Line
@@ -146,7 +148,7 @@
 
     <template #footer>
       <div class="flex flex-row-reverse gap-2">
-        <button
+        <!-- <button
           @click="UpdatePlans"
           class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] bg-green-500 text-white hover:bg-transparent hover:text-gray-900 hover:border-green-500 hover:border-3 text-xl transition-all ease-in duration-100"
         >
@@ -157,7 +159,7 @@
           class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
         >
           Close
-        </button>
+        </button> -->
       </div>
     </template>
   </Modal>
@@ -255,7 +257,7 @@ const fetchMasterPlan = async () => {
     })
     store.setLine(lineMap) // Update the store with unique lines
     store.setMasters(data.data) // Update the store with master data
-
+    await store.computeAllJobStyles()
     console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)
