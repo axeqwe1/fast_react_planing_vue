@@ -64,7 +64,7 @@
               </button>
             </li>
             <li>
-              <button @click="showModal = true" class="btn btn-accent rounded-2xl">
+              <button @click="showSettingMasterHoliday = true" class="btn btn-accent rounded-2xl">
                 Master Holiday
               </button>
             </li>
@@ -74,7 +74,10 @@
               </button>
             </li>
             <li>
-              <button @click="showModal = true" class="btn btn-accent rounded-2xl">
+              <button
+                @click="showSettingMasterEfficiency = true"
+                class="btn btn-accent rounded-2xl"
+              >
                 Master Efficiency
               </button>
             </li>
@@ -147,20 +150,43 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-row-reverse gap-2">
-        <!-- <button
-          @click="UpdatePlans"
-          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] bg-green-500 text-white hover:bg-transparent hover:text-gray-900 hover:border-green-500 hover:border-3 text-xl transition-all ease-in duration-100"
-        >
-          Confirm
-        </button>
-        <button
-          @click="showSettingMasterLine = false"
-          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
-        >
-          Close
-        </button> -->
-      </div>
+      <div class="flex flex-row-reverse gap-2"></div>
+    </template>
+  </Modal>
+
+  <Modal
+    :modelValue="showSettingMasterEfficiency"
+    :size="'full'"
+    @update:modelValue="(val) => (showSettingMasterEfficiency = val)"
+  >
+    <template #header>
+      <h2 class="text-2xl font-bold">MasterEfficiency Setting</h2>
+    </template>
+
+    <div class="h-full">
+      <FormMasterEfficiency />
+    </div>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2"></div>
+    </template>
+  </Modal>
+
+  <Modal
+    :modelValue="showSettingMasterHoliday"
+    :size="'full'"
+    @update:modelValue="(val) => (showSettingMasterHoliday = val)"
+  >
+    <template #header>
+      <h2 class="text-2xl font-bold">MasterHoliday Setting</h2>
+    </template>
+
+    <div class="h-full">
+      <FormMasterHoliday />
+    </div>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2"></div>
     </template>
   </Modal>
 </template>
@@ -175,9 +201,14 @@ import type { Job, Line } from '@/type/types'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import FormMasterLine from './form/FormMasterLine.vue'
 import { useMaster } from '@/stores/masterStore'
+import FormMasterEfficiency from './form/FormMasterEfficiency.vue'
+import FormMasterHoliday from './form/FormMasterHoliday.vue'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)
+const showSettingMasterEfficiency = ref(false)
+const showSettingMasterHoliday = ref(false)
+const showSettingMasterWorkday = ref(false)
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)
 const store = useScheduleStore()
@@ -266,6 +297,7 @@ const fetchMasterPlan = async () => {
 
 onMounted(() => {
   STORE_MASTER.getMasterLine()
+  STORE_MASTER.getMasterEfficiency()
 })
 </script>
 

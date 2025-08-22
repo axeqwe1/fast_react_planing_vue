@@ -53,7 +53,7 @@ export interface MasterData {
 }
 
 export interface MasterHoliday {
-  holidayDate: Date
+  holidayDate: string
   holidayName: string
   dayOfWeek: string
   isNational: boolean
@@ -78,6 +78,19 @@ export interface MasterLine {
   updateDate: Date
 }
 
+export interface MasterEfficiency {
+  id: number
+  lineCode: string
+  effectiveDate: string
+  efficiencyPct: number
+  basisNote: string
+  status: number
+  remark: string
+  createBy: string
+  createDate: Date | null
+  updateBy: string
+  updateDate: Date | null
+}
 export type DropMode = 'insert' | 'merge' | 'normal' | 'skip'
 
 export interface DetectDropModeParams {

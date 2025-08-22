@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
-
+let openModalCount = 0
 // Props
 interface Props {
   modelValue?: boolean
@@ -161,12 +161,18 @@ const handleOverlayClick = () => {
 const originalBodyStyle = ref('')
 
 const disableBodyScroll = () => {
-  originalBodyStyle.value = document.body.style.overflow
-  document.body.style.overflow = 'hidden'
+  if (openModalCount === 0) {
+    document.body.style.overflow = 'hidden'
+  }
+  openModalCount++
 }
 
 const enableBodyScroll = () => {
-  document.body.style.overflow = originalBodyStyle.value
+  openModalCount--
+  if (openModalCount <= 0) {
+    document.body.style.overflow = ''
+    openModalCount = 0
+  }
 }
 
 // Focus management
