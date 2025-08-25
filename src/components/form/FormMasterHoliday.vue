@@ -182,7 +182,7 @@ const lines = [
   { id: '3', name: 'RACHABURI' },
 ]
 const menus = reactive({ menuX: 0, menuY: 0 })
-const contextMenuActions = ref([{ label: 'Delete Line', action: 'delete' }])
+const contextMenuActions = ref([{ label: 'Delete Holiday', action: 'delete' }])
 const DayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const lineType = [
   { name: 'ALL' },

@@ -190,7 +190,7 @@ const lines = [
   { id: '3', name: 'RACHABURI' },
 ]
 const menus = reactive({ menuX: 0, menuY: 0 })
-const contextMenuActions = ref([{ label: 'Delete Line', action: 'delete' }])
+const contextMenuActions = ref([{ label: 'Delete Efficiency', action: 'delete' }])
 
 const lineType = [
   { name: 'ALL' },

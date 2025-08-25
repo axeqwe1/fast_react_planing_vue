@@ -69,7 +69,7 @@
               </button>
             </li>
             <li>
-              <button @click="showModal = true" class="btn btn-accent rounded-2xl">
+              <button @click="showSettingMasterWorkday = true" class="btn btn-accent rounded-2xl">
                 Master Workday
               </button>
             </li>
@@ -189,6 +189,24 @@
       <div class="flex flex-row-reverse gap-2"></div>
     </template>
   </Modal>
+
+  <Modal
+    :modelValue="showSettingMasterWorkday"
+    :size="'full'"
+    @update:modelValue="(val) => (showSettingMasterWorkday = val)"
+  >
+    <template #header>
+      <h2 class="text-2xl font-bold">MasterWorkday Setting</h2>
+    </template>
+
+    <div class="h-full">
+      <FormMasterWorkday />
+    </div>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2"></div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -203,6 +221,7 @@ import FormMasterLine from './form/FormMasterLine.vue'
 import { useMaster } from '@/stores/masterStore'
 import FormMasterEfficiency from './form/FormMasterEfficiency.vue'
 import FormMasterHoliday from './form/FormMasterHoliday.vue'
+import FormMasterWorkday from './form/FormMasterWorkday.vue'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)

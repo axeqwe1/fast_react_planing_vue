@@ -33,6 +33,7 @@ export const useScheduleStore = defineStore('schedule', {
     }>,
     holidayCellReady: false,
     jobUpdate: [] as Job[],
+    dayInWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   }),
   actions: {
     setLine(line: Line[]) {
