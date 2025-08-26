@@ -91,6 +91,24 @@ export interface MasterEfficiency {
   updateBy: string
   updateDate: Date | null
 }
+
+export interface MasterSam {
+  id: number
+  style: string
+  season: string
+  typeName: string
+  programCode: string
+  saM_Minutes: number
+  effectiveDate: string // JSON Date
+  expireDate: string
+  status: number
+  remark: string
+}
+export interface MasterSamView {
+  style: string
+  season: string
+}
+
 export type DropMode = 'insert' | 'merge' | 'normal' | 'skip'
 
 export interface DetectDropModeParams {

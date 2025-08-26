@@ -1,6 +1,6 @@
 import type { Job, MasterData, MasterEfficiency, MasterLine, MasterHoliday } from '@/type/types'
 import { apiService } from '../axios'
-import type { CreateMasterWorkDay } from '@/type/requestDTO'
+import type { CreateMasterSam, CreateMasterWorkDay } from '@/type/requestDTO'
 
 export const GetMasterPlanData = async () => {
   try {
@@ -141,6 +141,58 @@ export const CreateWorkDay = async (data: CreateMasterWorkDay[]) => {
   try {
     const API_PATH = `api/Masterworkday/CreateMasterWorkDay`
     const res = await apiService.post(API_PATH, data)
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+//
+
+export const GetMasterSAM = async () => {
+  try {
+    const API_PATH = `api/Mastersam/GetMasterSam`
+    const res = await apiService.get(`${API_PATH}`)
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const GetMasterSAMView = async () => {
+  try {
+    const API_PATH = `api/Mastersam/GetMasterSamView`
+    const res = await apiService.get(`${API_PATH}`)
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const SearchQueryMasterSamViewStyle = async (style: string) => {
+  try {
+    const API_PATH = `api/Mastersam/SearchQueryMasterSamViewStyle/${style}`
+    const res = await apiService.get(`${API_PATH}`)
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const CreateMasterSamAPI = async (data: CreateMasterSam) => {
+  try {
+    const API_PATH = `api/Mastersam/CreateMasterSam`
+    const res = await apiService.post(API_PATH, data)
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const deleteMasterSAM = async (id: number) => {
+  try {
+    const API_PATH = `api/Mastersam/DeleteMasterSAM/${id}`
+    const res = await apiService._delete(API_PATH)
     return res.data
   } catch (err: any) {
     throw err

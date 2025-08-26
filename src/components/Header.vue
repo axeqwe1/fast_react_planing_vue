@@ -81,6 +81,11 @@
                 Master Efficiency
               </button>
             </li>
+            <li>
+              <button @click="showSettingMasterSam = true" class="btn btn-warning rounded-2xl">
+                Master SAM
+              </button>
+            </li>
           </ul>
         </div>
       </div>
@@ -207,6 +212,23 @@
       <div class="flex flex-row-reverse gap-2"></div>
     </template>
   </Modal>
+  <Modal
+    :modelValue="showSettingMasterSam"
+    :size="'full'"
+    @update:modelValue="(val) => (showSettingMasterSam = val)"
+  >
+    <template #header>
+      <h2 class="text-2xl font-bold">MasterSam Setting</h2>
+    </template>
+
+    <div class="h-full">
+      <FormMasterSam />
+    </div>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2"></div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -222,12 +244,15 @@ import { useMaster } from '@/stores/masterStore'
 import FormMasterEfficiency from './form/FormMasterEfficiency.vue'
 import FormMasterHoliday from './form/FormMasterHoliday.vue'
 import FormMasterWorkday from './form/FormMasterWorkday.vue'
+import FormMasterSam from './form/FormMasterSam.vue'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)
 const showSettingMasterEfficiency = ref(false)
 const showSettingMasterHoliday = ref(false)
 const showSettingMasterWorkday = ref(false)
+const showSettingMasterSam = ref(false)
+
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)
 const store = useScheduleStore()
@@ -317,6 +342,9 @@ const fetchMasterPlan = async () => {
 onMounted(() => {
   STORE_MASTER.getMasterLine()
   STORE_MASTER.getMasterEfficiency()
+  STORE_MASTER.GetMasterSAM()
+  STORE_MASTER.GetMasterHoliday()
+  STORE_MASTER.getMasterSAMView()
 })
 </script>
 
