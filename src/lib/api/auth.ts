@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { apiService } from '../axios'
 
-export const login = async (data: { username: string; password: string }) => {
+export const login = async (data: { username: string; password: string; remember: boolean }) => {
   try {
     const res = await apiService.post('/api/Auth/login', data)
     return res

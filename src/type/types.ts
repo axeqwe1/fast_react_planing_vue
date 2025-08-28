@@ -122,3 +122,19 @@ export interface DetectDropModeParams {
 type WorkCalendarMap = Record<string, number>
 // หรือแบบนี้ก็ได้ถ้าอยากใช้ Date object
 type WorkCalendarMapDate = Record<string /* ISO Date */, number /* hours */>
+
+export interface User {
+  fullname: string
+  username: string
+  email: string
+  isActive: boolean
+}
+
+export interface JobStyleOptions {
+  timeIndexMap: Map<string, number>
+  containerWidth: number
+  isHoliday?: (date: Date) => boolean
+  workHour?: number
+  breakDuration?: number
+  currentDay?: Date
+}

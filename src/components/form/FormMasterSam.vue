@@ -2,9 +2,7 @@
   <div class="w-full h-full flex flex-row form-master-line">
     <div class="flex-1/3 flex flex-col justify-start gap-2">
       <div class="w-100">
-        <div class="flex flex-row items-center gap-2 w-full">
-
-        </div>
+        <div class="flex flex-row items-center gap-2 w-full"></div>
       </div>
       <div class="flex flex-row gap-3 flex-wrap">
         <!-- <div class="w-60">
@@ -14,19 +12,24 @@
         <div class="w-60">
           <div class="dropdown w-full">
             <label>Style</label>
-            <input v-model="model.style" tabindex="0" role="input" class="input "/>
+            <input v-model="model.style" tabindex="0" role="input" class="input" />
             <ul
               tabindex="0"
-              class="dropdown-content  bg-base-100 rounded-box z-1 p-2 shadow-sm max-h-[200px] overflow-auto w-full"
-              
+              class="dropdown-content bg-base-100 rounded-box z-1 p-2 shadow-sm max-h-[200px] overflow-auto w-full"
             >
-              <li v-for="item in styleList" @click="handleClickStyle(item)" class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full">
+              <li
+                v-for="item in styleList"
+                @click="handleClickStyle(item)"
+                class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full"
+              >
                 <a>{{ item }}</a>
               </li>
-              <li v-if="styleList.length <= 0" class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full">
+              <li
+                v-if="styleList.length <= 0"
+                class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full"
+              >
                 <a>No Data</a>
               </li>
-              
             </ul>
           </div>
         </div>
@@ -34,14 +37,22 @@
         <div class="w-60">
           <div class="dropdown w-full">
             <label>Season</label>
-            <input v-model="model.season" tabindex="0" role="input" class="input "></input>
+            <input v-model="model.season" tabindex="0" role="input" class="input" />
             <ul
               tabindex="0"
-              class="dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm w-full"
-              
+              class="dropdown-content bg-base-100 rounded-box z-1 p-2 shadow-sm w-full"
             >
-              <li  v-for="item in seasonList" @click="handleClickSeason(item)" class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full"><a>{{ item }}</a></li>
-              <li v-if="seasonList.length <= 0" class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full">
+              <li
+                v-for="item in seasonList"
+                @click="handleClickSeason(item)"
+                class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full"
+              >
+                <a>{{ item }}</a>
+              </li>
+              <li
+                v-if="seasonList.length <= 0"
+                class="p-2 bg-base-100 hover:bg-base-300 hover:cursor-pointer w-full"
+              >
                 <a>No Data</a>
               </li>
             </ul>
@@ -53,7 +64,7 @@
         </div>
         <div class="w-60">
           <label for="TypeName">TypeName</label>
-          <input v-model="model.typeName" type="text"  class="input" />
+          <input v-model="model.typeName" type="text" class="input" />
         </div>
 
         <!-- <div class="w-60 flex flex-col justify-start">
@@ -75,14 +86,7 @@
           >
             {{ isEdit ? 'Update' : 'Save' }}
           </button>
-          <button
-            v-if="isEdit"
-            class="btn btn-accent w-60 btn-xl"
-           
-            @click="reset"
-          >
-            Reset
-          </button>
+          <button v-if="isEdit" class="btn btn-accent w-60 btn-xl" @click="reset">Reset</button>
         </div>
       </div>
     </div>
@@ -94,7 +98,7 @@
             <thead>
               <tr>
                 <th></th>
-                <th >Style</th>
+                <th>Style</th>
                 <th>Season</th>
                 <th>TypeName</th>
                 <th>Program Code</th>
@@ -105,7 +109,14 @@
             </thead>
             <tbody>
               <!-- row 1 -->
-              <tr @contextmenu="(e) => showContextMenu(e,item)" @click="selectEdit(item,index)" class="hover:bg-base-200 hover:cursor-pointer" v-for="(item,index) in master" :class="currentActive == index ? 'bg-base-200' : ''" :key="item.id">
+              <tr
+                @contextmenu="(e) => showContextMenu(e, item)"
+                @click="selectEdit(item, index)"
+                class="hover:bg-base-200 hover:cursor-pointer"
+                v-for="(item, index) in master"
+                :class="currentActive == index ? 'bg-base-200' : ''"
+                :key="item.id"
+              >
                 <td>{{ item.id }}</td>
                 <td class="w-50">{{ item.style }}</td>
                 <td>{{ item.season }}</td>
@@ -115,7 +126,6 @@
                 <td>{{ item.effectiveDate.split('T')[0] }}</td>
                 <td>{{ item.expireDate.split('T')[0] }}</td>
               </tr>
-             
             </tbody>
           </table>
         </div>
@@ -216,7 +226,7 @@ const STORE_MASTER = useMaster()
 const model = reactive<CreateMasterSam>({
   season: '',
   style: '',
-  typeName:'',
+  typeName: '',
   SAM_Minutes: 0,
 })
 const showModal = ref<boolean>(false)
@@ -228,21 +238,19 @@ const styleList = ref<string[]>([])
 const seasonRef = ref('')
 const seasonList = ref<string[]>([])
 
-const currentActive = ref<number|null>(null)
+const currentActive = ref<number | null>(null)
 
-
-
-const selectEdit = (masterline: MasterSam,index:number) => {
-  if(currentActive.value == index){
+const selectEdit = (masterline: MasterSam, index: number) => {
+  if (currentActive.value == index) {
     reset()
-  }else{
-  model.season = masterline.season
-  model.style = masterline.style
-  model.SAM_Minutes = masterline.saM_Minutes
-  model.typeName = masterline.typeName
-  currentActive.value = index
-  isEdit.value = true
-  }  
+  } else {
+    model.season = masterline.season
+    model.style = masterline.style
+    model.SAM_Minutes = masterline.saM_Minutes
+    model.typeName = masterline.typeName
+    currentActive.value = index
+    isEdit.value = true
+  }
 }
 const handleClickStyle = (item: string) => {
   model.style = item
@@ -342,7 +350,6 @@ const submit = () => {
   } else if (model.typeName.trim() === '') {
     toastMessage.value = 'Type is required'
     showToastCountdown()
-
   } else {
     // ✅ ผ่าน validation
     toastIsError.value = false
@@ -365,8 +372,8 @@ const showToastCountdown = () => {
   }, 1000)
 }
 
-const fetchStyled = debounce(async (newVal:string) => {
-  if(!newVal){
+const fetchStyled = debounce(async (newVal: string) => {
+  if (!newVal) {
     styleList.value = []
     seasonList.value = []
     return
@@ -374,25 +381,28 @@ const fetchStyled = debounce(async (newVal:string) => {
 
   const res = await SearchQueryMasterSamViewStyle(newVal)
 
-  styleList.value = res.map((item:any) => item.style)
+  const setStyle = new Set(res.map((item: any) => item.style))
+  styleList.value = [...setStyle] as string[]
 
   const set = new Set(res.map((item: any) => item.season))
-  seasonList.value = [...set] as string []
-  console.log(seasonList.value,styleList.value)
-},100)
+  seasonList.value = [...set] as string[]
+  console.log(seasonList.value, styleList.value)
+}, 100)
 
 watchEffect(() => {
   master.value = STORE_MASTER.masterSam
 })
-watch(() => model.style, async (newVal) => {
-  fetchStyled(newVal)
-})
+watch(
+  () => model.style,
+  async (newVal) => {
+    fetchStyled(newVal)
+  },
+)
 onMounted(() => {
   STORE_MASTER.GetMasterSAM()
   STORE_MASTER.getMasterSAMView()
   master.value = STORE_MASTER.masterSam
 })
-
 </script>
 
 <style scoped>

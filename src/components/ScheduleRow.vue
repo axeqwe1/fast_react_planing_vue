@@ -87,6 +87,7 @@
         </template>
       </div>
     </div>
+
     <!-- Overlay to close the menu -->
     <div class="overlay" @click="closeContextMenu" v-if="showMenu" />
 
@@ -141,6 +142,14 @@
         </div>
       </template>
     </Modal>
+
+    <!-- <template v-if="divideLeft">
+      <viewCanvas />
+    </template> -->
+
+    <div v-for="divide in divideLeft" class="absolute" :style="{ left: divide + 'px' }">
+      <div class="week-break-background"></div>
+    </div>
   </div>
 </template>
 

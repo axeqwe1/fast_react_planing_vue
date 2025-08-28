@@ -34,6 +34,8 @@ export const useScheduleStore = defineStore('schedule', {
     holidayCellReady: false,
     jobUpdate: [] as Job[],
     dayInWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    isInitialized: false,
+    initializationPromise: null as Promise<void> | null,
   }),
   actions: {
     setLine(line: Line[]) {
@@ -113,7 +115,11 @@ export const useScheduleStore = defineStore('schedule', {
 
       const startKey = formatTimeKey(startDate)
       const endKey = formatTimeKey(endDate)
-
+      let bgColor = '#007bff'
+      const CurrentDay = new Date()
+      if (new Date(startKey) < CurrentDay && new Date(endKey) < CurrentDay) {
+        bgColor = '#FF3333' // สีเทา
+      }
       if (!timeIndexMap.has(startKey) || !timeIndexMap.has(endKey)) {
         // console.warn('Not found:', startKey, endKey)
         return { display: 'none' }
@@ -203,7 +209,7 @@ export const useScheduleStore = defineStore('schedule', {
       return {
         left: left + 'px',
         width: Math.max(width, 1.16) + 'px', // minimum width 10px
-        backgroundColor: '#007bff',
+        backgroundColor: bgColor,
         minWidth: '1.16px',
       }
     },

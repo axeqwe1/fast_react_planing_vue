@@ -49,16 +49,27 @@
 </template>
 
 <script setup lang="ts">
+console.log('Render ChartContent.vue')
 import type { Job, Line, MasterData, MasterHoliday } from '@/type/types'
-import { ref, onMounted, watch, watchEffect, nextTick, type ComponentPublicInstance } from 'vue'
+import {
+  ref,
+  onMounted,
+  watch,
+  watchEffect,
+  nextTick,
+  type ComponentPublicInstance,
+  onBeforeUnmount,
+} from 'vue'
 import ScheduleRow from './ScheduleRow.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import Loading from '@/components/LoadingComponent.vue'
 import { storeToRefs } from 'pinia'
 import { GetMasterHoliday, GetMasterPlanData } from '@/lib/api/Masterplan'
-import { template } from 'lodash'
+import { debounce, template } from 'lodash'
 import LoadingComponent from '@/components/LoadingComponent.vue'
+import { useRoute } from 'vue-router'
+
 const weeks = ref([] as { start: Date; end: Date }[])
 const weeksDay = ref(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
 const master = ref([] as MasterData[])
@@ -69,11 +80,24 @@ const LoadingRef = ref(isLoading)
 const headerRef = ref<HTMLElement | null>(null)
 const minHeadRef = ref<HTMLElement[]>([])
 const store = useScheduleStore()
+
 const minWidthHeader = ref(store.minWidthHeader || 300)
-watchEffect(() => {
-  minWidthHeader.value = store.minWidthHeader || 300
-  store.headerWidth = headerRef.value?.scrollWidth || 0 // Set header width for the store
-})
+watch(
+  () => store.minWidthHeader,
+  (val) => {
+    minWidthHeader.value = val || 300
+  },
+  { immediate: true },
+)
+
+watch(
+  () => headerRef.value?.scrollWidth,
+  (val) => {
+    if (val) {
+      store.headerWidth = val
+    }
+  },
+)
 
 function setMinHeadRef(el: Element | ComponentPublicInstance, i: number) {
   if (el instanceof HTMLElement) {
@@ -84,7 +108,7 @@ const fetchMasterPlan = async () => {
   try {
     const res = await GetMasterPlanData()
     const data = res
-    console.log(res)
+    console.log(data)
     data.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
@@ -108,7 +132,7 @@ const fetchMasterPlan = async () => {
       } as Line
     })
     store.setLine(lineMap) // Update the store with unique lines
-    store.setMasters(data.data) // Update the store with master data
+    store.setMasters(data) // Update the store with master data
 
     console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
@@ -127,9 +151,12 @@ const fetchMasterHoliday = async () => {
   }
 }
 onMounted(async () => {
-  loadStore.setLoading(true) // Set loading state to true
+  console.log('--- Mounted ---')
+  loadStore.setLoading(true)
   await fetchMasterPlan()
+  console.log('--- fetchMasterPlan done ---')
   const CAL_WEEK = calculateWeeks(store.Jobs)
+  console.log('--- calculateWeeks done ---', CAL_WEEK.length)
   store.setWeeks(CAL_WEEK) // Calculate weeks based on jobs
   weeks.value = store.weeks
   await fetchMasterHoliday()
@@ -144,7 +171,9 @@ onMounted(async () => {
     // if want to cache durationwork must have weeks data
     store.cacheWorkDuration()
   }
-  store.buildHolidayCell()
+
+  // store.buildHolidayCell()
+  console.log('--- buildHolidayCell done ---')
   loadStore.setLoading(false)
   // Mock data for jobs
 })
@@ -189,6 +218,10 @@ function formatDate(date: Date): string {
   const year = d.getFullYear()
   return `${day}/${month}/${year}`
 }
+
+onBeforeUnmount(() => {
+  console.log('destroyed viewCanvas')
+})
 </script>
 
 <style scoped></style>

@@ -58,34 +58,49 @@
           <ul class="menu bg-base-200 text-base-content min-h-full w-80 p-4 gap-4">
             <!-- Sidebar content here -->
             <label class="text-3xl text-center">Settings</label>
-            <li>
-              <button @click="showSettingMasterLine = true" class="btn btn-accent rounded-2xl">
-                Master Line
-              </button>
-            </li>
-            <li>
-              <button @click="showSettingMasterHoliday = true" class="btn btn-accent rounded-2xl">
-                Master Holiday
-              </button>
-            </li>
-            <li>
-              <button @click="showSettingMasterWorkday = true" class="btn btn-accent rounded-2xl">
-                Master Workday
-              </button>
-            </li>
-            <li>
-              <button
-                @click="showSettingMasterEfficiency = true"
-                class="btn btn-accent rounded-2xl"
-              >
-                Master Efficiency
-              </button>
-            </li>
-            <li>
-              <button @click="showSettingMasterSam = true" class="btn btn-warning rounded-2xl">
-                Master SAM
-              </button>
-            </li>
+            <div class="flex flex-col justify-between h-full gap-20">
+              <div class="flex flex-col gap-3">
+                <li>
+                  <button @click="showSettingMasterLine = true" class="btn btn-accent rounded-2xl">
+                    Master Line
+                  </button>
+                </li>
+                <li>
+                  <button
+                    @click="showSettingMasterHoliday = true"
+                    class="btn btn-accent rounded-2xl"
+                  >
+                    Master Holiday
+                  </button>
+                </li>
+                <li>
+                  <button
+                    @click="showSettingMasterWorkday = true"
+                    class="btn btn-accent rounded-2xl"
+                  >
+                    Master Workday
+                  </button>
+                </li>
+                <li>
+                  <button
+                    @click="showSettingMasterEfficiency = true"
+                    class="btn btn-accent rounded-2xl"
+                  >
+                    Master Efficiency
+                  </button>
+                </li>
+                <li>
+                  <button @click="showSettingMasterSam = true" class="btn btn-warning rounded-2xl">
+                    Master SAM
+                  </button>
+                </li>
+              </div>
+              <div>
+                <li>
+                  <button @click="handleLogout" class="btn btn-error rounded-2xl">Logout</button>
+                </li>
+              </div>
+            </div>
           </ul>
         </div>
       </div>
@@ -245,6 +260,8 @@ import FormMasterEfficiency from './form/FormMasterEfficiency.vue'
 import FormMasterHoliday from './form/FormMasterHoliday.vue'
 import FormMasterWorkday from './form/FormMasterWorkday.vue'
 import FormMasterSam from './form/FormMasterSam.vue'
+import { logout } from '@/lib/api/auth'
+import { useAuth } from '@/stores/userStore'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)
@@ -259,6 +276,7 @@ const store = useScheduleStore()
 const width = ref(store.minWidthHeader || 300)
 const jobs = ref([] as Job[])
 const STORE_MASTER = useMaster()
+const user = useAuth()
 const refresh = async () => {
   store.Jobs = []
   store.jobUpdate = []
@@ -287,6 +305,12 @@ const handleConfirm = () => {
 
 const handleClose = () => {
   console.log('Modal closed')
+}
+const handleLogout = async () => {
+  const res = await logout()
+  if (res.status && res.status == 200) {
+    user.isAuthen = false
+  }
 }
 watch(width, (newWidth) => {
   if (newWidth) {
