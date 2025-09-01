@@ -70,7 +70,7 @@ const timelineCells = computed(() => {
           className: isWeekend ? 'weekend' : '',
           style: {
             position: 'absolute',
-            left: `${leftPosition - store.minWidthHeader / 7}px`,
+            left: `${leftPosition}px`,
             width: `${store.minWidthHeader / 7}px`,
             height: '70px',
             background: isWeekend ? '#4da8da80' : '#eee',

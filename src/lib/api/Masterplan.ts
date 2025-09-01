@@ -198,3 +198,13 @@ export const deleteMasterSAM = async (id: number) => {
     throw err
   }
 }
+
+export const GetOrderGNX = async (pageNumber: number, pageSize: number) => {
+  try {
+    const API_PATH = `api/Masterplan/GetOrderGNX?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    const res = await apiService.get(API_PATH)
+    return res
+  } catch (err: any) {
+    throw err
+  }
+}

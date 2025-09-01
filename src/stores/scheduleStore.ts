@@ -90,7 +90,7 @@ export const useScheduleStore = defineStore('schedule', {
       const startDate = new Date(job.startDate)
       const endDate = new Date(job.endDate)
       this.isHoliday(endDate)
-      console.log(this.isHoliday(endDate))
+      // console.log(this.isHoliday(endDate))
       if (this.isHoliday(endDate)) {
         console.log(job)
       }
@@ -216,12 +216,10 @@ export const useScheduleStore = defineStore('schedule', {
     //determine style to divide line
     getDevideStyle(endDate: Date) {
       const END_DATE = new Date(endDate)
-      // แก้เวลาเป็นเวลาเลิกงาน (เช่น 17:00)
       END_DATE.setHours(16, 0, 0, 0)
 
-      const datePart = END_DATE.toISOString().split('T')[0]
-      const timePart = END_DATE.toTimeString().split(' ')[0].substring(0, 5) // "HH:mm:00"
-      const key = `${datePart} ${timePart}`
+      // console.log(END_DATE, 'end date for devide')
+      const key = formatTimeKey(END_DATE)
 
       const timeIndexMap = this.timeIndexMap.get(key)
 
@@ -235,9 +233,9 @@ export const useScheduleStore = defineStore('schedule', {
 
       const unitWidth = containerWidth / totalUnits
 
-      const leftPosition = (endOffset + 1) * unitWidth
+      const leftPosition = (endOffset + 1) * unitWidth - unitWidth * 8 * 60
 
-      return leftPosition
+      return leftPosition + 42.74
     },
     // Important create timeindex
     getDayIndex(workHour: number) {
@@ -247,19 +245,20 @@ export const useScheduleStore = defineStore('schedule', {
       let actWorkHour = workHour || 8
 
       console.log(this.weeks.length, 'weeks length', this.weeks)
+
       this.weeks.forEach((week, index) => {
         let current = new Date(week.start)
         let end = new Date(week.end)
-
         const startHour = 8
         const endHour = startHour + BREAK_DURATION + actWorkHour
+        console.log(current, end, 'current and end')
 
+        // end = new Date(end.setDate(end.getDate() + 1)) // เพิ่ม 1 วันเพื่อให้ครอบคลุมถึงวันสุดท้าย
         while (current <= end) {
-          let dateKey = current.toISOString().split('T')[0]
-
+          let dateKey = formatTimeKey(current).split(' ')[0]
+          console.log(dateKey, 'date key for time index')
           for (let hour = startHour; hour <= endHour; hour++) {
             for (let minute = 0; minute < 60; minute += 1) {
-              if (hour === 16 && minute > 0) break
               let timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
               let key = `${dateKey} ${timeKey}`
 
@@ -317,7 +316,7 @@ export const useScheduleStore = defineStore('schedule', {
 
       let containerWidth = document.querySelector('.week-header')?.scrollWidth || 1000
       const unitWidth = containerWidth / totalUnits
-      const leftPosition = endOffset * unitWidth
+      const leftPosition = (endOffset + 1) * unitWidth - unitWidth * 8 * 60
 
       return leftPosition
     },
@@ -656,4 +655,10 @@ function setTime(date: Date | string, day: string): Date {
 
 function toDate(d: Date | string): Date {
   return d instanceof Date ? d : new Date(d)
+}
+
+function normalizeDate(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0) // reset ชั่วโมง นาที วินาที มิลลิวินาที
+  return d
 }

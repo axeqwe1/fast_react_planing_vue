@@ -16,6 +16,17 @@ watch(
   },
   { immediate: true },
 )
+onMounted(async () => {
+  const res = await me()
+  if (res == null) {
+    user.isAuthen = false
+  }
+  if (res && res.status == 200) {
+    user.isAuthen = true
+  } else {
+    user.isAuthen = false
+  }
+})
 </script>
 
 <template>

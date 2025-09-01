@@ -147,9 +147,9 @@
       <viewCanvas />
     </template> -->
 
-    <div v-for="divide in divideLeft" class="absolute" :style="{ left: divide + 'px' }">
+    <!-- <div v-for="divide in divideLeft" class="absolute" :style="{ left: divide + 'px' }">
       <div class="week-break-background"></div>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -326,7 +326,7 @@ watch(
   { immediate: true }, // เรียกทันทีตอน mounted
 )
 watch(
-  () => [store.weeks, store.minWidthHeader],
+  () => [store.weeks, store.minWidthHeader, store.headerWidth],
   () => {
     store.getDayIndex(8)
     store.computeAllJobStyles()

@@ -13,22 +13,11 @@ import { me } from '@/lib/api/auth'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import { useAuth } from '@/stores/userStore'
 import { onMounted } from 'vue'
-const { isLoading } = useLoadingStore()
+const { setLoading } = useLoadingStore()
 const user = useAuth()
 
-onMounted(async () => {
-  console.log('check')
-  const res = await me()
-  console.log(res)
-  if (res == null) {
-    user.isAuthen = false
-    return
-  }
-  if (res.status && res.status == 200) {
-    user.isAuthen = true
-  } else {
-    user.isAuthen = false
-  }
+onMounted(() => {
+  // window.location.reload()
 })
 </script>
 

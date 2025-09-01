@@ -138,3 +138,36 @@ export interface JobStyleOptions {
   breakDuration?: number
   currentDay?: Date
 }
+
+export interface OrderGNX {
+  orderNo: string
+  style: string
+  division: string
+  season: string
+  programCode: string
+  color: string
+  customer: string
+  shipDate: Date
+  qty: number
+  qtyQCSew: number
+  qtyPack: number
+  status: string
+  statusName: string
+  processNameStatus: string
+  processStatus: number
+  progressPct: number
+  qtyBundle: number
+  qtyCut: number
+  qtyEMB: number
+  qtyEmboss: number
+  qtyPrint: number
+  qtyHeat: number
+  qtyPRPad: number
+  qtyFusing: number
+  qtyBonding: number
+  qtyLaserCut: number
+  qtyQc: number
+  qtyMatch: number
+  qtyOut: number
+  qtySew: number
+}

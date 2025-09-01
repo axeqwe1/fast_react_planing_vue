@@ -40,12 +40,15 @@
       >
         <IconZoomIn />
       </button>
+
       <button
         @click="refresh"
         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
       >
         Refresh
       </button>
+
+      <button @click="showViewOrder = true" class="btn btn-accent">View Order</button>
       <div class="drawer drawer-end">
         <input id="my-drawer" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content">
@@ -244,6 +247,24 @@
       <div class="flex flex-row-reverse gap-2"></div>
     </template>
   </Modal>
+
+  <Modal
+    :modelValue="showViewOrder"
+    :size="'full'"
+    @update:modelValue="(val) => (showViewOrder = val)"
+  >
+    <template #header>
+      <h2 class="text-2xl font-bold">View Order</h2>
+    </template>
+
+    <div class="h-full">
+      <ViewOrderDetails />
+    </div>
+
+    <!-- <template #footer>
+      <div class="flex flex-row-reverse gap-2"></div>
+    </template> -->
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -262,6 +283,7 @@ import FormMasterWorkday from './form/FormMasterWorkday.vue'
 import FormMasterSam from './form/FormMasterSam.vue'
 import { logout } from '@/lib/api/auth'
 import { useAuth } from '@/stores/userStore'
+import ViewOrderDetails from './details/ViewOrderDetails.vue'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)
@@ -269,6 +291,7 @@ const showSettingMasterEfficiency = ref(false)
 const showSettingMasterHoliday = ref(false)
 const showSettingMasterWorkday = ref(false)
 const showSettingMasterSam = ref(false)
+const showViewOrder = ref(false)
 
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)

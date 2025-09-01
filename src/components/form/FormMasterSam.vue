@@ -95,7 +95,7 @@
         <div class="overflow-x-auto">
           <table class="table table-xs">
             <!-- head -->
-            <thead>
+            <thead class="sticky top-0 bg-base-300">
               <tr>
                 <th></th>
                 <th>Style</th>
