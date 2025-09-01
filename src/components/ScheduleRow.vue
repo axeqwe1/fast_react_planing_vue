@@ -31,7 +31,7 @@
           <div
             v-for="(job, jIndex) in store.getJobsForLine(line.name)"
             :key="job.line + job.name"
-            @contextmenu.prevent="showContextMenu($event, job, line.name)"
+            @contextmenu.prevent.stop="showContextMenu($event, job, line.name)"
             v-tooltip.top="{
               content: `
                 <table style='border-collapse: collapse; font-size: 12px;'>
@@ -158,7 +158,7 @@
       </template>
 
       <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        Placeholder
+        {{ chooseStartTime }}
       </div>
 
       <template #footer>
@@ -226,6 +226,7 @@ const dragContext = {
 }
 const showModal = ref<boolean>(false)
 const showLineMenu = ref<boolean>(false)
+const chooseStartTime = ref<string>('')
 const { setLoading } = useLoadingStore()
 const scheduleRowRefs = ref<ScheduleRefs>({})
 const lines = ref<Line[]>([])
@@ -263,6 +264,7 @@ const showContextLine = (event: MouseEvent, linename: string) => {
   if (!timeKey) return
 
   console.log('timeKey', timeKey)
+  chooseStartTime.value = timeKey
 }
 
 const closeContextMenu = () => {
