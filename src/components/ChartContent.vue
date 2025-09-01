@@ -108,7 +108,7 @@ const fetchMasterPlan = async () => {
   try {
     const res = await GetMasterPlanData()
     const data = res
-    console.log(data)
+    // console.log(data)
     data.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
@@ -134,7 +134,7 @@ const fetchMasterPlan = async () => {
     store.setLine(lineMap) // Update the store with unique lines
     store.setMasters(data) // Update the store with master data
 
-    console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
+    // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)
   }
@@ -142,7 +142,7 @@ const fetchMasterPlan = async () => {
 const fetchMasterHoliday = async () => {
   try {
     const res = await GetMasterHoliday()
-    console.log(res)
+    // console.log(res)
     res.forEach((item: MasterHoliday) => {
       store.holidays.push(new Date(item.holidayDate))
     })

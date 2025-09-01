@@ -28,7 +28,7 @@ export const useMaster = defineStore('master', {
       const fetchData = async () => {
         const res = await GetMasterLineData()
         this.masterLine = res
-        console.log(this.masterLine)
+        // console.log(this.masterLine)
       }
       fetchData()
     },
@@ -36,7 +36,7 @@ export const useMaster = defineStore('master', {
       const fetchData = async () => {
         const res = await GetMasterEfficiency()
         this.masterEfficiency = res
-        console.log(this.masterEfficiency)
+        // console.log(this.masterEfficiency)
       }
       fetchData()
     },
@@ -44,7 +44,7 @@ export const useMaster = defineStore('master', {
       const fetchData = async () => {
         const res = await GetMasterHoliday()
         this.masterHoliday = res
-        console.log(this.masterHoliday)
+        // console.log(this.masterHoliday)
       }
       fetchData()
     },
@@ -53,7 +53,7 @@ export const useMaster = defineStore('master', {
         const res = await GetMasterSAM()
         if (res.sam != null) {
           this.masterSam = res.sam
-          console.log(this.masterSam)
+          // console.log(this.masterSam)
         }
       }
       fetchData()
@@ -62,7 +62,7 @@ export const useMaster = defineStore('master', {
       const fetchData = async () => {
         const res = await GetMasterSAMView()
         this.masterSamView = res
-        console.log(this.masterSam)
+        // console.log(this.masterSam)
       }
       fetchData()
     },

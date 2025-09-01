@@ -7,10 +7,10 @@ export const useLoadingStore = defineStore('loading', {
   }),
   actions: {
     setLoading(loading: boolean) {
-      console.log(`Loading state changed: ${loading}`)
+      // console.log(`Loading state changed: ${loading}`)
 
       this.isLoading = loading
-      console.log(this.isLoading)
+      // console.log(this.isLoading)
     },
   },
 })

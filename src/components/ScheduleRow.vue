@@ -25,6 +25,7 @@
         "
         @dragover="onDragOver(line.name, $event)"
         @drop="(e) => onDrop(e, line.name)"
+        @contextmenu.prevent="showContextLine($event, line.name)"
       >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
@@ -89,7 +90,7 @@
     </div>
 
     <!-- Overlay to close the menu -->
-    <div class="overlay" @click="closeContextMenu" v-if="showMenu" />
+    <div class="overlay" @click="closeContextMenu" v-if="showMenu || showLineMenu" />
 
     <!-- Custom Context Menu -->
     <ContextMenu
@@ -100,6 +101,13 @@
       :y="menus.menuY"
     />
 
+    <ContextMenu
+      v-if="showLineMenu"
+      :actions="contextLineMenu"
+      @action-clicked="handleActionClick"
+      :x="menus.menuX"
+      :y="menus.menuY"
+    />
     <!-- Custom Modal -->
     <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
       <template #header>
@@ -184,6 +192,7 @@ import ContextMenu from './ContextMenu.vue'
 import Modal from './Modal.vue'
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
+const contextLineMenu = ref([{ label: 'add job', action: 'addJob' }])
 const store = useScheduleStore()
 const draggableEl = ref<Record<string, HTMLElement>>({})
 const draggingJob = ref<Job | null>(null)
@@ -195,6 +204,7 @@ const dragContext = {
   clientXStart: 0,
 }
 const showModal = ref<boolean>(false)
+const showLineMenu = ref<boolean>(false)
 const { setLoading } = useLoadingStore()
 const scheduleRowRefs = ref<ScheduleRefs>({})
 const lines = ref<Line[]>([])
@@ -214,7 +224,20 @@ const showContextMenu = (event: MouseEvent, job: Job, linename: string) => {
   menus.menuX = getRelativeX(containerX, event)
   menus.menuY = getRelativeY(containerY, event)
 }
+
+const showContextLine = (event: MouseEvent, linename: string) => {
+  console.log(linename)
+  const containerX = draggableEl.value[linename]
+  const containerY = (document.querySelector('.containerY') as HTMLElement) || null
+  event.preventDefault()
+  showLineMenu.value = true
+
+  menus.menuX = getRelativeX(containerX, event)
+  menus.menuY = getRelativeY(containerY, event)
+}
+
 const closeContextMenu = () => {
+  showLineMenu.value = false
   showMenu.value = false
 }
 function handleActionClick(action: any) {
@@ -321,7 +344,7 @@ watch(
   () => store.Lines, // ✅ ต้องใช้แบบนี้เพื่อติดตาม reactive props
   (newMaster) => {
     lines.value = newMaster
-    console.log('Updated lines:', newMaster)
+    // console.log('Updated lines:', newMaster)
   },
   { immediate: true }, // เรียกทันทีตอน mounted
 )

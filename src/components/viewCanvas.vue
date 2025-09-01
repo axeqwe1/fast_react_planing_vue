@@ -4,15 +4,15 @@
 
     <!-- Divide bars overlay -->
     <div class="divide-overlay">
-      <div
+      <!-- <div
         v-for="pos in visibleDivides"
         :key="pos"
         class="divide-bar"
         :style="{
-          left: `${pos - store.minWidthHeader / 7}px`,
-          width: `${store.minWidthHeader / 7}px`,
+          left: `${pos - store.minWidthHeader}px`,
+          width: `${store.minWidthHeader}px`,
         }"
-      />
+      /> -->
       <div v-for="cell in timelineCells" :class="cell.className" :style="cell.style"></div>
     </div>
   </div>
@@ -59,11 +59,15 @@ const timelineCells = computed(() => {
     days.forEach((day) => {
       const duration = store.getDayDuration(day, lineName)
       const isWeekend = store.isHoliday(day)
-
+      const isSunday = day.getDay() === 0
       // ใช้ตำแหน่งจริงจาก store แทน cellIndex
       const leftPosition = store.getDurationStyle(key, day)
-
-      if (isWeekend) {
+      const toDay = new Date()
+      toDay.setHours(0, 0, 0, 0)
+      const dayCopy = new Date(day)
+      dayCopy.setHours(0, 0, 0, 0)
+      const notToday = dayCopy < toDay
+      if (isWeekend || notToday) {
         cells.push({
           key: `${key}-${day.getTime()}`,
           text: duration.toString(),
@@ -73,7 +77,8 @@ const timelineCells = computed(() => {
             left: `${leftPosition}px`,
             width: `${store.minWidthHeader / 7}px`,
             height: '70px',
-            background: isWeekend ? '#4da8da80' : '#eee',
+            background: isWeekend ? '#4da8da80' : notToday ? '#ddd' : '#eee',
+            borderRight: isSunday ? '1px solid red' : '',
           },
         })
       }
@@ -109,8 +114,6 @@ onMounted(() => {
 .timeline-container {
   width: 100%;
   height: 70px;
-  overflow-x: auto;
-  overflow-y: hidden;
   position: relative;
   background: #fff;
 }

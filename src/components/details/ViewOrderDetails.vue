@@ -1,26 +1,30 @@
 <template>
-  <div class="w-full h-full flex flex-row items-center justify-center form-master-line">
-    <div class="h-full overflow-auto border-1">
-      <div class="flex flex-row justify-start items-center gap-3 px-3">
-        <div>
-          <label>START SHIP</label>
-          <input
-            v-model="shipDate.start"
-            type="date"
-            class="input input-bordered input-sm w-full max-w-xs"
-          />
-        </div>
-
-        <div>
-          <label>END SHIP</label>
-          <input
-            v-model="shipDate.end"
-            type="date"
-            class="input input-bordered input-sm w-full max-w-xs"
-          />
-        </div>
+  <div class="w-full h-full flex flex-col gap-3 items-center justify-center form-master-line">
+    <div class="flex flex-row justify-start items-end gap-3 px-3">
+      <div>
+        <label>START SHIPDATE</label>
+        <input
+          v-model="shipDate.start"
+          type="date"
+          class="input input-bordered input-sm w-full max-w-xs"
+        />
       </div>
-      <div class="flex flex-col h-full max-h-[470px] justify-between items-center p-3">
+
+      <div>
+        <label>END SHIPDATE</label>
+        <input
+          v-model="shipDate.end"
+          type="date"
+          class="input input-bordered input-sm w-full max-w-xs"
+        />
+      </div>
+
+      <div>
+        <button @click="resetFilter" class="btn btn-warning">Reset Filter</button>
+      </div>
+    </div>
+    <div class="h-full overflow-auto border-1 max-w-[1400px]">
+      <div class="flex flex-col h-full max-h-[900px] justify-between items-center p-3">
         <div
           v-bind="containerProps"
           style="height: 500px; overflow-y: auto"
@@ -49,6 +53,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.orderNo)"
                         @update:data="(val) => onFilterSelect('orderNo', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -70,6 +75,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.style)"
                         @update:data="(val) => onFilterSelect('style', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -92,6 +98,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.season)"
                         @update:data="(val) => onFilterSelect('season', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -114,6 +121,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.programCode)"
                         @update:data="(val) => onFilterSelect('programCode', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -135,6 +143,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.color)"
                         @update:data="(val) => onFilterSelect('color', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -156,6 +165,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.customer)"
                         @update:data="(val) => onFilterSelect('customer', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -182,6 +192,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.statusName)"
                         @update:data="(val) => onFilterSelect('statusName', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -205,6 +216,7 @@
                       <CustomFilterColumn
                         :data="masterFiltered.map((item) => item.processNameStatus)"
                         @update:data="(val) => onFilterSelect('processNameStatus', val)"
+                        :reset="resetFilterCount"
                       />
                     </div>
                   </th>
@@ -309,10 +321,21 @@
           </div>
           <div class="flex flex-row">
             <div class="flex flex-row items-center gap-2">
-              <button @click="pagInModel.pageNumber = 1" class="btn btn-sm bg-base-200"><<</button>
+              <button
+                @click="pagInModel.pageNumber = 1"
+                class="btn btn-sm bg-base-200"
+                :class="
+                  pagInModel.pageNumber > 1 ? 'btn btn-sm bg-base-200' : 'btn btn-sm btn-disabled'
+                "
+              >
+                <<
+              </button>
               <button
                 @click="
                   pagInModel.pageNumber > 1 ? pagInModel.pageNumber-- : (pagInModel.pageNumber = 1)
+                "
+                :class="
+                  pagInModel.pageNumber > 1 ? 'btn btn-sm bg-base-200' : 'btn btn-sm btn-disabled'
                 "
                 class="btn btn-sm bg-base-200"
               >
@@ -325,13 +348,23 @@
                     ? pagInModel.pageNumber++
                     : (pagInModel.pageNumber = pagInModel.totalPage)
                 "
-                class="btn btn-sm bg-base-300"
+                :class="
+                  pagInModel.pageNumber < pagInModel.totalPage
+                    ? 'btn btn-sm bg-base-200'
+                    : 'btn btn-sm btn-disabled'
+                "
+                class="btn btn-sm bg-base-200"
               >
                 >
               </button>
               <button
                 @click="pagInModel.pageNumber = pagInModel.totalPage"
                 class="btn btn-sm bg-base-200"
+                :class="
+                  pagInModel.pageNumber < pagInModel.totalPage
+                    ? 'btn btn-sm bg-base-200'
+                    : 'btn btn-sm btn-disabled'
+                "
               >
                 >>
               </button>
@@ -369,6 +402,8 @@ const toastMessage = ref<string>('')
 const master = ref<OrderGNX[]>([])
 const masterFiltered = ref<OrderGNX[]>([])
 const pagingMaster = ref<OrderGNX[]>([])
+const resetFilterCount = ref(0)
+
 const shipDate = reactive<{ start: string; end: string }>({
   start: '',
   end: '',
@@ -421,10 +456,33 @@ function toggleFilter(column: string) {
 }
 const currentActive = ref<number | null>(null)
 const selectCollect: any[] = []
+function resetFilter() {
+  Object.keys(filterState).forEach((key) => {
+    filterState[key as keyof typeof filterState] = []
+  })
+  masterFiltered.value = master.value
+  pagInModel.pageNumber = 1
+  shipDate.start = ''
+  shipDate.end = ''
+  resetFilterCount.value++
+}
 function onFilterSelect(column: keyof typeof filterState, selected: string[]) {
   filterState[column] = selected
+  // console.log(shipDate)
+  let masterArr = master.value
+  if (shipDate.start && shipDate.end) {
+    const start = new Date(shipDate.start)
+    start.setHours(0, 0, 0, 0) // เริ่มต้นวัน
 
-  masterFiltered.value = master.value.filter((item) => {
+    const end = new Date(shipDate.end)
+    end.setHours(23, 59, 59, 999) // สิ้นสุดวัน
+
+    masterArr = masterArr.filter((item) => {
+      const ship = new Date(item.shipDate)
+      return ship >= start && ship <= end
+    })
+  }
+  masterFiltered.value = masterArr.filter((item) => {
     return (Object.entries(filterState) as [keyof typeof filterState, string[]][]).every(
       ([key, selectedValues]) => {
         if (!selectedValues || selectedValues.length === 0) return true
@@ -529,7 +587,7 @@ watch(pagInModel, async () => {
     pagInModel.pageNumber,
   )
   pagingMaster.value = paginatedData
-  console.log(paginatedData)
+  // console.log(paginatedData)
 })
 watch(masterFiltered, () => {
   pagInModel.totalRows = masterFiltered.value.length
@@ -543,14 +601,14 @@ watch(shipDate, () => {
     const end = new Date(shipDate.end)
     end.setHours(23, 59, 59, 999) // สิ้นสุดวัน
 
-    masterFiltered.value = master.value.filter((item) => {
+    masterFiltered.value = masterFiltered.value.filter((item) => {
       const ship = new Date(item.shipDate)
       return ship >= start && ship <= end
     })
 
     pagInModel.pageNumber = 1
   } else {
-    masterFiltered.value = master.value
+    masterFiltered.value = masterFiltered.value
     pagInModel.pageNumber = 1
   }
 })

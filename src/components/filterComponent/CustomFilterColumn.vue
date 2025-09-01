@@ -27,7 +27,7 @@
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { debounce } from 'lodash'
 
-const props = defineProps<{ data: any[] }>()
+const props = defineProps<{ data: any[]; reset: number }>()
 const emit = defineEmits(['update:data'])
 
 const data = ref<any[]>([])
@@ -43,14 +43,26 @@ const doFilter = debounce((term: string) => {
 onMounted(async () => {
   await nextTick(() => {
     data.value = [...new Set(props.data)]
-    console.log('Mounted with data:', data.value)
+    // console.log('Mounted with data:', data.value)
   })
 })
+
+watch(
+  () => props.reset,
+  () => {
+    selectedItems.value = []
+    // console.log('Reset triggered, cleared selectedItems')
+  },
+)
 watch(
   () => props.data,
   (newData) => {
     data.value = [...new Set(newData)]
-    console.log('Props data changed:', data.value)
+
+    if (!newData) {
+      selectedItems.value = []
+      // console.log('Cleared selectedItems due to empty data')
+    }
   },
   { immediate: true },
 )

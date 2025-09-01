@@ -60,14 +60,12 @@ export const useScheduleStore = defineStore('schedule', {
         const style = this.getDevideStyle(week.end)
         this.divideCache.push(style)
       })
-      console.log(this.getDivideCache(), 'divide cache computed')
     },
 
     computeAllJobStyles() {
       this.Jobs.forEach((job) => {
         this.jobStyleCache.set(job.id, this.getJobStyle(job))
       })
-      console.log('Computed')
     },
 
     getJobStyleFromCache(job: Job) {
@@ -117,7 +115,12 @@ export const useScheduleStore = defineStore('schedule', {
       const endKey = formatTimeKey(endDate)
       let bgColor = '#007bff'
       const CurrentDay = new Date()
-      if (new Date(startKey) < CurrentDay && new Date(endKey) < CurrentDay) {
+      CurrentDay.setHours(0, 0, 0, 0)
+      const dateStartCopy = new Date(startKey)
+      dateStartCopy.setHours(0, 0, 0, 0)
+      const dateEndCopy = new Date(endDate)
+      dateEndCopy.setHours(0, 0, 0, 0)
+      if (dateStartCopy < CurrentDay && dateEndCopy < CurrentDay) {
         bgColor = '#FF3333' // สีเทา
       }
       if (!timeIndexMap.has(startKey) || !timeIndexMap.has(endKey)) {
@@ -244,19 +247,19 @@ export const useScheduleStore = defineStore('schedule', {
       const BREAK_DURATION = 0
       let actWorkHour = workHour || 8
 
-      console.log(this.weeks.length, 'weeks length', this.weeks)
+      // console.log(this.weeks.length, 'weeks length', this.weeks)
 
       this.weeks.forEach((week, index) => {
         let current = new Date(week.start)
         let end = new Date(week.end)
         const startHour = 8
         const endHour = startHour + BREAK_DURATION + actWorkHour
-        console.log(current, end, 'current and end')
+        // console.log(current, end, 'current and end')
 
         // end = new Date(end.setDate(end.getDate() + 1)) // เพิ่ม 1 วันเพื่อให้ครอบคลุมถึงวันสุดท้าย
         while (current <= end) {
           let dateKey = formatTimeKey(current).split(' ')[0]
-          console.log(dateKey, 'date key for time index')
+          // console.log(dateKey, 'date key for time index')
           for (let hour = startHour; hour <= endHour; hour++) {
             for (let minute = 0; minute < 60; minute += 1) {
               let timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
