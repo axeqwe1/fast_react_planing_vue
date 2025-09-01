@@ -151,6 +151,27 @@
       </template>
     </Modal>
 
+    <!-- Modal Add Job -->
+    <Modal v-model="showModalAddJob" size="large" :closable="false" :persistent="true">
+      <template #header>
+        <h2 class="text-2xl font-bold">Add Job</h2>
+      </template>
+
+      <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+        Placeholder
+      </div>
+
+      <template #footer>
+        <div class="flex flex-row-reverse gap-2">
+          <button
+            @click="showModalAddJob = false"
+            class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+          >
+            Close
+          </button>
+        </div>
+      </template>
+    </Modal>
     <!-- <template v-if="divideLeft">
       <viewCanvas />
     </template> -->
@@ -210,6 +231,7 @@ const scheduleRowRefs = ref<ScheduleRefs>({})
 const lines = ref<Line[]>([])
 const showMenu = ref(false)
 const contextTargetJob = ref<Job | null>()
+const showModalAddJob = ref<boolean>(false)
 const { getRelativeX, getRelativeY, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 
@@ -234,6 +256,13 @@ const showContextLine = (event: MouseEvent, linename: string) => {
 
   menus.menuX = getRelativeX(containerX, event)
   menus.menuY = getRelativeY(containerY, event)
+
+  const unitWidth = containerX.offsetWidth / store.timeIndexMap.size
+  const index = Math.floor(menus.menuX / unitWidth)
+  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+  if (!timeKey) return
+
+  console.log('timeKey', timeKey)
 }
 
 const closeContextMenu = () => {
@@ -248,6 +277,12 @@ function handleActionClick(action: any) {
       console.log('found action')
       showModal.value = true
       if (showModal.value) showMenu.value = false
+      break
+    }
+    case 'addJob': {
+      console.log('found action add job')
+      showModalAddJob.value = true
+      if (showModalAddJob.value) showLineMenu.value = false
       break
     }
     default: {

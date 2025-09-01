@@ -264,7 +264,7 @@ export const useScheduleStore = defineStore('schedule', {
             for (let minute = 0; minute < 60; minute += 1) {
               let timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
               let key = `${dateKey} ${timeKey}`
-
+              if (hour === 16 && minute > 0) break // ถ้าเกินเวลาทำงาน ให้หยุด
               if (!timeIndexMap.has(key)) {
                 timeIndexMap.set(key, totalUnits++)
               }
