@@ -601,14 +601,40 @@ watch(shipDate, () => {
     const end = new Date(shipDate.end)
     end.setHours(23, 59, 59, 999) // สิ้นสุดวัน
 
-    masterFiltered.value = masterFiltered.value.filter((item) => {
+    if (
+      filterState.color.length > 0 ||
+      filterState.customer.length > 0 ||
+      filterState.orderNo.length > 0 ||
+      filterState.processNameStatus.length > 0 ||
+      filterState.programCode.length > 0 ||
+      filterState.season.length > 0 ||
+      filterState.statusName.length > 0 ||
+      filterState.style.length > 0
+    ) {
+      let masterArr = master.value
+      masterArr = masterArr.filter((item) => {
+        const ship = new Date(item.shipDate)
+        return ship >= start && ship <= end
+      })
+      masterFiltered.value = masterArr.filter((item) => {
+        return (Object.entries(filterState) as [keyof typeof filterState, string[]][]).every(
+          ([key, selectedValues]) => {
+            if (!selectedValues || selectedValues.length === 0) return true
+            return selectedValues.includes(item[key])
+          },
+        )
+      })
+      pagInModel.pageNumber = 1
+      return
+    }
+    masterFiltered.value = master.value.filter((item) => {
       const ship = new Date(item.shipDate)
       return ship >= start && ship <= end
     })
 
     pagInModel.pageNumber = 1
   } else {
-    masterFiltered.value = masterFiltered.value
+    masterFiltered.value = master.value
     pagInModel.pageNumber = 1
   }
 })
