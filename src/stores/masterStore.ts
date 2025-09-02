@@ -22,6 +22,7 @@ export const useMaster = defineStore('master', {
     masterHoliday: [] as MasterHoliday[],
     masterSam: [] as MasterSam[],
     masterSamView: [] as MasterSamView[],
+    currentFactory: 'ALL' as string,
   }),
   actions: {
     getMasterLine() {

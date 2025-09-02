@@ -278,6 +278,7 @@ export const useScheduleStore = defineStore('schedule', {
     cacheWorkDuration() {
       const WORK_HOUR = 8
       this.weeks.forEach((week) => {
+        // console.log(week.start, 'week start for cache work duration')
         const weekKey = formatTimeKey(week.start)
         let date = []
         for (let d = new Date(week.start); d <= week.end; d.setDate(d.getDate() + 1)) {

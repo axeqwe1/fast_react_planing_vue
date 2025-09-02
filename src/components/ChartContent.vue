@@ -40,7 +40,7 @@
       <div class="text-6xl font-bold">Loading...</div>
     </template>
     <template v-else>
-      <ScheduleRow :master="master" />
+      <ScheduleRow />
     </template>
   </div>
   <div class="h-screen flex justify-center items-center w-full" v-if="weeks.length < 1">
@@ -59,6 +59,7 @@ import {
   nextTick,
   type ComponentPublicInstance,
   onBeforeUnmount,
+  defineProps,
 } from 'vue'
 import ScheduleRow from './ScheduleRow.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
@@ -69,18 +70,25 @@ import { GetMasterHoliday, GetMasterPlanData } from '@/lib/api/Masterplan'
 import { debounce, template } from 'lodash'
 import LoadingComponent from '@/components/LoadingComponent.vue'
 import { useRoute } from 'vue-router'
+import { useMaster } from '@/stores/masterStore'
 
 const weeks = ref([] as { start: Date; end: Date }[])
 const weeksDay = ref(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
 const master = ref([] as MasterData[])
+const masterLine = ref<Line[]>([])
 const jobs = ref([] as Job[])
 const loadStore = useLoadingStore()
+const STORE_MASTER = useMaster()
 const { isLoading } = storeToRefs(loadStore)
 const LoadingRef = ref(isLoading)
 const headerRef = ref<HTMLElement | null>(null)
 const minHeadRef = ref<HTMLElement[]>([])
 const store = useScheduleStore()
-
+const isInitial = ref(false)
+const props = defineProps<{
+  // Define any props if needed
+  factory: string
+}>()
 const minWidthHeader = ref(store.minWidthHeader || 300)
 watch(
   () => store.minWidthHeader,
@@ -104,12 +112,18 @@ function setMinHeadRef(el: Element | ComponentPublicInstance, i: number) {
     minHeadRef.value[i] = el
   }
 }
-const fetchMasterPlan = async () => {
+const fetchMasterPlan = async (factory?: string) => {
   try {
     const res = await GetMasterPlanData()
     const data = res
+    let filterData = []
+    if (factory == 'YPT') {
+      filterData = data.filter((item: any) => item.data.line.startsWith('S-5'))
+    } else {
+      filterData = data
+    }
     // console.log(data)
-    data.forEach((items: any, index: number) => {
+    filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
         line: items.data.line,
@@ -124,16 +138,24 @@ const fetchMasterPlan = async () => {
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
+
     const filterLine = new Set(data.map((item: any) => item.data.line)) // Extract unique lines
-    const arrLine = Array.from(filterLine) // Convert Set to Array
+    let arrLine = Array.from(filterLine) // Convert Set to Array
+
     const lineMap = arrLine.map((line: any) => {
       return {
         name: line,
       } as Line
     })
-    store.setLine(lineMap) // Update the store with unique lines
-    store.setMasters(data) // Update the store with master data
+    masterLine.value = lineMap
 
+    if (factory && factory === 'YPT') {
+      store.Lines = masterLine.value.filter((line) => line.name.startsWith('S-5'))
+    } else {
+      store.Lines = masterLine.value
+    }
+    // store.setMasters(filterData)
+    // store.setLine(masterLine.value) // Update the store with unique lines
     // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)
@@ -150,11 +172,13 @@ const fetchMasterHoliday = async () => {
     console.error(err)
   }
 }
-onMounted(async () => {
+
+const initializeData = async (factory?: string) => {
   console.log('--- Mounted ---')
   loadStore.setLoading(true)
-  await fetchMasterPlan()
-  console.log('--- fetchMasterPlan done ---')
+  isInitial.value = false
+  await fetchMasterPlan(factory)
+  console.log('--- fetchMasterPlan done ---', masterLine.value)
   const CAL_WEEK = calculateWeeks(store.Jobs)
   console.log('--- calculateWeeks done ---', CAL_WEEK.length)
   store.setWeeks(CAL_WEEK) // Calculate weeks based on jobs
@@ -174,9 +198,11 @@ onMounted(async () => {
 
   // store.buildHolidayCell()
   console.log('--- buildHolidayCell done ---')
+
+  isInitial.value = true
   loadStore.setLoading(false)
   // Mock data for jobs
-})
+}
 
 function calculateWeeks(jobs: Job[]) {
   const minDate = new Date(Math.min(...jobs.map((job) => new Date(job.startDate).getTime())))
@@ -219,9 +245,26 @@ function formatDate(date: Date): string {
   return `${day}/${month}/${year}`
 }
 
+onMounted(async () => {
+  console.log(STORE_MASTER.currentFactory)
+  initializeData()
+})
+
 onBeforeUnmount(() => {
   console.log('destroyed viewCanvas')
 })
+
+watch(
+  () => STORE_MASTER.currentFactory,
+  async (newVal) => {
+    console.log('Factory changed chart:', newVal)
+    if (newVal && newVal === 'YPT') {
+      store.Lines = masterLine.value.filter((line) => line.name.startsWith('S-5'))
+    } else {
+      store.Lines = masterLine.value
+    }
+  },
+)
 </script>
 
 <style scoped></style>

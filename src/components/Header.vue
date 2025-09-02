@@ -3,7 +3,34 @@
     class="flex fixed w-full top-0 left-0 z-10 bg-white border-b-1 border-gray-200 h-[60px] items-center justify-between px-4"
   >
     <div class="flex items-center">
-      <span class="text-lg font-bold">Ai-Planing</span>
+      <div class="dropdown">
+        <div
+          tabindex="0"
+          role="button"
+          class="p-3 rounded-full hover:bg-base-300 hover:cursor-pointer text-lg font-bold"
+        >
+          Ai-Planing <span>{{ fac }}</span>
+        </div>
+        <ul
+          tabindex="0"
+          class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
+        >
+          <li @click="changeFac(item)" :key="item" v-for="item in ListFac">
+            <a>{{ item }}</a>
+          </li>
+        </ul>
+      </div>
+
+      <span
+        @click="showListJobOrder = true"
+        class="p-3 rounded-full hover:bg-base-300 cursor-pointer relative"
+      >
+        <IconFolder />
+        <span
+          class="absolute flex justify-center items-center text-xs w-2 h-3 p-2 bg-rose-600 text-white rounded-full top-2 right-1"
+          >2
+        </span>
+      </span>
     </div>
     <div class="flex items-center space-x-4">
       <button
@@ -265,11 +292,33 @@
       <div class="flex flex-row-reverse gap-2"></div>
     </template> -->
   </Modal>
+
+  <!-- Modal Add Job -->
+  <Modal v-model="showListJobOrder" size="large" :closable="false" :persistent="true">
+    <template #header>
+      <h2 class="text-2xl font-bold">Add Job</h2>
+    </template>
+
+    <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+      <!-- {{ chooseStartTime }} -->
+    </div>
+
+    <template #footer>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="showListJobOrder = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { useScheduleStore } from '@/stores/scheduleStore'
-import { IconCheck, IconZoomIn, IconZoomOut } from '@tabler/icons-vue'
+import { IconCheck, IconZoomIn, IconZoomOut, IconFolder } from '@tabler/icons-vue'
 import { onMounted, ref, watch } from 'vue'
 import Modal from './Modal.vue'
 import { GetMasterPlanData, UpdatePlan } from '@/lib/api/Masterplan'
@@ -292,14 +341,32 @@ const showSettingMasterHoliday = ref(false)
 const showSettingMasterWorkday = ref(false)
 const showSettingMasterSam = ref(false)
 const showViewOrder = ref(false)
+const showListJobOrder = ref(false)
 
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)
 const store = useScheduleStore()
 const width = ref(store.minWidthHeader || 300)
 const jobs = ref([] as Job[])
+const fac = ref<string>('ALL')
+const ListFac = ref<string[]>(['ALL', 'YPT', 'GNX'])
+
 const STORE_MASTER = useMaster()
 const user = useAuth()
+
+const emit = defineEmits<{
+  (e: 'factory', value: string): void
+  (e: 'openAddJobModal', value: boolean): void
+}>()
+
+const changeFac = (item: string) => {
+  fac.value = item
+  STORE_MASTER.currentFactory = item
+  // emit('factory', item)
+  const active = document.activeElement as HTMLElement | null
+  active?.blur()
+}
+
 const refresh = async () => {
   store.Jobs = []
   store.jobUpdate = []
@@ -392,6 +459,7 @@ onMounted(() => {
   STORE_MASTER.GetMasterSAM()
   STORE_MASTER.GetMasterHoliday()
   STORE_MASTER.getMasterSAMView()
+  emit('factory', fac.value)
 })
 </script>
 

@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-col relative">
-    <div class="flex z-0 border-b-1 border-gray-500" v-for="(line, i) in lines">
+    <div
+      class="flex z-0 border-b-1 border-gray-500"
+      v-for="(line, i) in lines"
+      :key="line.name + STORE_MASTER.currentFactory"
+    >
       <div
         class="flex flex-col w-full border-1 border-gray-400 p-2 sticky left-0 max-w-[200px] bg-slate-200 z-8"
       >
@@ -30,7 +34,7 @@
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
             v-for="(job, jIndex) in store.getJobsForLine(line.name)"
-            :key="job.line + job.name"
+            :key="job.line + job.name + STORE_MASTER.currentFactory"
             @contextmenu.prevent.stop="showContextMenu($event, job, line.name)"
             v-tooltip.top="{
               content: `
@@ -211,6 +215,7 @@ import { useTime } from '@/composables/useTime'
 import { detectDropMode } from '@/utils/detectDropMode'
 import ContextMenu from './ContextMenu.vue'
 import Modal from './Modal.vue'
+import { useMaster } from '@/stores/masterStore'
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
 const contextLineMenu = ref([{ label: 'add job', action: 'addJob' }])
@@ -233,6 +238,7 @@ const lines = ref<Line[]>([])
 const showMenu = ref(false)
 const contextTargetJob = ref<Job | null>()
 const showModalAddJob = ref<boolean>(false)
+const STORE_MASTER = useMaster()
 const { getRelativeX, getRelativeY, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 
@@ -381,7 +387,7 @@ watch(
   () => store.Lines, // ✅ ต้องใช้แบบนี้เพื่อติดตาม reactive props
   (newMaster) => {
     lines.value = newMaster
-    // console.log('Updated lines:', newMaster)
+    console.log('Updated lines:', newMaster)
   },
   { immediate: true }, // เรียกทันทีตอน mounted
 )
