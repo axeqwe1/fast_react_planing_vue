@@ -22,8 +22,8 @@
           <label for="Factory">Factory</label>
           <select class="select" v-model="model.factoryCode">
             <option disabled selected>Choose Factory</option>
-            <option v-for="line in lines" :key="line.id" :value="line.id">
-              {{ line.name }}
+            <option v-for="line in lines" :key="line.id" :value="line.factoryCode">
+              {{ line.factoryCode }}
             </option>
           </select>
         </div>
@@ -201,17 +201,14 @@ import { ref, onMounted, watch, watchEffect, reactive } from 'vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { CreateMasterLine, DeleteMasterLine } from '@/lib/api/Masterplan'
 import Modal from '../Modal.vue'
+const STORE_MASTER = useMaster()
 const isEdit = ref<boolean>(false)
 const showToast = ref<boolean>(false)
 const toastIsError = ref<boolean>(true)
 const countDownToast = ref<number>(0)
 const toastMessage = ref<string>('')
 const targetLineId = ref<number>(0)
-const lines = [
-  { id: '1', name: 'YPT' },
-  { id: '2', name: 'GNX' },
-  { id: '3', name: 'RACHABURI' },
-]
+const lines = STORE_MASTER.masterFactory
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'Delete Line', action: 'delete' }])
 
@@ -239,7 +236,7 @@ const lineType = [
   { name: 'Underwear' },
 ]
 const masterline = ref<MasterLine[]>([])
-const STORE_MASTER = useMaster()
+
 const model = reactive<MasterLine>({
   id: 0,
   lineCode: '',
@@ -262,6 +259,7 @@ const contextTargetJob = ref<Job | null>()
 const { getRelativeX, getRelativeY, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 const selectEdit = (masterline: MasterLine) => {
+  console.log(masterline)
   model.id = masterline.id
   model.lineCode = masterline.lineCode
   model.lineName = masterline.lineName
@@ -349,7 +347,7 @@ const submit = () => {
   } else if (model.lineName.trim() === '') {
     toastMessage.value = 'Line Name is required'
     showToastCountdown()
-  } else if (!lines.some((h) => h.id === model.factoryCode)) {
+  } else if (!lines.some((h) => h.factoryCode === model.factoryCode)) {
     toastMessage.value = 'Invalid Factory'
     showToastCountdown()
   } else if (!lineType.some((h) => h.name === model.lineType)) {

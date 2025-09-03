@@ -208,3 +208,25 @@ export const GetOrderGNX = async (pageNumber: number, pageSize: number) => {
     throw err
   }
 }
+
+export const GetFactoryData = async () => {
+  try {
+    const API_PATH = `api/Masterfactory/GetFactoryData`
+    const res = await apiService.get(API_PATH)
+
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const GetPlanJob = async () => {
+  try {
+    const API_PATH = `api/Masterplan/GetPlanJob`
+    const res = await apiService.get(API_PATH)
+
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}

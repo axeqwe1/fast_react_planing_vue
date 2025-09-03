@@ -40,6 +40,7 @@ export const me = async () => {
     if (err.status && err.status === 401) {
       return null
     }
+    console.error(err)
     return err // Re-throw the error for further handling if needed
   }
 }

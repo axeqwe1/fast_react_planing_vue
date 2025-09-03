@@ -10,13 +10,15 @@
       >
         <div class="flex justify-between items-center">
           <span class="font-bold">
-            0 <span class="pl-1 font-semibold"> {{ line.name }} </span>
+            <span class="pl-1 font-semibold"> {{ line.name }} </span>
           </span>
           <span class="font-bold">3 <span class="font-bold pl-1"> 0 </span></span>
         </div>
         <div class="flex justify-between items-center">
-          <span class="font-bold"> 0 <span class="pl-1 font-semibold"> YPT </span> </span>
-          <span class="font-bold">3</span>
+          <span class="font-bold">
+            <span class="pl-1 font-semibold"> {{ line.company }} </span>
+          </span>
+          <span class="font-bold text-sky-600">{{ line.manpower }}</span>
         </div>
       </div>
 
@@ -156,13 +158,13 @@
     </Modal>
 
     <!-- Modal Add Job -->
-    <Modal v-model="showModalAddJob" size="large" :closable="false" :persistent="true">
+    <Modal v-model="showModalAddJob" size="full" :closable="false" :persistent="true">
       <template #header>
         <h2 class="text-2xl font-bold">Add Job</h2>
       </template>
 
       <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        {{ chooseStartTime }}
+        <FormAddJob :defaultStartDate="chooseStartTime" />
       </div>
 
       <template #footer>
@@ -216,6 +218,7 @@ import { detectDropMode } from '@/utils/detectDropMode'
 import ContextMenu from './ContextMenu.vue'
 import Modal from './Modal.vue'
 import { useMaster } from '@/stores/masterStore'
+import FormAddJob from '@/components/form/FormAddJob.vue'
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
 const contextLineMenu = ref([{ label: 'add job', action: 'addJob' }])
@@ -278,17 +281,17 @@ const closeContextMenu = () => {
   showMenu.value = false
 }
 function handleActionClick(action: any) {
-  console.log(action)
-  console.log(contextTargetJob.value)
+  // console.log(action)
+  // console.log(contextTargetJob.value)
   switch (action) {
     case 'viewplan': {
-      console.log('found action')
+      // console.log('found action')
       showModal.value = true
       if (showModal.value) showMenu.value = false
       break
     }
     case 'addJob': {
-      console.log('found action add job')
+      // console.log('found action add job')
       showModalAddJob.value = true
       if (showModalAddJob.value) showLineMenu.value = false
       break

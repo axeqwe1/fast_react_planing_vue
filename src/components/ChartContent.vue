@@ -66,7 +66,7 @@ import { useScheduleStore } from '@/stores/scheduleStore'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import Loading from '@/components/LoadingComponent.vue'
 import { storeToRefs } from 'pinia'
-import { GetMasterHoliday, GetMasterPlanData } from '@/lib/api/Masterplan'
+import { GetMasterHoliday, GetMasterPlanData, GetPlanJob } from '@/lib/api/Masterplan'
 import { debounce, template } from 'lodash'
 import LoadingComponent from '@/components/LoadingComponent.vue'
 import { useRoute } from 'vue-router'
@@ -114,45 +114,46 @@ function setMinHeadRef(el: Element | ComponentPublicInstance, i: number) {
 }
 const fetchMasterPlan = async (factory?: string) => {
   try {
-    const res = await GetMasterPlanData()
+    // const res = await GetPlanJob()
+    const res = await GetPlanJob()
+    STORE_MASTER.planJob = res
     const data = res
     let filterData = []
-    if (factory == 'YPT') {
-      filterData = data.filter((item: any) => item.data.line.startsWith('S-5'))
-    } else {
-      filterData = data
-    }
-    // console.log(data)
+    filterData = data.filter((item: any) => item.sewStart != null)
+
+    // console.log(data.filter((item: any) => item.sewStart != null))
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
-        line: items.data.line,
-        qty: items.data.qty,
-        style: items.data.style,
-        color: items.data.color,
-        typeName: items.data.typeName,
-        name: items.data.orderNo,
-        startDate: items.data.sewAssembly,
-        endDate: items.data.sewFinish,
+        line: items.lineCode,
+        qty: items.qty,
+        style: items.style,
+        color: items.color,
+        typeName: items.type,
+        name: items.orderNo,
+        startDate: items.sewStart,
+        endDate: items.sewFinish,
         duration: items.duration,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
 
-    const filterLine = new Set(data.map((item: any) => item.data.line)) // Extract unique lines
-    let arrLine = Array.from(filterLine) // Convert Set to Array
+    // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
+    let arrLine = STORE_MASTER.masterLine // Convert Set to Array
 
     const lineMap = arrLine.map((line: any) => {
       return {
-        name: line,
+        name: line.lineName,
+        company: line.factoryCode,
+        manpower: line.capacityMP,
       } as Line
     })
     masterLine.value = lineMap
 
-    if (factory && factory === 'YPT') {
-      store.Lines = masterLine.value.filter((line) => line.name.startsWith('S-5'))
-    } else {
+    if (factory === 'ALL') {
       store.Lines = masterLine.value
+    } else {
+      store.Lines = masterLine.value.filter((line) => line.company === factory)
     }
     // store.setMasters(filterData)
     // store.setLine(masterLine.value) // Update the store with unique lines
@@ -205,8 +206,13 @@ const initializeData = async (factory?: string) => {
 }
 
 function calculateWeeks(jobs: Job[]) {
-  const minDate = new Date(Math.min(...jobs.map((job) => new Date(job.startDate).getTime())))
-  const maxDate = new Date(Math.max(...jobs.map((job) => new Date(job.endDate).getTime())))
+  let minDate = new Date(Math.min(...jobs.map((job) => new Date(job.startDate).getTime())))
+  let maxDate = new Date(Math.max(...jobs.map((job) => new Date(job.endDate).getTime())))
+  if (jobs.filter((item) => item.startDate != null).length == 0) {
+    minDate = new Date()
+    maxDate = new Date(minDate)
+    maxDate.setMonth(maxDate.getMonth() + 12)
+  }
 
   const extendedMaxDate = new Date(maxDate)
   extendedMaxDate.setMonth(extendedMaxDate.getMonth() + 5)
@@ -247,7 +253,7 @@ function formatDate(date: Date): string {
 
 onMounted(async () => {
   console.log(STORE_MASTER.currentFactory)
-  initializeData()
+  initializeData(STORE_MASTER.currentFactory)
 })
 
 onBeforeUnmount(() => {
@@ -258,10 +264,11 @@ watch(
   () => STORE_MASTER.currentFactory,
   async (newVal) => {
     console.log('Factory changed chart:', newVal)
-    if (newVal && newVal === 'YPT') {
-      store.Lines = masterLine.value.filter((line) => line.name.startsWith('S-5'))
-    } else {
+
+    if (newVal === 'ALL') {
       store.Lines = masterLine.value
+    } else {
+      store.Lines = masterLine.value.filter((line) => line.company === newVal)
     }
   },
 )

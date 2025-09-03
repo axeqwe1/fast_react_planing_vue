@@ -5,7 +5,14 @@ import { me } from '@/lib/api/auth'
 
 export const useAuth = defineStore('authen', {
   state: () => ({
-    user: { username: '', fullname: '', isActive: false, email: '' } as User,
+    user: {
+      username: '',
+      fullname: '',
+      isActive: false,
+      email: '',
+      factoryId: 0,
+      factoryName: '',
+    } as User,
     isAuthen: false as boolean,
   }),
   actions: {

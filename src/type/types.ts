@@ -14,43 +14,44 @@ export interface Job {
 export interface Line {
   name: string
   company: string
+  manpower: number
 }
 
-export interface MasterData {
-  Line: string
-  orderNo: string
-  color: string
-  typeName: string
-  style: string
-  programCode: string
-  shipDest: string
-  customer: string
-  season: string
-  manpower: number
-  sam: number
-  sewStart: Date
-  sewAssembly: Date
-  sewFinish: Date
-  shipDate: Date
-  prodCfm: Date
-  qty: number
-  cut: number
-  match: number
-  out: number
-  sew: number
-  qc: number
-  blQty: number
-  blCut: number
-  blMatch: number
-  blOut: number
-  blSew: number
-  blQc: number
-  decoration: string
-  closeOrder: string
-  planningNo: string
-  cutDate: Date
-  sewDate: Date
-}
+// export interface MasterData {
+//   Line: string
+//   orderNo: string
+//   color: string
+//   typeName: string
+//   style: string
+//   programCode: string
+//   shipDest: string
+//   customer: string
+//   season: string
+//   manpower: number
+//   sam: number
+//   sewStart: Date
+//   sewAssembly: Date
+//   sewFinish: Date
+//   shipDate: Date
+//   prodCfm: Date
+//   qty: number
+//   cut: number
+//   match: number
+//   out: number
+//   sew: number
+//   qc: number
+//   blQty: number
+//   blCut: number
+//   blMatch: number
+//   blOut: number
+//   blSew: number
+//   blQc: number
+//   decoration: string
+//   closeOrder: string
+//   planningNo: string
+//   cutDate: Date
+//   sewDate: Date
+// }
 
 export interface MasterHoliday {
   holidayDate: string
@@ -127,6 +128,8 @@ export interface User {
   fullname: string
   username: string
   email: string
+  factoryId: number
+  factoryName: string
   isActive: boolean
 }
 
@@ -170,4 +173,50 @@ export interface OrderGNX {
   qtyMatch: number
   qtyOut: number
   qtySew: number
+}
+
+export interface MasterFactory {
+  id: number
+  factoryApp: string
+  factoryCode: string
+  factoryName: string
+}
+
+export interface MasterData {
+  color: string
+  customer: string
+  division: string
+  lineCode: string
+  orderNo: string
+  processNameStatus: string
+  processStatus: number
+  programCode: string
+  progressPct: number
+  psrDate: string // ISO date string
+  qty: number
+  qtyBonding: number
+  qtyBundle: number
+  qtyCut: number
+  qtyEMB: number
+  qtyEmboss: number
+  qtyFusing: number
+  qtyHeat: number
+  qtyLaserCut: number
+  qtyMatch: number
+  qtyOut: number
+  qtyPRPad: number
+  qtyPack: number
+  qtyPrint: number
+  qtyQCSew: number
+  qtyQc: number
+  qtySew: number
+  sam: number
+  season: string
+  sewFinish: string
+  sewStart: string
+  shipDate: string // ISO date string
+  status: string
+  statusName: string
+  style: string
+  type: string
 }

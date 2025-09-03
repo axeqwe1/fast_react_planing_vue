@@ -257,6 +257,7 @@
       <div class="flex flex-row-reverse gap-2"></div>
     </template>
   </Modal>
+
   <Modal
     :modelValue="showSettingMasterSam"
     :size="'full'"
@@ -349,8 +350,9 @@ const store = useScheduleStore()
 const width = ref(store.minWidthHeader || 300)
 const jobs = ref([] as Job[])
 const fac = ref<string>('ALL')
-const ListFac = ref<string[]>(['ALL', 'YPT', 'GNX'])
+const ListFac = ref<string[]>([])
 
+const masterLine = ref<Line[]>([])
 const STORE_MASTER = useMaster()
 const user = useAuth()
 
@@ -416,13 +418,15 @@ watch(width, (newWidth) => {
     console.log('New width:', store.minWidthHeader)
   }
 })
-const fetchMasterPlan = async () => {
+const fetchMasterPlan = async (factory?: string) => {
   try {
     const res = await GetMasterPlanData()
     const data = res
-    jobs.value = []
-    console.log(res)
-    data.forEach((items: any, index: number) => {
+    let filterData = []
+
+    filterData = data
+    // console.log(data)
+    filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
         line: items.data.line,
@@ -437,21 +441,44 @@ const fetchMasterPlan = async () => {
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
+
     const filterLine = new Set(data.map((item: any) => item.data.line)) // Extract unique lines
-    const arrLine = Array.from(filterLine) // Convert Set to Array
+    let arrLine = STORE_MASTER.masterLine // Convert Set to Array
+
     const lineMap = arrLine.map((line: any) => {
       return {
-        name: line,
+        name: line.lineName,
+        company: line.factoryCode,
+        manpower: line.capacityMP,
       } as Line
     })
-    store.setLine(lineMap) // Update the store with unique lines
-    store.setMasters(data.data) // Update the store with master data
-    await store.computeAllJobStyles()
-    console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
+    masterLine.value = lineMap
+
+    if (factory === 'ALL') {
+      store.Lines = masterLine.value
+    } else {
+      store.Lines = masterLine.value.filter((line) => line.company === factory)
+    }
+    // store.setMasters(filterData)
+    // store.setLine(masterLine.value) // Update the store with unique lines
+    // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)
   }
 }
+
+watch(
+  () => STORE_MASTER.masterFactory,
+  (newVal) => {
+    ListFac.value = newVal.map((item) => item.factoryCode)
+    if (!ListFac.value.includes(fac.value)) {
+      fac.value = 'ALL'
+      STORE_MASTER.currentFactory = 'ALL'
+      store.Lines = masterLine.value
+    }
+    emit('factory', fac.value)
+  },
+)
 
 onMounted(() => {
   STORE_MASTER.getMasterLine()
@@ -459,6 +486,9 @@ onMounted(() => {
   STORE_MASTER.GetMasterSAM()
   STORE_MASTER.GetMasterHoliday()
   STORE_MASTER.getMasterSAMView()
+  STORE_MASTER.getMasterFactory()
+  // STORE_MASTER.getPlanJob()
+
   emit('factory', fac.value)
 })
 </script>
