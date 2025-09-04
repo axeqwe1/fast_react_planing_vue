@@ -128,6 +128,7 @@ const fetchMasterPlan = async (factory?: string) => {
         line: items.lineCode,
         qty: items.qty,
         style: items.style,
+        season: items.season,
         color: items.color,
         typeName: items.type,
         name: items.orderNo,
@@ -140,10 +141,10 @@ const fetchMasterPlan = async (factory?: string) => {
 
     // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
     let arrLine = STORE_MASTER.masterLine // Convert Set to Array
-
     const lineMap = arrLine.map((line: any) => {
       return {
         name: line.lineName,
+        lineCode: line.lineCode,
         company: line.factoryCode,
         manpower: line.capacityMP,
       } as Line

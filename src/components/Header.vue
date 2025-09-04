@@ -137,6 +137,21 @@
     </div>
   </div>
 
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition-opacity duration-500"
+      leave-active-class="transition-opacity duration-500"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="showToast" class="toast toast-top toast-center z-[9999]">
+        <div class="alert" :class="toastIsError ? 'alert-error text-amber-200' : 'alert-success'">
+          <span class="font-bold">{{ toastMessage }}</span>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
   <!-- Custom Modal -->
   <Modal :modelValue="showModal" :size="'large'" @update:modelValue="(val) => (showModal = val)">
     <template #header>
@@ -322,7 +337,7 @@ import { useScheduleStore } from '@/stores/scheduleStore'
 import { IconCheck, IconZoomIn, IconZoomOut, IconFolder } from '@tabler/icons-vue'
 import { onMounted, ref, watch } from 'vue'
 import Modal from './Modal.vue'
-import { GetMasterPlanData, UpdatePlan } from '@/lib/api/Masterplan'
+import { GetMasterPlanData, GetPlanJob, UpdatePlan } from '@/lib/api/Masterplan'
 import type { Job, Line } from '@/type/types'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import FormMasterLine from './form/FormMasterLine.vue'
@@ -343,6 +358,11 @@ const showSettingMasterWorkday = ref(false)
 const showSettingMasterSam = ref(false)
 const showViewOrder = ref(false)
 const showListJobOrder = ref(false)
+
+const showToast = ref<boolean>(false)
+const toastIsError = ref<boolean>(true)
+const countDownToast = ref<number>(0)
+const toastMessage = ref<string>('')
 
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)
@@ -372,13 +392,24 @@ const changeFac = (item: string) => {
 const refresh = async () => {
   store.Jobs = []
   store.jobUpdate = []
-  await fetchMasterPlan()
+  await fetchMasterPlan(STORE_MASTER.currentFactory)
 }
 const UpdatePlans = async () => {
   const res = await UpdatePlan(store.jobUpdate)
+  console.log(res)
+  if (res.status === 200) {
+    showModal.value = false
+    toastIsError.value = false
+    toastMessage.value = 'UPDATE SUCCESS'
+    showToastCountdown()
+  } else {
+    toastIsError.value = true
+    toastMessage.value = res.statusText
+    showToastCountdown()
+  }
 
   store.jobUpdate = []
-  await fetchMasterPlan()
+  await fetchMasterPlan(STORE_MASTER.currentFactory)
 
   showModal.value = false
 }
@@ -420,34 +451,39 @@ watch(width, (newWidth) => {
 })
 const fetchMasterPlan = async (factory?: string) => {
   try {
-    const res = await GetMasterPlanData()
+    // const res = await GetPlanJob()
+    jobs.value = []
+    const res = await GetPlanJob()
+    STORE_MASTER.planJob = res
+    store.jobStyleCache.clear()
     const data = res
     let filterData = []
+    filterData = data.filter((item: any) => item.sewStart != null)
 
-    filterData = data
-    // console.log(data)
+    // console.log(data.filter((item: any) => item.sewStart != null))
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
-        line: items.data.line,
-        qty: items.data.qty,
-        style: items.data.style,
-        color: items.data.color,
-        typeName: items.data.typeName,
-        name: items.data.orderNo,
-        startDate: items.data.sewAssembly,
-        endDate: items.data.sewFinish,
+        line: items.lineCode,
+        qty: items.qty,
+        style: items.style,
+        season: items.season,
+        color: items.color,
+        typeName: items.type,
+        name: items.orderNo,
+        startDate: items.sewStart,
+        endDate: items.sewFinish,
         duration: items.duration,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
 
-    const filterLine = new Set(data.map((item: any) => item.data.line)) // Extract unique lines
+    // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
     let arrLine = STORE_MASTER.masterLine // Convert Set to Array
-
     const lineMap = arrLine.map((line: any) => {
       return {
         name: line.lineName,
+        lineCode: line.lineCode,
         company: line.factoryCode,
         manpower: line.capacityMP,
       } as Line
@@ -459,12 +495,28 @@ const fetchMasterPlan = async (factory?: string) => {
     } else {
       store.Lines = masterLine.value.filter((line) => line.company === factory)
     }
+
+    store.computeAllJobStyles()
     // store.setMasters(filterData)
     // store.setLine(masterLine.value) // Update the store with unique lines
     // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
   } catch (err: any) {
     console.error('Error fetching test data:', err)
   }
+}
+let timer: any = null
+const showToastCountdown = () => {
+  countDownToast.value = 5
+  showToast.value = true
+  timer = setInterval(() => {
+    if (countDownToast.value > 0) {
+      countDownToast.value--
+    } else {
+      showToast.value = false
+      clearInterval(timer)
+      timer = null
+    }
+  }, 1000)
 }
 
 watch(
@@ -487,6 +539,7 @@ onMounted(() => {
   STORE_MASTER.GetMasterHoliday()
   STORE_MASTER.getMasterSAMView()
   STORE_MASTER.getMasterFactory()
+  STORE_MASTER.getMasterWorkDay()
   // STORE_MASTER.getPlanJob()
 
   emit('factory', fac.value)

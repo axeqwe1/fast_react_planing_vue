@@ -130,3 +130,23 @@ export function getJobStyles(
     minWidth: '1.16px',
   }
 }
+
+export function getShiftRange(curDate: Date, shiftStart: string, baseMinutes: number) {
+  // curDate: Date เช่น new Date("2025-09-04T00:00:00")
+  const [hh, mm, ss] = shiftStart.split(':').map(Number)
+
+  const start = new Date(curDate)
+  start.setHours(hh, mm || 0, ss || 0, 0)
+  console.log('Parse', curDate)
+  const end = new Date(start)
+  end.setMinutes(start.getMinutes() + baseMinutes)
+
+  return { start, end }
+}
+
+// export function timeStringToDate(date: Date, timeString: string): Date {
+//   const result = new Date(date)
+//   const [h, m, s] = timeString.split(':').map(Number)
+//   result.setHours(h, m, s)
+//   return result
+// }

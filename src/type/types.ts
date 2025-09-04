@@ -3,6 +3,7 @@ export interface Job {
   name: string
   qty: number
   style: string
+  season: string
   color: string
   typeName: string
   startDate: string
@@ -13,6 +14,7 @@ export interface Job {
 
 export interface Line {
   name: string
+  lineCode: string
   company: string
   manpower: number
 }
@@ -219,4 +221,12 @@ export interface MasterData {
   statusName: string
   style: string
   type: string
+  factoryCode: string
+}
+
+export interface MasterWorkDay {
+  workDate: string
+  isWorkday: boolean
+  workHours: number
+  holidayName: string
 }

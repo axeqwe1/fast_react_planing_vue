@@ -18,11 +18,13 @@ watch(
 )
 onMounted(async () => {
   const res = await me()
+  console.log(res)
   if (res == null) {
     user.isAuthen = false
   }
   if (res && res.status == 200) {
     user.isAuthen = true
+    user.user = res.data.user
   } else {
     user.isAuthen = false
   }

@@ -1,6 +1,6 @@
 import type { Job, MasterData, MasterEfficiency, MasterLine, MasterHoliday } from '@/type/types'
 import { apiService } from '../axios'
-import type { CreateMasterSam, CreateMasterWorkDay } from '@/type/requestDTO'
+import type { CreateMasterSam, CreateMasterWorkDay, UpdatePlanJob } from '@/type/requestDTO'
 
 export const GetMasterPlanData = async () => {
   try {
@@ -24,11 +24,12 @@ export const GetMasterHoliday = async () => {
   }
 }
 
-export const UpdatePlan = async (data: Job[]) => {
+export const UpdatePlan = async (data: UpdatePlanJob[]) => {
   try {
     const API_PATH = 'api/Masterplan/UpdatePlan'
     const res = await apiService.post(`${API_PATH}`, data)
     console.log(res)
+    return res
   } catch (err: any) {
     console.error(err)
     throw err
@@ -131,6 +132,16 @@ export const GetWorkDay = async (data: string[]) => {
   try {
     const API_PATH = `api/Masterworkday/GetWorkdayData`
     const res = await apiService.post(API_PATH, data)
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const GetWorkDayAll = async () => {
+  try {
+    const API_PATH = `api/Masterworkday/GetWorkdayDataAll`
+    const res = await apiService.get(API_PATH)
     return res.data
   } catch (err: any) {
     throw err

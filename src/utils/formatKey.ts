@@ -12,6 +12,14 @@ export function formatDateLocal(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+export function formatLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  )
+}
+
 export const parseDate = (dateStr: string) => {
   const [year, month, day] = dateStr.split('-').map(Number)
   return new Date(year, month - 1, day) // month -1 เพราะ JS เริ่ม 0=Jan

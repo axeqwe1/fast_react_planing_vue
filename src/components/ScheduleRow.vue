@@ -12,13 +12,37 @@
           <span class="font-bold">
             <span class="pl-1 font-semibold"> {{ line.name }} </span>
           </span>
-          <span class="font-bold">3 <span class="font-bold pl-1"> 0 </span></span>
+          <span class="font-bold"
+            >EFF :
+            <span
+              class="font-bold pl-1"
+              :class="
+                (() => {
+                  const eff =
+                    STORE_MASTER.masterEfficiency.find((item) => item.lineCode == line.lineCode)
+                      ?.efficiencyPct ?? 0
+
+                  if (eff === 0) return 'bg-black text-white'
+                  if (eff < 35) return 'bg-red-500 text-amber-400'
+                  if (eff < 70) return 'bg-amber-400 text-blue-600'
+                  return 'bg-green-500 text-black'
+                })()
+              "
+            >
+              {{
+                STORE_MASTER.masterEfficiency.find((item) => item.lineCode == line.lineCode)
+                  ?.efficiencyPct
+              }}%
+            </span></span
+          >
         </div>
         <div class="flex justify-between items-center">
           <span class="font-bold">
             <span class="pl-1 font-semibold"> {{ line.company }} </span>
           </span>
-          <span class="font-bold text-sky-600">{{ line.manpower }}</span>
+          <span class="font-bold"
+            >SAM : <span class="font-bold text-sky-600"> {{ line.manpower }}</span></span
+          >
         </div>
       </div>
 
@@ -31,7 +55,7 @@
         "
         @dragover="onDragOver(line.name, $event)"
         @drop="(e) => onDrop(e, line.name)"
-        @contextmenu.prevent="showContextLine($event, line.name)"
+        @contextmenu.prevent="showContextLine($event, line.name, line.company)"
       >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
@@ -164,7 +188,7 @@
       </template>
 
       <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        <FormAddJob :defaultStartDate="chooseStartTime" />
+        <FormAddJob :defaultStartDate="chooseStartTime" :factory-code="targetFactoryCode" />
       </div>
 
       <template #footer>
@@ -242,6 +266,7 @@ const showMenu = ref(false)
 const contextTargetJob = ref<Job | null>()
 const showModalAddJob = ref<boolean>(false)
 const STORE_MASTER = useMaster()
+const targetFactoryCode = ref<string>()
 const { getRelativeX, getRelativeY, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 
@@ -253,17 +278,18 @@ const showContextMenu = (event: MouseEvent, job: Job, linename: string) => {
   event.preventDefault()
   showMenu.value = true
   contextTargetJob.value = job
+
   menus.menuX = getRelativeX(containerX, event)
   menus.menuY = getRelativeY(containerY, event)
 }
 
-const showContextLine = (event: MouseEvent, linename: string) => {
+const showContextLine = (event: MouseEvent, linename: string, factoryCode: string) => {
   console.log(linename)
   const containerX = draggableEl.value[linename]
   const containerY = (document.querySelector('.containerY') as HTMLElement) || null
   event.preventDefault()
   showLineMenu.value = true
-
+  targetFactoryCode.value = factoryCode
   menus.menuX = getRelativeX(containerX, event)
   menus.menuY = getRelativeY(containerY, event)
 

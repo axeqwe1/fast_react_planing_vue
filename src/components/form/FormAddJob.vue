@@ -1,10 +1,34 @@
 <template>
   <div class="w-full h-full flex flex-row form-master-line">
     <div class="flex-1/3 flex flex-col justify-start gap-2">
-      <div class="w-100">
-        <div class="flex flex-row items-center gap-2 w-full"></div>
+      <div class="w-60">
+        <div class="flex flex-col items-start gap-2 w-full">
+          <label for="HolidayDate">START DATE</label>
+          <input type="date" class="input" />
+        </div>
       </div>
       <div class="flex flex-row gap-3 flex-wrap">
+        <div class="w-60">
+          <label for="HolidayDate">OrderNo</label>
+          <input type="text" class="input" />
+        </div>
+        <div class="w-60">
+          <label for="HolidayDate">Line</label>
+          <input type="text" class="input" />
+        </div>
+        <div class="w-60">
+          <label for="HolidayDate">Style</label>
+          <input type="text" class="input" />
+        </div>
+        <div class="w-60">
+          <label for="HolidayDate">Color</label>
+          <input type="text" class="input" />
+        </div>
+        <div class="w-60">
+          <label for="HolidayDate">Season</label>
+          <input type="text" class="input" />
+        </div>
+
         <!-- <div class="w-60">
           <label for="LineCode">Line Code</label>
           <input v-model="model.lineCode" type="text" placeholder="LineCode" class="input" />
@@ -442,9 +466,14 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import CustomFilterColumn from '@/components/filterComponent/CustomFilterColumn.vue'
 import Modal from '../Modal.vue'
 import { defaultDocument, useVirtualList } from '@vueuse/core'
-import type { MasterData } from '@/type/types'
+import type { Job, MasterData } from '@/type/types'
 import { GetPlanJob } from '@/lib/api/Masterplan'
 import { useMaster } from '@/stores/masterStore'
+import { getShiftRange } from '@/utils/utility'
+import { formatDateLocal, formatLocal } from '@/utils/formatKey'
+import { useCaltime } from '@/composables/useCaltime'
+
+const { calTime } = useCaltime()
 
 const showModal = ref<boolean>()
 const showToast = ref<boolean>(false)
@@ -456,6 +485,23 @@ const master = ref<MasterData[]>([])
 const masterFiltered = ref<MasterData[]>([])
 const pagingMaster = ref<MasterData[]>([])
 const openFilter = ref<string | null>(null) // 'orderNo', 'style', null
+
+const modelData = reactive<{
+  startDate: string
+  Line: string
+  Order: string
+  Color: string
+  Style: string
+  Season: string
+}>({
+  startDate: '',
+  Line: '',
+  Order: '',
+  Color: '',
+  Style: '',
+  Season: '',
+})
+
 const pagInModel = reactive<{
   pageNumber: number
   pageSize: number
@@ -478,7 +524,7 @@ const filterState = {
   customer: [] as string[],
   programCode: [] as string[],
 }
-const props = defineProps<{ defaultStartDate?: string }>()
+const props = defineProps<{ defaultStartDate?: string; factoryCode?: string }>()
 const { list, containerProps, wrapperProps } = useVirtualList(
   pagingMaster, // ข้อมูล array ที่กรองแล้ว
   {
@@ -489,6 +535,12 @@ const { list, containerProps, wrapperProps } = useVirtualList(
 const STORE_MASTER = useMaster()
 const submit = async () => {}
 const reset = async () => {}
+function selectData(master: MasterData) {
+  modelData.Color = master.color
+  modelData.Order = master.orderNo
+  modelData.Style = master.style
+  modelData.Season = master.season
+}
 function toggleFilter(column: string) {
   if (openFilter.value === column) {
     openFilter.value = null // คลิกซ้ำ → ปิด
@@ -523,20 +575,17 @@ function onFilterSelect(column: keyof typeof filterState, selected: string[]) {
 const fetchData = async () => {
   const data = STORE_MASTER.planJob.filter(
     (item) =>
-      item.processNameStatus == 'Waiting' && (item.sewStart == null || item.lineCode == null),
+      item.processNameStatus == 'Waiting' &&
+      (STORE_MASTER.currentFactory != 'ALL'
+        ? item.factoryCode == STORE_MASTER.currentFactory
+        : item.factoryCode) &&
+      (item.sewStart == null || item.lineCode == null),
   )
   console.log(data)
   // pagInModel.totalRows = res.data.totalRecords
   // pagInModel.totalPage = res.data.totalPages
   master.value = data
   masterFiltered.value = data
-  pagInModel.totalRows = masterFiltered.value.length
-  pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
-  pagingMaster.value = paginateArray(
-    masterFiltered.value,
-    pagInModel.pageSize,
-    pagInModel.pageNumber,
-  )
 }
 function paginateArray(array: MasterData[], pageSize: number, pageNumber: number) {
   const startIndex = (pageNumber - 1) * pageSize
@@ -558,9 +607,20 @@ function handleClickOutside(e: PointerEvent) {
     openFilter.value = null
   }
 }
-onMounted(() => {
-  fetchData()
-  console.log(props.defaultStartDate)
+onMounted(async () => {
+  await fetchData()
+
+  masterFiltered.value = masterFiltered.value.filter(
+    (item) => item.factoryCode == props.factoryCode,
+  )
+
+  pagInModel.totalRows = masterFiltered.value.length
+  pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
+  pagingMaster.value = paginateArray(
+    masterFiltered.value,
+    pagInModel.pageSize,
+    pagInModel.pageNumber,
+  )
 })
 watch(pagInModel, async () => {
   pagInModel.totalRows = masterFiltered.value.length
@@ -583,6 +643,16 @@ watch(
     console.log(newVal)
   },
 )
+watch(
+  () => props.factoryCode,
+  (newVal) => {
+    masterFiltered.value = masterFiltered.value.filter((item) => item.factoryCode == newVal)
+  },
+)
+
+onMounted(() => {
+  // calTime(props.defaultStartDate)
+})
 </script>
 
 <style scoped></style>

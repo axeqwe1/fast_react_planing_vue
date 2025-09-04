@@ -1,11 +1,14 @@
+import { useCaltime } from '@/composables/useCaltime'
 import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
+import type { UpdatePlanJob } from '@/type/requestDTO'
 import type { Job, Line, MasterData } from '@/type/types'
 import { isSameDay } from '@/utils/detectDropMode'
 import { formatTimeKey } from '@/utils/formatKey'
 import { get } from 'lodash'
 import { time } from 'motion-v'
 import { defineStore } from 'pinia'
+import { useAuth } from './userStore'
 
 export const useScheduleStore = defineStore('schedule', {
   state: () => ({
@@ -32,7 +35,7 @@ export const useScheduleStore = defineStore('schedule', {
       style: Record<string, any>
     }>,
     holidayCellReady: false,
-    jobUpdate: [] as Job[],
+    jobUpdate: [] as UpdatePlanJob[],
     dayInWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     isInitialized: false,
     initializationPromise: null as Promise<void> | null,
@@ -336,6 +339,7 @@ export const useScheduleStore = defineStore('schedule', {
     ) {
       let job = findJobById(jobId)
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
+      const { calTime } = useCaltime()
       if (!job) return
 
       // // 1. ปรับวันหยุดถ้า mode = skip หรือ newStart ตกวันหยุด
@@ -343,7 +347,11 @@ export const useScheduleStore = defineStore('schedule', {
       //   newStart = this.getNextWorkingDay(newStart)
       // }
 
-      let newEnd = addWorkingDuration(newStart, jobDuration)
+      if (this.isHoliday(newStart)) {
+        newStart.setDate(newStart.getDate() + 1)
+        newStart.setHours(8, 0, 0, 0)
+      }
+      let newEnd = calTime(newStart, job.name, job.color, targetLineId)
       // let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
         case 'insert':
@@ -370,11 +378,13 @@ export const useScheduleStore = defineStore('schedule', {
     ) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
-
+      const { calTime } = useCaltime()
+      const job = findJobById(movingJobId)
+      console.warn('insertttt and pushhhh')
       // normalize start ตามเวลาทำงาน
-      const startAdj = adjustToWorkingHours(start)
+      const startAdj = start
       // คำนวณ end ตาม duration ของ job
-      const endAdj = addWorkingDuration(startAdj, duration)
+      const endAdj = calTime(start, job.name, job.color, lineId)
 
       const startDate = formatTimeKey(this.getNextWorkingDate(new Date(startAdj)))
       const endDate = formatTimeKey(endAdj)
@@ -386,8 +396,9 @@ export const useScheduleStore = defineStore('schedule', {
       this.moveAndShift(lineId, movingJobId, startDate, endDate)
     },
     moveAndShift(lineId: string, movingJobId: number, pivotStart: string, pivotEnd: string) {
+      const { calTime } = useCaltime()
       let pivotStartDate = toDate(pivotStart)
-
+      console.log(lineId)
       let pivotEndDate = toDate(pivotEnd)
       console.log(pivotStartDate, 'AAAAAAAAAAAAAA', pivotEndDate)
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
@@ -412,7 +423,8 @@ export const useScheduleStore = defineStore('schedule', {
             newStart,
             this.Jobs.filter((i) => i.id === movingJobId).map((i) => i.duration)[0],
           )
-          newEnd = this.getNextWorkingDate(newEnd) // ✅ normalize
+          const currentJob = this.Jobs.find((item) => item.id == movingJobId)
+          newEnd = calTime(newStart, currentJob!.name, currentJob!.color, lineId) // ✅ normalize
           // this.jobUpdate.push(j)
           pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
           pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
@@ -436,7 +448,7 @@ export const useScheduleStore = defineStore('schedule', {
           if (offset > 0) {
             let newStart = new Date(jobStart.getTime() + offset)
             // newStart = this.getNextWorkingDate(newStart, 8)
-            let newEnd = addWorkingDuration(newStart, job.duration)
+            let newEnd = calTime(newStart, job.name, job.color, lineId)
             // newEnd = this.getNextWorkingDate(newEnd, 8)
             console.log('Chainnnnnnpushhhhh#######################')
             this.updateJob(job.id, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
@@ -460,27 +472,27 @@ export const useScheduleStore = defineStore('schedule', {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
       // update job ที่ลากมาก่อน
-      const startAdj = adjustToWorkingHours(start)
-      const endAdj = addWorkingDuration(startAdj, duration)
+      // const startAdj = adjustToWorkingHours(start)
+      // const endAdj = addWorkingDuration(startAdj, duration)
 
       // ปรับเวลาให้ตรงกับช่วงเวลาที่มีใน timeIndexMap
-      let startDate = formatTimeKey(startAdj)
-      let endDate = formatTimeKey(endAdj)
+      let startDate = formatTimeKey(start)
+      let endDate = formatTimeKey(end)
       // this.updateJob(movingJobId, lineId, startDate, endDate)
       const index = getInsertIndexInLine(container, e)
       const timeKey = [...this.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
       if (!timeKey) return
       console.log(timeKey, 'timeIndex compare start', startDate, 'end', endDate)
 
-      const newStart = new Date(timeKey)
-      const dur = this.getDuration(newStart, endDate)
-      const newEnd = new Date(newStart.getTime() + dur)
+      // const newStart = new Date(timeKey)
+      // const dur = this.getDuration(newStart, endDate)
+      // const newEnd = new Date(newStart.getTime() + dur)
 
-      console.log(newStart, newEnd)
+      console.log(startDate, endDate)
 
-      this.updateJob(movingJobId, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
+      this.updateJob(movingJobId, lineId, startDate, endDate)
 
-      this.moveAndShift(lineId, movingJobId, formatTimeKey(newStart), formatTimeKey(newEnd))
+      this.moveAndShift(lineId, movingJobId, startDate, endDate)
     },
     // Helper Functuion
     isHoliday(date: Date): boolean {
@@ -497,28 +509,28 @@ export const useScheduleStore = defineStore('schedule', {
     },
     updateJob(jobId: number, lineId: string, start: string, end: string) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
+      const { user } = useAuth()
       let job = findJobById(jobId)
       job.line = lineId
-      const holidayStart = this.getNextWorkingDate(new Date(start), 8)
-      const holidayEnd = this.getNextWorkingDate(addWorkingDuration(holidayStart, job.duration), 8)
 
-      if (holidayStart == holidayEnd) {
-        console.log('trigger')
-        holidayEnd.setDate(holidayEnd.getDate() + 1)
+      job.startDate = start
+      job.endDate = end
+
+      console.log(start, ' ', end)
+      const updateData: UpdatePlanJob = {
+        ...job,
+        updateBy: user.fullname,
+        updateDate: new Date(),
       }
-
-      job.startDate = formatTimeKey(holidayStart)
-      job.endDate = formatTimeKey(holidayEnd)
-
       // ตรวจสอบว่ามี job.id ซ้ำใน jobUpdate หรือไม่
       const existingIndex = this.jobUpdate.findIndex((existingJob) => existingJob.id === jobId)
       console.log(existingIndex)
       if (existingIndex !== -1) {
         // ถ้าเจอ job.id ซ้ำ ให้แทนที่ด้วยข้อมูลใหม่
-        this.jobUpdate[existingIndex] = job
+        this.jobUpdate[existingIndex] = updateData
       } else {
         // ถ้าไม่ซ้ำ ให้เพิ่มเข้าไป
-        this.jobUpdate.push(job)
+        this.jobUpdate.push(updateData)
       }
       // const startDate = new Date(start)
       // const endDate = new Date(end)
@@ -546,7 +558,7 @@ export const useScheduleStore = defineStore('schedule', {
       //   isSkipStart = false
       // }
 
-      console.log(this.isHoliday(new Date(end)), 'end is ', end)
+      // console.log(this.isHoliday(new Date(end)), 'end is ', end)
       console.log(this.jobUpdate)
     },
 
