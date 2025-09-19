@@ -341,7 +341,7 @@ export const useScheduleStore = defineStore('schedule', {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { calTime } = useCaltime()
       if (!job) return
-
+      console.warn(targetLineId)
       // // 1. ปรับวันหยุดถ้า mode = skip หรือ newStart ตกวันหยุด
       // if (dropMode === 'skip' || this.isHoliday(newStart)) {
       //   newStart = this.getNextWorkingDay(newStart)
@@ -351,7 +351,7 @@ export const useScheduleStore = defineStore('schedule', {
         newStart.setDate(newStart.getDate() + 1)
         newStart.setHours(8, 0, 0, 0)
       }
-      let newEnd = calTime(newStart, job.name, job.color, targetLineId)
+      let newEnd = calTime(newStart, job.name, job.color, targetLineId) as Date
       // let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
         case 'insert':
@@ -384,7 +384,7 @@ export const useScheduleStore = defineStore('schedule', {
       // normalize start ตามเวลาทำงาน
       const startAdj = start
       // คำนวณ end ตาม duration ของ job
-      const endAdj = calTime(start, job.name, job.color, lineId)
+      const endAdj = calTime(start, job.name, job.color, lineId) as Date
 
       const startDate = formatTimeKey(this.getNextWorkingDate(new Date(startAdj)))
       const endDate = formatTimeKey(endAdj)
@@ -424,7 +424,7 @@ export const useScheduleStore = defineStore('schedule', {
             this.Jobs.filter((i) => i.id === movingJobId).map((i) => i.duration)[0],
           )
           const currentJob = this.Jobs.find((item) => item.id == movingJobId)
-          newEnd = calTime(newStart, currentJob!.name, currentJob!.color, lineId) // ✅ normalize
+          newEnd = calTime(newStart, currentJob!.name, currentJob!.color, lineId) as Date // ✅ normalize
           // this.jobUpdate.push(j)
           pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
           pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
@@ -448,7 +448,7 @@ export const useScheduleStore = defineStore('schedule', {
           if (offset > 0) {
             let newStart = new Date(jobStart.getTime() + offset)
             // newStart = this.getNextWorkingDate(newStart, 8)
-            let newEnd = calTime(newStart, job.name, job.color, lineId)
+            let newEnd = calTime(newStart, job.name, job.color, lineId) as Date
             // newEnd = this.getNextWorkingDate(newEnd, 8)
             console.log('Chainnnnnnpushhhhh#######################')
             this.updateJob(job.id, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
@@ -516,7 +516,7 @@ export const useScheduleStore = defineStore('schedule', {
       job.startDate = start
       job.endDate = end
 
-      console.log(start, ' ', end)
+      console.log(start, '', end)
       const updateData: UpdatePlanJob = {
         ...job,
         updateBy: user.fullname,

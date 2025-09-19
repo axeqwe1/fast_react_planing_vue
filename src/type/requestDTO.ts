@@ -25,3 +25,22 @@ export interface UpdatePlanJob {
   updateBy: string
   updateDate: Date
 }
+
+export interface AddPlanJob {
+  startDate: string
+  endDate: string
+  LineCode: string
+  OrderNo: string
+  Style: string
+  Color: string
+  Season: string
+  CreateBy: string
+}
+
+export interface GetPlanScheduleRequestDTO {
+  Order: string
+  Color: string
+  Line: string
+  StartDate: string
+  Respect: number
+}

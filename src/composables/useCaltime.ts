@@ -4,9 +4,9 @@ import { getShiftRange } from '@/utils/utility'
 
 export function useCaltime() {
   const STORE_MASTER = useMaster()
-  function calTime(start: Date, orderNo: string, color: string, lineName: string) {
+  function calTime(start: Date, orderNo: string, color: string, lineCode: string) {
     // param startDate orderNo color lineCode
-    const Line = STORE_MASTER.masterLine.filter((item) => item.lineName === lineName)[0]
+    const Line = STORE_MASTER.masterLine.filter((item) => item.lineCode === lineCode)[0]
     const Manpower = Line.capacityMP
     const Efficiency = STORE_MASTER.masterEfficiency
       .filter((item) => item.lineCode == Line.lineCode)
@@ -58,8 +58,8 @@ export function useCaltime() {
       })[0]
 
       if (WorkDay) {
-        console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
-        console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
+        // console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
+        // console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
         defaultWorkHour = WorkDay.workHours
         isWorkDay = WorkDay.isWorkday
       } else {
@@ -84,7 +84,7 @@ export function useCaltime() {
       const workMinute = defaultWorkHour * MINUTE_PER_HOUR
       let LastEndDateTime = currentDate
       if (workMinute <= 0 && !isWorkDay) {
-        console.warn('Not found', WorkDay.workDate)
+        // console.warn('Not found', WorkDay.workDate)
         currentDate.setDate(currentDate.getDate() + 1)
         continue
       }
@@ -95,7 +95,7 @@ export function useCaltime() {
       // ถ้าวันใหม่ต้อง reset กลับไป shift.start
       if (remainMinute > 0 && currentDate.toDateString() !== startDate.toDateString()) {
         LastEndDateTime = shift.start
-        console.warn('is change')
+        // console.warn('is change')
       }
 
       if (LastEndDateTime.getTime() > shift.start.getTime()) {
@@ -107,7 +107,7 @@ export function useCaltime() {
 
       if (actualStart >= shift.end) {
         // ข้ามไปวันถัดไป
-        console.warn('Jump Day')
+        // console.warn('Jump Day')
         currentDate.setDate(currentDate.getDate() + 1)
         continue
       }
@@ -131,7 +131,7 @@ export function useCaltime() {
       if (AllocatedWorkMin === CAP_MIN_TODAY) {
         // ถ้าเต็มวัน → จบตรงเวลาเลิกงานพอดี
         actualEnd = shift.end
-        console.warn('shift end')
+        // console.warn('shift end')
       } else {
         // ถ้าไม่เต็มวัน → คำนวณตามนาทีจริง
         const CLOCK_MIN_USED = MP_EFF_FACTOR > 0 ? AllocatedWorkMin / MP_EFF_FACTOR : 0
@@ -143,12 +143,22 @@ export function useCaltime() {
       remainMinute = remainMinute - AllocatedWorkMin
       LastEndDateTime = actualEnd
 
+      const producedQty = AllocatedWorkMin / Sam
+
       CUMULATIVE_QTY += Math.round(AllocatedWorkMin / Sam)
       const QtyRemainAfterThisDay = Math.round(qty - CUMULATIVE_QTY)
-      console.log('Actual START IS : ', actualStart)
-      console.log('Actual End IS : ', LastEndDateTime)
-      console.log('Cumulative', CUMULATIVE_QTY)
-      console.log('QtyRemainAfterThisDay', QtyRemainAfterThisDay)
+      // console.log('Actual START IS : ', actualStart)
+      // console.log('Actual End IS : ', LastEndDateTime)
+      // console.log('Cumulative', CUMULATIVE_QTY)
+      // console.log('QtyRemainAfterThisDay', QtyRemainAfterThisDay)
+      // console.table({
+      //   date: formatDateLocal(currentDate),
+      //   remainMinute,
+      //   CAP_MIN_TODAY,
+      //   AllocatedWorkMin,
+      //   producedQty: AllocatedWorkMin / Sam,
+      //   CUMULATIVE_QTY,
+      // })
       endDate = LastEndDateTime
       currentDate.setDate(currentDate.getDate() + 1)
     }

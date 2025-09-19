@@ -4,8 +4,8 @@
       <div
         class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
       >
-        <span>Capacity = 60,000 / hour</span>
-        <span>WIP. 0</span>
+        <span>{{ posDate }}</span>
+        <span>60 x 8 x {{ posManpower }} = {{ posManpower ? 60 * 8 * posManpower : '0' }}</span>
       </div>
 
       <div class="flex week-header" ref="headerRef">
@@ -40,7 +40,10 @@
       <div class="text-6xl font-bold">Loading...</div>
     </template>
     <template v-else>
-      <ScheduleRow />
+      <ScheduleRow
+        @update-position-date="getPositionDate"
+        @update-position-manpower="getPositionManpower"
+      />
     </template>
   </div>
   <div class="h-screen flex justify-center items-center w-full" v-if="weeks.length < 1">
@@ -85,6 +88,8 @@ const headerRef = ref<HTMLElement | null>(null)
 const minHeadRef = ref<HTMLElement[]>([])
 const store = useScheduleStore()
 const isInitial = ref(false)
+const posDate = ref<string>()
+const posManpower = ref<number>()
 const props = defineProps<{
   // Define any props if needed
   factory: string
@@ -252,6 +257,12 @@ function formatDate(date: Date): string {
   return `${day}/${month}/${year}`
 }
 
+function getPositionDate(position: string) {
+  posDate.value = position
+}
+function getPositionManpower(manpower: number) {
+  posManpower.value = manpower
+}
 onMounted(async () => {
   console.log(STORE_MASTER.currentFactory)
   initializeData(STORE_MASTER.currentFactory)

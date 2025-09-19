@@ -27,8 +27,8 @@
       >
         <IconFolder />
         <span
-          class="absolute flex justify-center items-center text-xs w-2 h-3 p-2 bg-rose-600 text-white rounded-full top-2 right-1"
-          >2
+          class="absolute flex justify-center items-center text-xs font-bold w-3 h-3 p-3 bg-rose-600 text-amber-300 rounded-full top-0 right-0"
+          >{{ totalJob > 99 ? '99+' : totalJob }}
         </span>
       </span>
     </div>
@@ -310,13 +310,14 @@
   </Modal>
 
   <!-- Modal Add Job -->
-  <Modal v-model="showListJobOrder" size="large" :closable="false" :persistent="true">
+  <Modal v-model="showListJobOrder" size="full" :closable="false" :persistent="true">
     <template #header>
       <h2 class="text-2xl font-bold">Add Job</h2>
     </template>
 
-    <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+    <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 h-full">
       <!-- {{ chooseStartTime }} -->
+      <FormAddJob />
     </div>
 
     <template #footer>
@@ -349,6 +350,7 @@ import FormMasterSam from './form/FormMasterSam.vue'
 import { logout } from '@/lib/api/auth'
 import { useAuth } from '@/stores/userStore'
 import ViewOrderDetails from './details/ViewOrderDetails.vue'
+import FormAddJob from './form/FormAddJob.vue'
 const { setLoading } = useLoadingStore()
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)
@@ -375,6 +377,8 @@ const ListFac = ref<string[]>([])
 const masterLine = ref<Line[]>([])
 const STORE_MASTER = useMaster()
 const user = useAuth()
+
+const totalJob = ref<number>(0)
 
 const emit = defineEmits<{
   (e: 'factory', value: string): void
@@ -528,7 +532,24 @@ watch(
       STORE_MASTER.currentFactory = 'ALL'
       store.Lines = masterLine.value
     }
+
     emit('factory', fac.value)
+  },
+)
+watch(
+  () => [STORE_MASTER.currentFactory, STORE_MASTER.planJob],
+  () => {
+    const data = STORE_MASTER.planJob.filter(
+      (item) =>
+        item.processNameStatus == 'Waiting' && (item.sewStart == null || item.lineCode == null),
+    )
+    if (STORE_MASTER.currentFactory === 'ALL') {
+      totalJob.value = data.length
+    } else {
+      totalJob.value = data.filter(
+        (item) => item.factoryCode === STORE_MASTER.currentFactory,
+      ).length
+    }
   },
 )
 

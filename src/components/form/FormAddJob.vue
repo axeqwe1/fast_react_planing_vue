@@ -1,69 +1,57 @@
 <template>
   <div class="w-full h-full flex flex-row form-master-line">
     <div class="flex-1/3 flex flex-col justify-start gap-2">
-      <div class="w-60">
-        <div class="flex flex-col items-start gap-2 w-full">
-          <label for="HolidayDate">START DATE</label>
-          <input type="date" class="input" />
+      <div class="flex flex-row items-center gap-2">
+        <div class="w-40">
+          <label for="HolidayDate">Line</label>
+          <select class="select" v-model="modelData.Line">
+            <option disabled selected>Pick Line</option>
+            <option v-for="line in listLine" :value="line.lineCode">
+              {{ line.lineName }} ({{ line.factoryCode }})
+            </option>
+          </select>
+        </div>
+        <div class="w-50">
+          <label for="startDate">START DATE</label>
+          <input v-model="modelData.startDate" type="datetime-local" class="input" />
         </div>
       </div>
+
       <div class="flex flex-row gap-3 flex-wrap">
         <div class="w-60">
-          <label for="HolidayDate">OrderNo</label>
-          <input type="text" class="input" />
-        </div>
-        <div class="w-60">
-          <label for="HolidayDate">Line</label>
-          <input type="text" class="input" />
-        </div>
-        <div class="w-60">
-          <label for="HolidayDate">Style</label>
-          <input type="text" class="input" />
-        </div>
-        <div class="w-60">
-          <label for="HolidayDate">Color</label>
-          <input type="text" class="input" />
-        </div>
-        <div class="w-60">
-          <label for="HolidayDate">Season</label>
-          <input type="text" class="input" />
+          <label for="OrderNo">OrderNo</label>
+          <input v-model="modelData.Order" type="text" class="input" placeholder="OrderNO" />
         </div>
 
-        <!-- <div class="w-60">
-          <label for="LineCode">Line Code</label>
-          <input v-model="model.lineCode" type="text" placeholder="LineCode" class="input" />
-        </div> -->
+        <div class="w-60">
+          <label for="Style">Style</label>
+          <input v-model="modelData.Style" type="text" class="input" placeholder="Style" />
+        </div>
+        <div class="w-60">
+          <label for="Color">Color</label>
+          <input v-model="modelData.Color" type="text" class="input" placeholder="Color" />
+        </div>
+        <div class="w-60">
+          <label for="Season">Season</label>
+          <input v-model="modelData.Season" type="text" class="input" placeholder="Season" />
+        </div>
 
-        <!-- <div class="w-60 flex flex-col justify-start">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <span>Active</span>
-            <input
-              type="checkbox"
-              id="checkbox"
-              v-model="model.status"
-              class="toggle toggle-success"
-            />
-          </label>
-        </div> -->
         <div class="w-full flex flex-row justify-start items-center gap-2 mt-5">
           <button
             class="btn btn-success w-60 btn-xl"
-            :class="isEdit ? 'btn-warning' : 'btn-success'"
-            @click="submit"
+            :class="'btn-success'"
+            @click="confirmModal = true"
           >
             {{ isEdit ? 'Update' : 'Save' }}
           </button>
+
           <button v-if="isEdit" class="btn btn-accent w-60 btn-xl" @click="reset">Reset</button>
         </div>
       </div>
     </div>
     <div class="flex-1/2 h-full overflow-auto border-1">
-      <div class="flex flex-col max-h-[900px] justify-start items-center p-6">
-        <div
-          v-bind="containerProps"
-          style="height: 350px; overflow-y: auto"
-          class="w-full h-full overflow-x-auto"
-        >
+      <div class="flex flex-col h-full max-h-[900px] justify-start items-center p-6">
+        <div v-bind="containerProps" style="overflow-y: auto" class="w-full h-full overflow-x-auto">
           <div v-bind="wrapperProps">
             <table class="table table-xs">
               <!-- head -->
@@ -280,6 +268,7 @@
                   v-for="row in list"
                   :key="`${row.data.orderNo}${row.data.style}${row.data.color}${row.index}`"
                   :class="currentActive === row.index ? 'bg-base-200' : ''"
+                  @click="selectData(row.data)"
                 >
                   <td>{{ row.index + 1 }}</td>
                   <td>{{ row.data.orderNo }}</td>
@@ -431,27 +420,43 @@
 
   <!-- Custom Modal -->
   <Modal
-    :modelValue="showModal"
+    :modelValue="confirmModal"
     :size="'small'"
     @update:modelValue="(val: any) => (showModal = val)"
+    :closable="false"
+    :persistent="true"
   >
     <template #header>
-      <h2 class="text-2xl font-bold">Delete Master Line Data</h2>
+      <h2 class="text-2xl font-bold">
+        Add job to line
+        {{ STORE_MASTER.masterLine.find((item) => item.lineCode == modelData.Line)?.lineName }}
+      </h2>
     </template>
 
     <div>
-      <h1>Are you sure to Delete Data?</h1>
+      <h1>Are you sure to Add job to plan?</h1>
     </div>
 
     <template #footer>
       <div class="flex flex-row-reverse gap-2">
         <button
-          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] bg-green-500 text-white hover:bg-transparent hover:text-gray-900 hover:border-green-500 hover:border-3 text-xl transition-all ease-in duration-100"
+          @click="submit($event)"
+          :disabled="loadingProcess"
+          class="border-1 rounded-2xl w-[100px] h-[50px] hover:bg-transparent hover:text-gray-900 text-xl transition-all ease-in duration-100"
+          :class="
+            loadingProcess
+              ? 'btn-disabled opacity-50 cursor-not-allowed'
+              : 'bg-green-500 text-white hover:border-green-500 hover:border-3 hover:cursor-pointer'
+          "
         >
-          Confirm
+          <span v-show="loadingProcess">
+            <span class="loading loading-spinner"></span>
+            loading
+          </span>
+          <span v-show="!loadingProcess"> Confirm </span>
         </button>
         <button
-          @click="showModal = false"
+          @click="confirmModal = false"
           class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
         >
           Close
@@ -466,12 +471,14 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import CustomFilterColumn from '@/components/filterComponent/CustomFilterColumn.vue'
 import Modal from '../Modal.vue'
 import { defaultDocument, useVirtualList } from '@vueuse/core'
-import type { Job, MasterData } from '@/type/types'
-import { GetPlanJob } from '@/lib/api/Masterplan'
+import { type MasterLine, type Job, type MasterData, type Line } from '@/type/types'
 import { useMaster } from '@/stores/masterStore'
-import { getShiftRange } from '@/utils/utility'
-import { formatDateLocal, formatLocal } from '@/utils/formatKey'
 import { useCaltime } from '@/composables/useCaltime'
+import type { AddPlanJob } from '@/type/requestDTO'
+import { useAuth } from '@/stores/userStore'
+import { formatDateLocal, formatLocal } from '@/utils/formatKey'
+import { useScheduleStore } from '@/stores/scheduleStore'
+import { AddJob, GetPlanJob } from '@/lib/api/Masterplan'
 
 const { calTime } = useCaltime()
 
@@ -479,12 +486,14 @@ const showModal = ref<boolean>()
 const showToast = ref<boolean>(false)
 const toastIsError = ref<boolean>(true)
 const toastMessage = ref<string>('')
+const countDownToast = ref<number>(0)
 const isEdit = ref<boolean>()
 const currentActive = ref<number>()
 const master = ref<MasterData[]>([])
 const masterFiltered = ref<MasterData[]>([])
 const pagingMaster = ref<MasterData[]>([])
 const openFilter = ref<string | null>(null) // 'orderNo', 'style', null
+const loadingProcess = ref<boolean>(false)
 
 const modelData = reactive<{
   startDate: string
@@ -495,7 +504,7 @@ const modelData = reactive<{
   Season: string
 }>({
   startDate: '',
-  Line: '',
+  Line: 'Pick Line',
   Order: '',
   Color: '',
   Style: '',
@@ -524,7 +533,9 @@ const filterState = {
   customer: [] as string[],
   programCode: [] as string[],
 }
-const props = defineProps<{ defaultStartDate?: string; factoryCode?: string }>()
+const listLine = ref<MasterLine[]>([])
+const { user } = useAuth()
+const props = defineProps<{ defaultStartDate?: string; factoryCode?: string; lineCode?: string }>()
 const { list, containerProps, wrapperProps } = useVirtualList(
   pagingMaster, // ข้อมูล array ที่กรองแล้ว
   {
@@ -533,7 +544,104 @@ const { list, containerProps, wrapperProps } = useVirtualList(
   },
 )
 const STORE_MASTER = useMaster()
-const submit = async () => {}
+const store = useScheduleStore()
+const jobs = ref<Job[]>([])
+const masterLine = ref<Line[]>([])
+const confirmModal = ref<boolean>(false)
+const emit = defineEmits<{
+  (e: 'AddJob', value: boolean): void
+}>()
+
+function validation() {
+  if (!modelData.startDate) {
+    showToast.value = true
+    toastIsError.value = true
+    toastMessage.value = 'startDate is required'
+    showToastCountdown()
+    console.log('startDate is required')
+    return false
+  } else if (modelData.Line === 'Pick Line') {
+    showToast.value = true
+    toastIsError.value = true
+    toastMessage.value = 'Line is required'
+    showToastCountdown()
+    console.log('Line is required')
+    return false
+  } else if (!modelData.Order) {
+    showToast.value = true
+    toastIsError.value = true
+    toastMessage.value = 'Order is required'
+    showToastCountdown()
+    console.log('Order is required')
+    return false
+  } else if (!modelData.Color) {
+    showToast.value = true
+    toastIsError.value = true
+    toastMessage.value = 'Color is required'
+    showToastCountdown()
+    console.log('Color is required')
+    return false
+  } else if (!modelData.Style) {
+    showToast.value = true
+    toastIsError.value = true
+    toastMessage.value = 'Style is required'
+    showToastCountdown()
+    console.log('Style is required')
+    return false
+  } else if (!modelData.Season) {
+    showToast.value = true
+    toastIsError.value = true
+    toastMessage.value = 'Season is required'
+    showToastCountdown()
+    console.log('Season is required')
+    return false
+  } else {
+    showToast.value = false
+    toastIsError.value = false
+    console.log('✅ All fields valid')
+    return true
+  }
+}
+const submit = async (e: Event) => {
+  e.preventDefault()
+  loadingProcess.value = true
+  if (validation()) {
+    console.log('Compare Data : ', modelData.startDate, ' : ', new Date(modelData.startDate))
+    console.log(modelData.Line)
+    const newData: AddPlanJob = {
+      startDate: formatLocal(new Date(modelData.startDate)),
+      endDate: formatLocal(
+        calTime(
+          new Date(modelData.startDate),
+          modelData.Order,
+          modelData.Color,
+          modelData.Line,
+        ) as Date,
+      ),
+      Style: modelData.Style,
+      Season: modelData.Season,
+      CreateBy: user.fullname,
+      OrderNo: modelData.Order,
+      LineCode: modelData.Line,
+      Color: modelData.Color,
+    }
+
+    const res = await AddJob(newData)
+    console.log(res)
+    if (res.status === 200) {
+      confirmModal.value = false
+      toastIsError.value = false
+      toastMessage.value = res.data
+
+      showToastCountdown()
+      emit('AddJob', true)
+      await refresh()
+      loadingProcess.value = false
+    }
+  } else {
+    loadingProcess.value = false
+  }
+}
 const reset = async () => {}
 function selectData(master: MasterData) {
   modelData.Color = master.color
@@ -548,14 +656,14 @@ function toggleFilter(column: string) {
     openFilter.value = column // เปิด column ใหม่ → ปิดอันอื่น
   }
 }
-function resetFilter() {
-  Object.keys(filterState).forEach((key) => {
-    filterState[key as keyof typeof filterState] = []
-  })
-  masterFiltered.value = master.value
-  pagInModel.pageNumber = 1
-  resetFilterCount.value++
-}
+// function resetFilter() {
+//   Object.keys(filterState).forEach((key) => {
+//     filterState[key as keyof typeof filterState] = []
+//   })
+//   masterFiltered.value = master.value
+//   pagInModel.pageNumber = 1
+//   resetFilterCount.value++
+// }
 function onFilterSelect(column: keyof typeof filterState, selected: string[]) {
   filterState[column] = selected
   // console.log(shipDate)
@@ -581,7 +689,7 @@ const fetchData = async () => {
         : item.factoryCode) &&
       (item.sewStart == null || item.lineCode == null),
   )
-  console.log(data)
+  // console.log(data)
   // pagInModel.totalRows = res.data.totalRecords
   // pagInModel.totalPage = res.data.totalPages
   master.value = data
@@ -610,10 +718,23 @@ function handleClickOutside(e: PointerEvent) {
 onMounted(async () => {
   await fetchData()
 
-  masterFiltered.value = masterFiltered.value.filter(
-    (item) => item.factoryCode == props.factoryCode,
-  )
+  if (props.factoryCode) {
+    listLine.value = STORE_MASTER.masterLine.filter(
+      (item) => item.factoryCode === props.factoryCode,
+    )
+    masterFiltered.value = masterFiltered.value.filter(
+      (item) => item.factoryCode == props.factoryCode,
+    )
+  } else {
+    listLine.value = STORE_MASTER.masterLine
+  }
 
+  if (props.defaultStartDate) {
+    modelData.startDate = props.defaultStartDate
+  }
+  if (props.lineCode) {
+    modelData.Line = props.lineCode
+  }
   pagInModel.totalRows = masterFiltered.value.length
   pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
   pagingMaster.value = paginateArray(
@@ -633,26 +754,105 @@ watch(pagInModel, async () => {
   pagingMaster.value = paginatedData
   // console.log(paginatedData)
 })
+
 watch(masterFiltered, () => {
   pagInModel.totalRows = masterFiltered.value.length
   pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
 })
 watch(
-  () => props.defaultStartDate,
+  () => modelData.Line,
   (newVal) => {
     console.log(newVal)
-  },
-)
-watch(
-  () => props.factoryCode,
-  (newVal) => {
-    masterFiltered.value = masterFiltered.value.filter((item) => item.factoryCode == newVal)
+    let factoryCode = STORE_MASTER.masterLine.find((item) => item.lineCode == newVal)?.factoryCode
+    masterFiltered.value = master.value.filter((item) => item.factoryCode == factoryCode)
+    pagInModel.totalRows = masterFiltered.value.length
+    pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
+    pagingMaster.value = paginateArray(
+      masterFiltered.value,
+      pagInModel.pageSize,
+      pagInModel.pageNumber,
+    )
   },
 )
 
+const refresh = async () => {
+  // store.Jobs = []
+  // store.jobUpdate = []
+  await fetchMasterPlan(STORE_MASTER.currentFactory)
+}
+const fetchMasterPlan = async (factory?: string) => {
+  try {
+    // const res = await GetPlanJob()
+    jobs.value = []
+    const res = await GetPlanJob()
+    STORE_MASTER.planJob = res
+    store.jobStyleCache.clear()
+    const data = res
+    let filterData = []
+    filterData = data.filter((item: any) => item.sewStart != null)
+
+    // console.log(data.filter((item: any) => item.sewStart != null))
+    filterData.forEach((items: any, index: number) => {
+      jobs.value.push({
+        id: index, // Assuming each item has a unique id
+        line: items.lineCode,
+        qty: items.qty,
+        style: items.style,
+        season: items.season,
+        color: items.color,
+        typeName: items.type,
+        name: items.orderNo,
+        startDate: items.sewStart,
+        endDate: items.sewFinish,
+        duration: items.duration,
+      })
+    })
+    store.setJobs(jobs.value) // Update the store with fetched jobs
+
+    // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
+    let arrLine = STORE_MASTER.masterLine // Convert Set to Array
+    const lineMap = arrLine.map((line: any) => {
+      return {
+        name: line.lineName,
+        lineCode: line.lineCode,
+        company: line.factoryCode,
+        manpower: line.capacityMP,
+      } as Line
+    })
+    masterLine.value = lineMap
+
+    if (factory === 'ALL') {
+      store.Lines = masterLine.value
+    } else {
+      store.Lines = masterLine.value.filter((line) => line.company === factory)
+    }
+
+    store.computeAllJobStyles()
+    // store.setMasters(filterData)
+    // store.setLine(masterLine.value) // Update the store with unique lines
+    // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
+  } catch (err: any) {
+    console.error('Error fetching test data:', err)
+  }
+}
 onMounted(() => {
   // calTime(props.defaultStartDate)
 })
+
+let timer: any = null
+const showToastCountdown = () => {
+  countDownToast.value = 5
+  showToast.value = true
+  timer = setInterval(() => {
+    if (countDownToast.value > 0) {
+      countDownToast.value--
+    } else {
+      showToast.value = false
+      clearInterval(timer)
+      timer = null
+    }
+  }, 1000)
+}
 </script>
 
 <style scoped></style>

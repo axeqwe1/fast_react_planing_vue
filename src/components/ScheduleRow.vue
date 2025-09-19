@@ -3,17 +3,16 @@
     <div
       class="flex z-0 border-b-1 border-gray-500"
       v-for="(line, i) in lines"
-      :key="line.name + STORE_MASTER.currentFactory"
+      :key="line.lineCode + STORE_MASTER.currentFactory"
     >
       <div
-        class="flex flex-col w-full border-1 border-gray-400 p-2 sticky left-0 max-w-[200px] bg-slate-200 z-8"
+        class="flex flex-col justify-center w-full border-1 border-gray-400 p-2 sticky left-0 max-w-[200px] bg-slate-200 z-8"
       >
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center text-md">
           <span class="font-bold">
             <span class="pl-1 font-semibold"> {{ line.name }} </span>
           </span>
-          <span class="font-bold"
-            >EFF :
+          <span class="font-bold">
             <span
               class="font-bold pl-1"
               :class="
@@ -36,12 +35,12 @@
             </span></span
           >
         </div>
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center text-sm">
           <span class="font-bold">
             <span class="pl-1 font-semibold"> {{ line.company }} </span>
           </span>
           <span class="font-bold"
-            >SAM : <span class="font-bold text-sky-600"> {{ line.manpower }}</span></span
+            >MP: <span class="font-bold text-sky-600"> {{ line.manpower }}</span></span
           >
         </div>
       </div>
@@ -50,18 +49,19 @@
         class="relative h-[70px] w-full border-b-1 border-gray-200 z-0"
         :ref="
           (el) => {
-            if (el) setElementContainer(el, line.name)
+            if (el) setElementContainer(el, line.lineCode)
           }
         "
-        @dragover="onDragOver(line.name, $event)"
-        @drop="(e) => onDrop(e, line.name)"
-        @contextmenu.prevent="showContextLine($event, line.name, line.company)"
+        @dragover="onDragOver(line.lineCode, $event)"
+        @drop="(e) => onDrop(e, line.lineCode)"
+        @contextmenu.prevent="showContextLine($event, line.lineCode, line.company, line.lineCode)"
+        @mousemove="(e) => updateMouse(e, line.lineCode, line.manpower)"
       >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
-            v-for="(job, jIndex) in store.getJobsForLine(line.name)"
+            v-for="(job, jIndex) in store.getJobsForLine(line.lineCode)"
             :key="job.line + job.name + STORE_MASTER.currentFactory"
-            @contextmenu.prevent.stop="showContextMenu($event, job, line.name)"
+            @contextmenu.prevent.stop="showContextMenu($event, job, line.lineCode)"
             v-tooltip.top="{
               content: `
                 <table style='border-collapse: collapse; font-size: 12px;'>
@@ -141,33 +141,39 @@
     <!-- Custom Modal -->
     <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
       <template #header>
-        <h2 class="text-2xl font-bold">Update Plan</h2>
+        <h2 class="text-2xl font-bold">Plan Schedule</h2>
       </template>
+      <template v-if="loadingPlan">
+        <div>Loading...</div>
+      </template>
+      <template v-else>
+        <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>DoneToday</th>
+                <th>cumulativeQty</th>
 
-      <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>OrderNo</th>
-              <th>Line</th>
-              <th>Color</th>
-              <th>START - END</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in store.jobUpdate.sort(
-                (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-              )"
-            >
-              <td>{{ item.name }}</td>
-              <td>{{ item.line }}</td>
-              <td>{{ item.color }}</td>
-              <td>{{ item.startDate }} - {{ item.endDate }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                <th>TargetQty</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in planSchedule" :key="item.seqNo">
+                <td>{{ item.seqNo }}</td>
+                <td>{{ formatLocal(new Date(item.actualStartDateTime)) }}</td>
+                <td>{{ formatLocal(new Date(item.actualEndDateTime)) }}</td>
+                <td>{{ item.qtyDoneToday }}</td>
+                <td>{{ item.cumulativeQty }}</td>
+
+                <td>{{ item.qty }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
 
       <template #footer>
         <div class="flex flex-row-reverse gap-2">
@@ -188,7 +194,12 @@
       </template>
 
       <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        <FormAddJob :defaultStartDate="chooseStartTime" :factory-code="targetFactoryCode" />
+        <FormAddJob
+          :defaultStartDate="chooseStartTime"
+          :factory-code="targetFactoryCode"
+          :line-code="targetLineCode"
+          @add-job="AddJob"
+        />
       </div>
 
       <template #footer>
@@ -218,7 +229,7 @@ interface ScheduleRefs {
 }
 
 import { useScheduleStore } from '@/stores/scheduleStore'
-import type { Job, Line, MasterData } from '@/type/types'
+import type { Job, Line, MasterData, PlanSchedule } from '@/type/types'
 import {
   watch,
   ref,
@@ -233,7 +244,7 @@ import {
   reactive,
   type StyleValue,
 } from 'vue'
-import { formatTimeKey } from '@/utils/formatKey'
+import { formatDateLocal, formatLocal, formatTimeKey } from '@/utils/formatKey'
 import { useLoadingStore } from '@/stores/LoadingStore'
 import viewCanvas from '@/components/viewCanvas.vue'
 import { useMouseEvent } from '@/composables/useMouseEvent'
@@ -243,6 +254,8 @@ import ContextMenu from './ContextMenu.vue'
 import Modal from './Modal.vue'
 import { useMaster } from '@/stores/masterStore'
 import FormAddJob from '@/components/form/FormAddJob.vue'
+import { GetPlanScheduleData } from '@/lib/api/Masterplan'
+import type { GetPlanScheduleRequestDTO } from '@/type/requestDTO'
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
 const contextLineMenu = ref([{ label: 'add job', action: 'addJob' }])
@@ -267,11 +280,18 @@ const contextTargetJob = ref<Job | null>()
 const showModalAddJob = ref<boolean>(false)
 const STORE_MASTER = useMaster()
 const targetFactoryCode = ref<string>()
+const targetLineCode = ref<string>()
+const requestPlanSchedule = ref<GetPlanScheduleRequestDTO | null>(null)
+const planSchedule = ref<PlanSchedule[]>([])
+const emits = defineEmits<{
+  (e: 'updatePositionDate', value: string): void
+  (e: 'updatePositionManpower', value: number): void
+}>()
 const { getRelativeX, getRelativeY, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 
 // contextmenu on rightclick
-const showContextMenu = (event: MouseEvent, job: Job, linename: string) => {
+const showContextMenu = async (event: MouseEvent, job: Job, linename: string) => {
   console.log(linename)
   const containerX = draggableEl.value[linename]
   const containerY = (document.querySelector('.containerY') as HTMLElement) || null
@@ -281,15 +301,29 @@ const showContextMenu = (event: MouseEvent, job: Job, linename: string) => {
 
   menus.menuX = getRelativeX(containerX, event)
   menus.menuY = getRelativeY(containerY, event)
+  const request: GetPlanScheduleRequestDTO = {
+    Order: job.name,
+    Color: job.color,
+    Line: linename,
+    StartDate: job.startDate,
+    Respect: 1,
+  }
+  requestPlanSchedule.value = request
 }
 
-const showContextLine = (event: MouseEvent, linename: string, factoryCode: string) => {
+const showContextLine = (
+  event: MouseEvent,
+  linename: string,
+  factoryCode: string,
+  lineCode: string,
+) => {
   console.log(linename)
   const containerX = draggableEl.value[linename]
   const containerY = (document.querySelector('.containerY') as HTMLElement) || null
   event.preventDefault()
   showLineMenu.value = true
   targetFactoryCode.value = factoryCode
+  targetLineCode.value = lineCode
   menus.menuX = getRelativeX(containerX, event)
   menus.menuY = getRelativeY(containerY, event)
 
@@ -313,6 +347,7 @@ function handleActionClick(action: any) {
     case 'viewplan': {
       // console.log('found action')
       showModal.value = true
+      if (requestPlanSchedule.value) fetchPlanSchedule(requestPlanSchedule.value)
       if (showModal.value) showMenu.value = false
       break
     }
@@ -450,7 +485,35 @@ function setElementContainer(el: Element | ComponentPublicInstance, lineName: st
   }
 }
 
+function AddJob(success: boolean) {
+  showModalAddJob.value = !success
+}
+
+function updateMouse(e: MouseEvent, lineCode: string, manpower: number) {
+  const container = draggableEl.value[lineCode]
+  if (!container) return
+
+  const relativeX = getRelativeX(container, e)
+  const unitWidth = container.offsetWidth / store.timeIndexMap.size
+  const index = Math.floor(relativeX / unitWidth)
+  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+  console.log(timeKey)
+  emits('updatePositionDate', timeKey as string)
+  emits('updatePositionManpower', manpower)
+}
 // จัดการ Right Click
+
+// getPlanschedule
+const loadingPlan = ref<boolean>(false)
+const fetchPlanSchedule = async (request: GetPlanScheduleRequestDTO) => {
+  loadingPlan.value = true
+  const res = await GetPlanScheduleData(request)
+
+  if (res.status === 200) {
+    planSchedule.value = res.data
+  }
+  loadingPlan.value = false
+}
 </script>
 
 <style scoped>

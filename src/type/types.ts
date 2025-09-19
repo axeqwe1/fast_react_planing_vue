@@ -230,3 +230,15 @@ export interface MasterWorkDay {
   workHours: number
   holidayName: string
 }
+
+export interface PlanSchedule {
+  seqNo: number
+  actualStartDateTime: string
+  actualEndDateTime: string
+  saM_MinPerPc: number
+  qty: number
+  remainAfterThisDay: number
+  maxQtyPossibleToday: number
+  qtyDoneToday: number
+  cumulativeQty: number
+}
