@@ -131,16 +131,17 @@ export function getJobStyles(
   }
 }
 
-export function getShiftRange(curDate: Date, shiftStart: string, baseMinutes: number) {
-  // curDate: Date เช่น new Date("2025-09-04T00:00:00")
-  const [hh, mm, ss] = shiftStart.split(':').map(Number)
-
-  const start = new Date(curDate)
-  start.setHours(hh, mm || 0, ss || 0, 0)
-  console.log('Parse', curDate)
-  const end = new Date(start)
-  end.setMinutes(start.getMinutes() + baseMinutes)
-
+export function getShiftRange(currentDate: Date, shiftStart: string, workMinutes: number) {
+  const [h, m, s] = shiftStart.split(':').map(Number)
+  const start = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    currentDate.getDate(),
+    h,
+    m,
+    s,
+  )
+  const end = new Date(start.getTime() + workMinutes * 60000)
   return { start, end }
 }
 

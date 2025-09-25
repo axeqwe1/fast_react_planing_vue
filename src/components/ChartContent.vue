@@ -126,7 +126,7 @@ const fetchMasterPlan = async (factory?: string) => {
     let filterData = []
     filterData = data.filter((item: any) => item.sewStart != null)
 
-    // console.log(data.filter((item: any) => item.sewStart != null))
+    console.log(data.filter((item: any) => item.sewStart != null))
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
@@ -140,6 +140,8 @@ const fetchMasterPlan = async (factory?: string) => {
         startDate: items.sewStart,
         endDate: items.sewFinish,
         duration: items.duration,
+        processStatus: items.processStatus,
+        progressPct: items.progressPct,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs

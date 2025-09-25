@@ -56,15 +56,29 @@ export function useCaltime() {
           formatDateLocal(currentDate).split(' ')[0]
         )
       })[0]
-
+      console.log(
+        STORE_MASTER.masterWorkDay.filter((item) => {
+          console.log(formatDateLocal(currentDate).split(' ')[0])
+          return (
+            formatDateLocal(new Date(item.workDate)).split(' ')[0] ==
+            formatDateLocal(currentDate).split(' ')[0]
+          )
+        }),
+      )
       if (WorkDay) {
-        // console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
-        // console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
+        console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
+        console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
         defaultWorkHour = WorkDay.workHours
         isWorkDay = WorkDay.isWorkday
       } else {
-        defaultWorkHour = 0
-        isWorkDay = false
+        const dayOfWeek = currentDate.getDay() // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+        if (dayOfWeek === 0) {
+          defaultWorkHour = 0
+          isWorkDay = false
+        } else {
+          defaultWorkHour = 8
+          isWorkDay = true
+        }
       }
       //   const WorkDate = WorkDay.workDate
       //   const WorkHour = WorkDay.workHours

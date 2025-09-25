@@ -5,13 +5,22 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
-
+import { PrimeVueResolver } from '@primevue/auto-import-resolver'
+import Components from 'unplugin-vue-components/vite' // ✅ ต้อง import
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   return {
     base: mode === 'production' ? '/AiPlaningWeb/' : '/', // ✅,
     // base: "/PMD/",
-    plugins: [tailwindcss(), vue(), vueJsx(), vueDevTools()],
+    plugins: [
+      tailwindcss(),
+      vue(),
+      vueJsx(),
+      vueDevTools(),
+      Components({
+        resolvers: [PrimeVueResolver()],
+      }),
+    ],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -11,7 +11,9 @@ export function formatDateLocal(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-
+function toLocalDate(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
 export function formatLocal(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return (

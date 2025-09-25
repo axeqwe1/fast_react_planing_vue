@@ -126,6 +126,9 @@ export const useScheduleStore = defineStore('schedule', {
       if (dateStartCopy < CurrentDay && dateEndCopy < CurrentDay) {
         bgColor = '#FF3333' // สีเทา
       }
+      if (job.progressPct > 0) {
+        bgColor = '#38ff95'
+      }
       if (!timeIndexMap.has(startKey) || !timeIndexMap.has(endKey)) {
         // console.warn('Not found:', startKey, endKey)
         return { display: 'none' }
@@ -352,6 +355,7 @@ export const useScheduleStore = defineStore('schedule', {
         newStart.setHours(8, 0, 0, 0)
       }
       let newEnd = calTime(newStart, job.name, job.color, targetLineId) as Date
+      console.log(newEnd)
       // let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
         case 'insert':

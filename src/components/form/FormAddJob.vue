@@ -805,6 +805,8 @@ const fetchMasterPlan = async (factory?: string) => {
         startDate: items.sewStart,
         endDate: items.sewFinish,
         duration: items.duration,
+        processStatus: items.processStatus,
+        progressPct: items.progressPct,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs

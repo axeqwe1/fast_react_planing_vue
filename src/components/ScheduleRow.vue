@@ -54,57 +54,20 @@
         "
         @dragover="onDragOver(line.lineCode, $event)"
         @drop="(e) => onDrop(e, line.lineCode)"
-        @contextmenu.prevent="showContextLine($event, line.lineCode, line.company, line.lineCode)"
+        @contextmenu="(e) => onRightClick(e, line.lineCode, line.company, line.name)"
         @mousemove="(e) => updateMouse(e, line.lineCode, line.manpower)"
       >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
             v-for="(job, jIndex) in store.getJobsForLine(line.lineCode)"
             :key="job.line + job.name + STORE_MASTER.currentFactory"
-            @contextmenu.prevent.stop="showContextMenu($event, job, line.lineCode)"
-            v-tooltip.top="{
-              content: `
-                <table style='border-collapse: collapse; font-size: 12px;'>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>Line</b></td>
-                    <td>${line.name}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>Order</b></td>
-                    <td>${job.name}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>Start</b></td>
-                    <td>${formatTimeKey(new Date(job.startDate))}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>End</b></td>
-                    <td>${formatTimeKey(new Date(job.endDate))}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>Style</b></td>
-                    <td>${job.style}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>Color</b></td>
-                    <td>${job.color}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>TypeName</b></td>
-                    <td>${job.typeName}</td>
-                  </tr>
-                  <tr>
-                    <td style='padding: 2px 6px;'><b>QTY</b></td>
-                    <td style=''><b>${job.qty}</b></td>
-                  </tr>
-                </table>
-              `,
-              html: true,
-            }"
+            @contextmenu="(e) => onRightClickJob(e, job, line.lineCode)"
             class="schedule-bar z-5 border-r-4"
             draggable="true"
             @dragstart="(e) => onDragStart(e, job)"
             @dragend="onDragEnd"
+            @mouseenter="showTooltip(job, line, $event)"
+            @mouseleave="hideTooltip"
             :style="[store.getJobStyleFromCache(job)] as StyleValue"
           >
             <span class="bg-slate-800/50 p-1 rounded-sm">
@@ -118,12 +81,13 @@
         </template>
       </div>
     </div>
-
+    <ContextMenu ref="menu" :model="items" />
+    <ContextMenu ref="jobmenu" :model="jobMenu" />
     <!-- Overlay to close the menu -->
-    <div class="overlay" @click="closeContextMenu" v-if="showMenu || showLineMenu" />
+    <!-- <div class="overlay" @click="closeContextMenu" v-if="showMenu || showLineMenu" /> -->
 
     <!-- Custom Context Menu -->
-    <ContextMenu
+    <!-- <ContextMenu
       v-if="showMenu"
       :actions="contextMenuActions"
       @action-clicked="handleActionClick"
@@ -137,11 +101,11 @@
       @action-clicked="handleActionClick"
       :x="menus.menuX"
       :y="menus.menuY"
-    />
+    /> -->
     <!-- Custom Modal -->
     <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
       <template #header>
-        <h2 class="text-2xl font-bold">Plan Schedule</h2>
+        <h2 class="text-2xl font-bold">Plan Schedule : {{ targetOrder }}</h2>
       </template>
       <template v-if="loadingPlan">
         <div>Loading...</div>
@@ -156,13 +120,13 @@
                 <th>End</th>
                 <th>DoneToday</th>
                 <th>cumulativeQty</th>
-
                 <th>TargetQty</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in planSchedule" :key="item.seqNo">
                 <td>{{ item.seqNo }}</td>
+
                 <td>{{ formatLocal(new Date(item.actualStartDateTime)) }}</td>
                 <td>{{ formatLocal(new Date(item.actualEndDateTime)) }}</td>
                 <td>{{ item.qtyDoneToday }}</td>
@@ -220,6 +184,16 @@
     <!-- <div v-for="divide in divideLeft" class="absolute" :style="{ left: divide + 'px' }">
       <div class="week-break-background"></div>
     </div> -->
+    <!-- Tooltip single instance -->
+    <Teleport to="body">
+      <div
+        v-if="tooltip.visible"
+        ref="floatingEl"
+        class="tooltip"
+        v-html="tooltip.content"
+        :style="floatingStyles"
+      ></div>
+    </Teleport>
   </div>
 </template>
 
@@ -230,6 +204,7 @@ interface ScheduleRefs {
 
 import { useScheduleStore } from '@/stores/scheduleStore'
 import type { Job, Line, MasterData, PlanSchedule } from '@/type/types'
+import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue'
 import {
   watch,
   ref,
@@ -250,7 +225,9 @@ import viewCanvas from '@/components/viewCanvas.vue'
 import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
 import { detectDropMode } from '@/utils/detectDropMode'
-import ContextMenu from './ContextMenu.vue'
+// import ContextMenu from './ContextMenu.vue'
+import ContextMenu from 'primevue/contextmenu'
+
 import Modal from './Modal.vue'
 import { useMaster } from '@/stores/masterStore'
 import FormAddJob from '@/components/form/FormAddJob.vue'
@@ -281,8 +258,87 @@ const showModalAddJob = ref<boolean>(false)
 const STORE_MASTER = useMaster()
 const targetFactoryCode = ref<string>()
 const targetLineCode = ref<string>()
+const targetOrder = ref<string>()
 const requestPlanSchedule = ref<GetPlanScheduleRequestDTO | null>(null)
 const planSchedule = ref<PlanSchedule[]>([])
+const timeOnMouse = ref('')
+const menu = ref()
+const jobmenu = ref()
+const items = ref([
+  {
+    label: 'Add Job',
+    icon: 'pi pi-briefcase',
+    command: () => {
+      showModalAddJob.value = true
+    },
+  },
+])
+
+const jobMenu = ref([
+  {
+    label: 'Schedule Plan',
+    icon: 'pi pi-calendar',
+    command: () => {
+      showModal.value = true
+      if (requestPlanSchedule.value) {
+        fetchPlanSchedule(requestPlanSchedule.value)
+      }
+    },
+  },
+])
+const onRightClick = (
+  event: MouseEvent,
+  lineCode: string,
+  factoryCode: string,
+  linename: string,
+) => {
+  menu.value.show(event)
+  showLineMenu.value = true
+  targetFactoryCode.value = factoryCode
+  targetLineCode.value = lineCode
+
+  chooseStartTime.value = timeOnMouse.value
+  console.log(lineCode)
+}
+const onRightClickJob = (event: any, job: any, lineCode: string) => {
+  jobmenu.value.show(event)
+  const request: GetPlanScheduleRequestDTO = {
+    Order: job.name,
+    Color: job.color,
+    Line: lineCode,
+    StartDate: job.startDate,
+    Respect: 1,
+  }
+  requestPlanSchedule.value = request
+  targetOrder.value = job.name
+}
+// Tooltip state
+const tooltip = reactive({
+  visible: false,
+  content: '',
+})
+
+const referenceEl = ref<HTMLElement | null>(null)
+const floatingEl = ref<HTMLElement | null>(null)
+
+// useFloating setup
+const { floatingStyles, update } = useFloating(referenceEl, floatingEl, {
+  placement: 'top',
+  middleware: [offset(6), flip(), shift()],
+  whileElementsMounted: autoUpdate,
+})
+
+function showTooltip(job: any, line: any, event: MouseEvent) {
+  tooltip.visible = true
+  tooltip.content = tooltipContent(job, line)
+  referenceEl.value = event.currentTarget as HTMLElement
+  update() // update position
+}
+
+function hideTooltip() {
+  tooltip.visible = false
+}
+
 const emits = defineEmits<{
   (e: 'updatePositionDate', value: string): void
   (e: 'updatePositionManpower', value: number): void
@@ -309,59 +365,9 @@ const showContextMenu = async (event: MouseEvent, job: Job, linename: string) =>
     Respect: 1,
   }
   requestPlanSchedule.value = request
+  targetOrder.value = job.name
 }
 
-const showContextLine = (
-  event: MouseEvent,
-  linename: string,
-  factoryCode: string,
-  lineCode: string,
-) => {
-  console.log(linename)
-  const containerX = draggableEl.value[linename]
-  const containerY = (document.querySelector('.containerY') as HTMLElement) || null
-  event.preventDefault()
-  showLineMenu.value = true
-  targetFactoryCode.value = factoryCode
-  targetLineCode.value = lineCode
-  menus.menuX = getRelativeX(containerX, event)
-  menus.menuY = getRelativeY(containerY, event)
-
-  const unitWidth = containerX.offsetWidth / store.timeIndexMap.size
-  const index = Math.floor(menus.menuX / unitWidth)
-  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
-  if (!timeKey) return
-
-  console.log('timeKey', timeKey)
-  chooseStartTime.value = timeKey
-}
-
-const closeContextMenu = () => {
-  showLineMenu.value = false
-  showMenu.value = false
-}
-function handleActionClick(action: any) {
-  // console.log(action)
-  // console.log(contextTargetJob.value)
-  switch (action) {
-    case 'viewplan': {
-      // console.log('found action')
-      showModal.value = true
-      if (requestPlanSchedule.value) fetchPlanSchedule(requestPlanSchedule.value)
-      if (showModal.value) showMenu.value = false
-      break
-    }
-    case 'addJob': {
-      // console.log('found action add job')
-      showModalAddJob.value = true
-      if (showModalAddJob.value) showLineMenu.value = false
-      break
-    }
-    default: {
-      console.warn('Not found action')
-    }
-  }
-}
 // Drag and Drop Handlers
 function onDragStart(e: DragEvent, job: Job) {
   if (!e.dataTransfer) return
@@ -497,7 +503,7 @@ function updateMouse(e: MouseEvent, lineCode: string, manpower: number) {
   const unitWidth = container.offsetWidth / store.timeIndexMap.size
   const index = Math.floor(relativeX / unitWidth)
   const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
-  console.log(timeKey)
+  timeOnMouse.value = timeKey ? timeKey : ''
   emits('updatePositionDate', timeKey as string)
   emits('updatePositionManpower', manpower)
 }
@@ -513,6 +519,23 @@ const fetchPlanSchedule = async (request: GetPlanScheduleRequestDTO) => {
     planSchedule.value = res.data
   }
   loadingPlan.value = false
+}
+function tooltipContent(job: any, line: any) {
+  return `
+    <table style='border-collapse: collapse; font-size: 12px;'>
+      <tr><td><b>Line</b></td><td>${line.name}</td></tr>
+      <tr><td><b>Order</b></td><td>${job.name}</td></tr>
+      <tr><td><b>Start</b></td><td>${formatTimeKey(new Date(job.startDate))}</td></tr>
+      <tr><td><b>End</b></td><td>${formatTimeKey(new Date(job.endDate))}</td></tr>
+      <tr><td><b>Style</b></td><td>${job.style}</td></tr>
+      <tr><td><b>Color</b></td><td>${job.color}</td></tr>
+      <tr><td><b>Type</b></td><td>${job.typeName}</td></tr>
+      <tr><td><b>SAM</b></td><td>${STORE_MASTER.planJob.filter((item) => item.color == job.color && item.orderNo == job.name).map((item) => item.sam)[0]}</td></tr>
+      <tr><td><b>Status</b></td><td>${job.processStatus == '1' ? 'InProcess' : 'Waiting'}</td></tr>
+      <tr><td><b>Progres</b></td><td>${job.progressPct}</td></tr>
+      <tr><td><b>QTY</b></td><td><b>${job.qty}</b></td></tr>
+    </table>
+  `
 }
 </script>
 
@@ -576,5 +599,16 @@ const fetchPlanSchedule = async (request: GetPlanScheduleRequestDTO) => {
 
 .overlay:hover {
   cursor: pointer;
+}
+
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 9999;
 }
 </style>

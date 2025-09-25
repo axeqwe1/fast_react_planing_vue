@@ -10,6 +10,8 @@ export interface Job {
   endDate: string
   line: string
   duration: number
+  processStatus: string
+  progressPct: number
 }
 
 export interface Line {
@@ -233,6 +235,7 @@ export interface MasterWorkDay {
 
 export interface PlanSchedule {
   seqNo: number
+  order: string
   actualStartDateTime: string
   actualEndDateTime: string
   saM_MinPerPc: number

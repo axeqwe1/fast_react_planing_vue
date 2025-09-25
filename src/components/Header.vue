@@ -75,7 +75,8 @@
         Refresh
       </button>
 
-      <button @click="showViewOrder = true" class="btn btn-accent">View Order</button>
+      <button @click="showViewOrder = true" class="btn btn-accent">View All Order</button>
+
       <div class="drawer drawer-end">
         <input id="my-drawer" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content">
@@ -291,6 +292,8 @@
     </template>
   </Modal>
 
+  <!-- VIEW -->
+
   <Modal
     :modelValue="showViewOrder"
     :size="'full'"
@@ -301,14 +304,36 @@
     </template>
 
     <div class="h-full">
-      <ViewOrderDetails />
+      <Tabs v-model:value="activeTab">
+        <TabList>
+          <div class="w-full flex! flex-row justify-between">
+            <div>
+              <Tab value="0">All Order</Tab>
+              <Tab value="1">Planed Order</Tab>
+              <Tab value="2">Not Planed Order</Tab>
+            </div>
+            <div>
+              <div class="text-end pb-4">
+                <span class="px-3">Total : {{ viewDetailRef?.pagInModel.totalRows }} Rows</span>
+                <Button
+                  icon="pi pi-external-link"
+                  label="Export"
+                  @click="viewDetailRef?.exportCSV()"
+                />
+              </div>
+            </div>
+          </div>
+        </TabList>
+        <TabPanels class="p-0!">
+          <ViewOrderDetails :mode="mode" ref="viewDetailRef" />
+        </TabPanels>
+      </Tabs>
     </div>
 
     <!-- <template #footer>
       <div class="flex flex-row-reverse gap-2"></div>
     </template> -->
   </Modal>
-
   <!-- Modal Add Job -->
   <Modal v-model="showListJobOrder" size="full" :closable="false" :persistent="true">
     <template #header>
@@ -379,11 +404,42 @@ const STORE_MASTER = useMaster()
 const user = useAuth()
 
 const totalJob = ref<number>(0)
-
+const viewDetailRef = ref<InstanceType<typeof ViewOrderDetails>>() // ref ของ child
 const emit = defineEmits<{
   (e: 'factory', value: string): void
   (e: 'openAddJobModal', value: boolean): void
 }>()
+const activeTab = ref('0')
+const allRef = ref<InstanceType<typeof ViewOrderDetails>>()
+const planedRef = ref<InstanceType<typeof ViewOrderDetails>>()
+const notRef = ref<InstanceType<typeof ViewOrderDetails>>()
+
+const mode = ref('All')
+watch(activeTab, (newVal) => {
+  if (newVal === '0') {
+    mode.value = 'All'
+  }
+  if (newVal === '1') {
+    mode.value = 'Planed'
+  }
+  if (newVal === '2') {
+    mode.value = 'Not'
+  }
+})
+function exportCSV(active: string) {
+  if (active === '0') {
+    allRef.value?.exportCSV()
+    mode.value = 'All'
+  }
+  if (active === '1') {
+    planedRef.value?.exportCSV()
+    mode.value = 'Planed'
+  }
+  if (active === '2') {
+    notRef.value?.exportCSV()
+    mode.value = 'Not'
+  }
+}
 
 const changeFac = (item: string) => {
   fac.value = item
@@ -453,6 +509,7 @@ watch(width, (newWidth) => {
     console.log('New width:', store.minWidthHeader)
   }
 })
+
 const fetchMasterPlan = async (factory?: string) => {
   try {
     // const res = await GetPlanJob()
@@ -478,6 +535,8 @@ const fetchMasterPlan = async (factory?: string) => {
         startDate: items.sewStart,
         endDate: items.sewFinish,
         duration: items.duration,
+        processStatus: items.processStatus,
+        progressPct: items.progressPct,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs

@@ -6,11 +6,20 @@ import router from './router'
 import './style.css'
 import FloatingVue from 'floating-vue'
 import 'floating-vue/dist/style.css'
+import PrimeVue from 'primevue/config'
+import Aura from '@primeuix/themes/aura'
+import 'primeicons/primeicons.css'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(FloatingVue)
 app.use(router)
+app.use(PrimeVue, {
+  theme: {
+    ripple: false, // ปิด ripple
+    preset: Aura,
+  },
+})
 
 app.mount('#app')
