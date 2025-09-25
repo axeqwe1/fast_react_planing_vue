@@ -92,43 +92,101 @@
     </div>
     <div class="flex-1/2 h-full overflow-auto border-1">
       <div class="flex flex-col h-full justify-start items-center p-6">
-        <div class="overflow-x-auto">
-          <table class="table table-xs">
-            <!-- head -->
-            <thead class="sticky top-0 bg-base-300">
-              <tr>
-                <th></th>
-                <th>Style</th>
-                <th>Season</th>
-                <th>TypeName</th>
-                <th>Program Code</th>
-                <th>SAM_Minutes</th>
-                <th>Effective Date</th>
-                <th>Expire Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- row 1 -->
-              <tr
-                @contextmenu="(e) => showContextMenu(e, item)"
-                @click="selectEdit(item, index)"
-                class="hover:bg-base-200 hover:cursor-pointer"
-                v-for="(item, index) in master"
-                :class="currentActive == index ? 'bg-base-200' : ''"
-                :key="item.id"
-              >
-                <td>{{ item.id }}</td>
-                <td class="w-50">{{ item.style }}</td>
-                <td>{{ item.season }}</td>
-                <td>{{ item.typeName }}</td>
-                <td>{{ item.programCode }}</td>
-                <td>{{ item.saM_Minutes }}</td>
-                <td>{{ item.effectiveDate.split('T')[0] }}</td>
-                <td>{{ item.expireDate.split('T')[0] }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- DataTable -->
+        <DataTable
+          :value="master"
+          scrollable
+          scrollHeight="calc(100vh - 250px)"
+          v-model:filters="filters"
+          filterDisplay="row"
+          size="small"
+          selectionMode="single"
+          v-model:selection="selectedSam"
+        >
+          <!-- Style Column -->
+          <Column field="style" header="Style" sortable filter :showFilterMenu="false">
+            <template #filter="{ filterModel, filterCallback }">
+              <MultiSelect
+                v-model="filterModel.value"
+                :options="[...new Set(master.map((item) => item.style))]"
+                placeholder="Any"
+                display="chip"
+                @change="filterCallback"
+              />
+            </template>
+          </Column>
+
+          <!-- Season Column -->
+          <Column field="season" header="Season" sortable filter :showFilterMenu="false">
+            <template #filter="{ filterModel, filterCallback }">
+              <MultiSelect
+                v-model="filterModel.value"
+                :options="[...new Set(master.map((item) => item.season))]"
+                placeholder="Any"
+                display="chip"
+                @change="filterCallback"
+              />
+            </template>
+          </Column>
+
+          <!-- TypeName Column -->
+          <Column field="typeName" header="TypeName" sortable filter :showFilterMenu="false">
+            <template #filter="{ filterModel, filterCallback }">
+              <MultiSelect
+                v-model="filterModel.value"
+                :options="[...new Set(master.map((item) => item.typeName))]"
+                placeholder="Any"
+                display="chip"
+                @change="filterCallback"
+              />
+            </template>
+          </Column>
+
+          <!-- SAM Column -->
+          <Column field="saM_Minutes" header="SAM" sortable filter :showFilterMenu="false">
+            <!-- <template #filter="{ filterModel, filterCallback }">
+              <input
+                type="number"
+                v-model="filterModel.value"
+                @input="filterCallback"
+                placeholder="SAM"
+                class="input input-sm w-full"
+              />
+            </template> -->
+          </Column>
+
+          <!-- Effective Date Column -->
+          <Column
+            field="effectiveDate"
+            header="Effective Date"
+            sortable
+            filter
+            :showFilterMenu="false"
+          >
+            <template #body="{ data }">
+              <div>
+                {{
+                  data.effectiveDate
+                    ? formatLocal(new Date(data.effectiveDate)).split(' ')[0]
+                    : 'Not planed'
+                }}
+              </div>
+            </template>
+          </Column>
+
+          <!-- Expire Date Column -->
+          <Column field="expireDate" header="Expire Date" sortable filter :showFilterMenu="false">
+            <template #body="{ data }">
+              <div>
+                {{
+                  data.effectiveDate
+                    ? formatLocal(new Date(data.expireDate)).split(' ')[0]
+                    : 'Not planed'
+                }}
+              </div>
+            </template>
+          </Column>
+        </DataTable>
       </div>
     </div>
   </div>
@@ -196,6 +254,7 @@
 import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
 import { useMaster } from '@/stores/masterStore'
+import { formatLocal } from '@/utils/formatKey'
 import type { Job, Line, MasterEfficiency, MasterLine, MasterSam } from '@/type/types'
 import { ref, onMounted, watch, watchEffect, reactive, onBeforeUnmount, computed } from 'vue'
 import ContextMenu from '@/components/ContextMenu.vue'
@@ -212,7 +271,7 @@ import Modal from '../Modal.vue'
 import type { CreateMasterSam } from '@/type/requestDTO'
 import { debounce } from 'lodash'
 import { defaultDocument } from '@vueuse/core'
-
+import { FilterMatchMode } from '@primevue/core/api'
 const isEdit = ref<boolean>(false)
 const showToast = ref<boolean>(false)
 const toastIsError = ref<boolean>(true)
@@ -238,7 +297,19 @@ const styleList = ref<string[]>([])
 const seasonRef = ref('')
 const seasonList = ref<string[]>([])
 
+const loading = ref(true)
 const currentActive = ref<number | null>(null)
+
+const selectedSam = ref()
+
+const filters = ref({
+  style: { value: null, matchMode: FilterMatchMode.IN },
+  season: { value: null, matchMode: FilterMatchMode.IN },
+  typeName: { value: null, matchMode: FilterMatchMode.IN },
+  saM_Minutes: { value: null, matchMode: FilterMatchMode.EQUALS },
+  effectiveDate: { value: null, matchMode: FilterMatchMode.BETWEEN },
+  expireDate: { value: null, matchMode: FilterMatchMode.BETWEEN },
+})
 
 const selectEdit = (masterline: MasterSam, index: number) => {
   if (currentActive.value == index) {
@@ -402,6 +473,19 @@ onMounted(() => {
   STORE_MASTER.GetMasterSAM()
   STORE_MASTER.getMasterSAMView()
   master.value = STORE_MASTER.masterSam
+})
+
+watch(selectedSam, (newVal) => {
+  console.log(newVal)
+  if (newVal) {
+    model.season = newVal.season
+    model.style = newVal.style
+    model.SAM_Minutes = newVal.saM_Minutes
+    model.typeName = newVal.typeName
+    isEdit.value = true
+  } else {
+    reset()
+  }
 })
 </script>
 

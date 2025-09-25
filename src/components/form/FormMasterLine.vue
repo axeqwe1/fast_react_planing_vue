@@ -86,6 +86,15 @@
     </div>
     <div class="flex-1/2 h-full overflow-auto border-1">
       <div class="flex flex-col my-6">
+        <div class="p-1 px-4">
+          <Select
+            v-model="selectFilter"
+            name="factoryCode"
+            :options="filters"
+            placeholder="Filter Factory"
+            fluid
+          />
+        </div>
         <div
           v-for="item in masterline"
           class="card card-border bg-base-100 w-full p-1 px-4"
@@ -235,8 +244,10 @@ const lineType = [
   { name: 'T-Shirt+Pants' },
   { name: 'Underwear' },
 ]
-const masterline = ref<MasterLine[]>([])
 
+const masterline = ref<MasterLine[]>([])
+const selectFilter = ref('All')
+const filters = ref<string[]>([])
 const model = reactive<MasterLine>({
   id: 0,
   lineCode: '',
@@ -373,12 +384,14 @@ const showToastCountdown = () => {
     }
   }, 1000)
 }
-watchEffect(() => {
-  masterline.value = STORE_MASTER.masterLine
+watch(selectFilter, (newVal) => {
+  if (newVal === 'All') masterline.value = STORE_MASTER.masterLine
+  else masterline.value = STORE_MASTER.masterLine.filter((item) => item.factoryCode == newVal)
 })
 
 onMounted(() => {
   masterline.value = STORE_MASTER.masterLine
+  filters.value = ['All', ...new Set(masterline.value.map((item) => item.factoryCode))]
 })
 </script>
 

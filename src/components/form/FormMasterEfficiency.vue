@@ -8,21 +8,22 @@
           <button @click="reset" v-if="isEdit" class="btn btn-accent">Reset</button>
           <span v-if="isEdit" class="text-amber-500 w-full font-bold">Edit Mode</span>
         </div>
+        <div class="w-60">
+          <label for="Factory">Find Factory</label>
+          <select class="select" v-model="selectFactory">
+            <option disabled selected>Choose Factory</option>
+            <option v-for="item in factoryList" :key="item" :value="item">
+              {{ item }}
+            </option>
+          </select>
+        </div>
       </div>
       <div class="flex flex-row gap-3 flex-wrap">
-        <!-- <div class="w-60">
-          <label for="LineCode">Line Code</label>
-          <input v-model="model.lineCode" type="text" placeholder="LineCode" class="input" />
-        </div> -->
         <div class="w-60">
           <label for="LineType">Line Code</label>
           <select class="select" v-model="model.lineCode">
             <option disabled selected>Choose Line Code</option>
-            <option
-              v-for="item in STORE_MASTER.masterLine"
-              :key="item.lineCode"
-              :value="item.lineCode"
-            >
+            <option v-for="item in masterLine" :key="item.lineCode" :value="item.lineCode">
               {{ item.lineName }}
             </option>
           </select>
@@ -192,29 +193,6 @@ const lines = [
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'Delete Efficiency', action: 'delete' }])
 
-const lineType = [
-  { name: 'ALL' },
-  { name: '_None' },
-  { name: 'Accessories' },
-  { name: 'Baseball Shirt' },
-  { name: 'BG' },
-  { name: 'BG V' },
-  { name: 'Jacket' },
-  { name: 'Jacket FZ' },
-  { name: 'Jacket HD' },
-  { name: 'Jacket HZ' },
-  { name: 'NURSE PANTS' },
-  { name: 'NURSE SCRUB' },
-  { name: 'Pants' },
-  { name: 'Pants BG' },
-  { name: 'Polo Long arm' },
-  { name: 'Polo Short arm' },
-  { name: 'SKIRT' },
-  { name: 'Tight' },
-  { name: 'T-Shirt' },
-  { name: 'T-Shirt+Pants' },
-  { name: 'Underwear' },
-]
 const masterEfficiency = ref<MasterEfficiency[]>([])
 const STORE_MASTER = useMaster()
 const model = reactive<MasterEfficiency>({
@@ -232,10 +210,16 @@ const model = reactive<MasterEfficiency>({
 })
 const showModal = ref<boolean>(false)
 const showMenu = ref(false)
+const masterLine = ref(STORE_MASTER.masterLine)
 const contextTargetJob = ref<Job | null>()
 const { getRelativeX, getRelativeY, getInsertIndexInLine } = useMouseEvent()
 const { adjustTimeForIndex, adjustToWorkingHours } = useTime()
 
+const factoryList = ref([
+  'All',
+  ...new Set(STORE_MASTER.masterLine.map((item) => item.factoryCode)),
+])
+const selectFactory = ref('All')
 // const effectiveDateString = computed({
 //   get: () => {
 //     return model.effectiveDate ? formatDateLocal(model.effectiveDate) : ''
@@ -361,9 +345,19 @@ const showToastCountdown = () => {
 watchEffect(() => {
   masterEfficiency.value = STORE_MASTER.masterEfficiency
 })
+watch(selectFactory, (newVal) => {
+  console.log(newVal)
+  newVal != 'All'
+    ? (masterLine.value = STORE_MASTER.masterLine.filter((item) => item.factoryCode === newVal))
+    : (masterLine.value = STORE_MASTER.masterLine)
 
+  masterEfficiency.value = STORE_MASTER.masterEfficiency.filter((item) =>
+    masterLine.value.map((item) => item.lineCode).includes(item.lineCode),
+  )
+})
 onMounted(() => {
   STORE_MASTER.getMasterEfficiency()
+  masterLine.value = STORE_MASTER.masterLine
   masterEfficiency.value = STORE_MASTER.masterEfficiency
 })
 </script>

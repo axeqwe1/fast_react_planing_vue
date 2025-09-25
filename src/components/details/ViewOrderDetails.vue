@@ -224,7 +224,7 @@ import { values } from 'lodash'
 import { useMaster } from '@/stores/masterStore'
 import { formatDateLocal, formatLocal } from '@/utils/formatKey'
 
-const props = defineProps<{ mode: string }>()
+const props = defineProps<{ mode: string; targetCompany: string }>()
 const master = ref<MasterData[]>([])
 const masterFiltered = ref<MasterData[]>([])
 const shipDate = reactive<{ start: string; end: string }>({ start: '', end: '' })
@@ -332,7 +332,15 @@ watch(
     fetchOrder()
   },
 )
-
+watch(
+  () => props.targetCompany,
+  (newVal) => {
+    if (newVal == 'ALL') masterFiltered.value = STORE_MASTER.planJob
+    else masterFiltered.value = STORE_MASTER.planJob.filter((item) => item.factoryCode === newVal)
+    pagInModel.totalRows = masterFiltered.value.length
+    pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
+  },
+)
 onMounted(() => {
   csvFileName.value = `Order-${props.mode}-${timeStamp}`.toLocaleLowerCase()
   console.log(props.mode)

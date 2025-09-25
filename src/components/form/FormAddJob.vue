@@ -49,360 +49,269 @@
         </div>
       </div>
     </div>
+
     <div class="flex-1/2 h-full overflow-auto border-1">
-      <div class="flex flex-col h-full max-h-[900px] justify-start items-center p-6">
-        <div v-bind="containerProps" style="overflow-y: auto" class="w-full h-full overflow-x-auto">
-          <div v-bind="wrapperProps">
-            <table class="table table-xs">
-              <!-- head -->
-              <thead>
-                <tr class="sticky top-0 bg-base-200 z-10 text-center w-full">
-                  <th>#</th>
-                  <th class="relative" data-filter="orderNo">
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'orderNo' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('orderNo')"
-                    >
-                      Order No -
-                    </div>
-                    <div
-                      v-show="openFilter === 'orderNo'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.orderNo)"
-                        @update:data="(val) => onFilterSelect('orderNo', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <th class="relative" data-filter="style">
-                    <!-- Style -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'style' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('style')"
-                    >
-                      Style -
-                    </div>
-                    <div
-                      v-show="openFilter === 'style'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.style)"
-                        @update:data="(val) => onFilterSelect('style', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <th>Division</th>
-                  <th class="relative" data-filter="season">
-                    <!-- Season -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'season' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('season')"
-                    >
-                      Season -
-                    </div>
-                    <div
-                      v-show="openFilter === 'season'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.season)"
-                        @update:data="(val) => onFilterSelect('season', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <!-- ProgramTH -->
-                  <th class="relative" data-filter="programCode">
-                    <!-- programCode -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'programCode' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('programCode')"
-                    >
-                      Program Code -
-                    </div>
-                    <div
-                      v-show="openFilter === 'programCode'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.programCode)"
-                        @update:data="(val) => onFilterSelect('programCode', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <th class="relative" data-filter="color">
-                    <!-- Color -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'color' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('color')"
-                    >
-                      Color -
-                    </div>
-                    <div
-                      v-show="openFilter === 'color'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.color)"
-                        @update:data="(val) => onFilterSelect('color', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <th class="relative" data-filter="customer">
-                    <!-- Color -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'customer' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('customer')"
-                    >
-                      Customer -
-                    </div>
-                    <div
-                      v-show="openFilter === 'customer'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.customer)"
-                        @update:data="(val) => onFilterSelect('customer', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <th>Ship Date</th>
-                  <th>Qty</th>
-                  <th>Qty QC Sew</th>
-                  <th>Qty Pack</th>
-                  <th>Status</th>
-                  <th data-filter="statusName" class="relative">
-                    <!-- statusName -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'statusName' ? 'bg-blue-500 text-white' : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('statusName')"
-                    >
-                      Status Name -
-                    </div>
-                    <div
-                      v-show="openFilter === 'statusName'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.statusName)"
-                        @update:data="(val) => onFilterSelect('statusName', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
-                  <th data-filter="processNameStatus" class="relative">
-                    <!-- Process Name Status -->
-                    <div
-                      :class="[
-                        'cursor-pointer px-2 py-1 rounded',
-                        openFilter === 'processNameStatus'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100',
-                      ]"
-                      @click="toggleFilter('processNameStatus')"
-                    >
-                      Process Name Status -
-                    </div>
-                    <div
-                      v-show="openFilter === 'processNameStatus'"
-                      class="absolute z-50 mt-1 w-42 overflow-auto border rounded shadow bg-white"
-                    >
-                      <CustomFilterColumn
-                        :data="masterFiltered.map((item) => item.processNameStatus)"
-                        @update:data="(val) => onFilterSelect('processNameStatus', val)"
-                        :reset="resetFilterCount"
-                      />
-                    </div>
-                  </th>
+      <div class="flex flex-col h-full max-h-[1000px] justify-start items-center p-6">
+        <div class="card w-full overflow-auto h-full">
+          <DataTable
+            :value="masterFiltered"
+            v-model:selection="selectedRow"
+            selectionMode="single"
+            paginator
+            :rows="pagInModel.pageSize"
+            :totalRecords="pagInModel.totalRows"
+            :first="(pagInModel.pageNumber - 1) * pagInModel.pageSize"
+            @page="onPageChange"
+            :rowsPerPageOptions="[10, 20, 50, 100]"
+            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
+            currentPageReportTemplate="Total {totalRecords} entries"
+            scrollable
+            scrollHeight="calc(100vh - 370px)"
+            filterDisplay="row"
+            v-model:filters="filters"
+            :globalFilterFields="[
+              'orderNo',
+              'style',
+              'season',
+              'color',
+              'customer',
+              'programCode',
+              'statusName',
+              'processNameStatus',
+            ]"
+            size="small"
+            class="p-datatable-sm"
+            @row-select="selectData"
+          >
+            <!-- Order No Column -->
+            <Column
+              field="orderNo"
+              header="Order No"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 120px"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.orderNo))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
 
-                  <th>Process Pct</th>
-                  <th>Qty Bundle</th>
-                  <th>Qty Cut</th>
-                  <th>Qty EMB</th>
-                  <th>Qty Emboss</th>
-                  <th>Qty Print</th>
-                  <th>Qty Heat</th>
-                  <th>Qty PR Pad</th>
-                  <th>Qty Fusing</th>
-                  <th>Qty Bonding</th>
-                  <th>Qty Laser Cut</th>
-                  <th>Qty QC</th>
-                  <th>Qty Match</th>
-                  <th>Qty Out</th>
-                  <th>Qty Sew</th>
-                </tr>
-              </thead>
+            <!-- Style Column -->
+            <Column
+              field="style"
+              header="Style"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 120px"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.style))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
 
-              <!-- body -->
-              <tbody>
-                <tr
-                  class="hover:bg-base-200 hover:cursor-pointer text-center"
-                  v-for="row in list"
-                  :key="`${row.data.orderNo}${row.data.style}${row.data.color}${row.index}`"
-                  :class="currentActive === row.index ? 'bg-base-200' : ''"
-                  @click="selectData(row.data)"
+            <!-- Division Column -->
+            <Column field="division" header="Division" sortable style="min-width: 100px" />
+
+            <!-- Season Column -->
+            <Column
+              field="season"
+              header="Season"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 100px"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.season))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
+
+            <!-- Program Code Column -->
+            <Column
+              field="programCode"
+              header="Program Code"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 120px"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.programCode))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
+
+            <!-- Color Column -->
+            <Column
+              field="color"
+              header="Color"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 100px"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.color))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
+
+            <!-- Customer Column -->
+            <Column
+              field="customer"
+              header="Customer"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 120px"
+            >
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.customer))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
+
+            <!-- Ship Date Column -->
+            <Column field="shipDate" header="Ship Date" sortable style="min-width: 120px">
+              <template #body="{ data }">
+                <div
+                  :class="{
+                    'bg-red-400 text-amber-300': new Date(data.shipDate) < new Date(),
+                    'bg-sky-400 text-base-200': new Date(data.shipDate) > new Date(),
+                  }"
+                  class="font-bold px-2 py-1 rounded min-w-[125px] text-center"
                 >
-                  <td>{{ row.index + 1 }}</td>
-                  <td>{{ row.data.orderNo }}</td>
-                  <td>{{ row.data.style }}</td>
-                  <td>{{ row.data.division }}</td>
-                  <td>{{ row.data.season }}</td>
-                  <td>{{ row.data.programCode }}</td>
-                  <td>{{ row.data.color }}</td>
-                  <td>{{ row.data.customer }}</td>
-                  <td
-                    :class="{
-                      'bg-red-400 text-amber-300': new Date(row.data.shipDate) < new Date(),
-                      'bg-sky-400 text-base-200': new Date(row.data.shipDate) > new Date(),
-                    }"
-                    class="font-bold"
-                  >
-                    {{ row.data.shipDate.toString().split('T')[0] }}
-                  </td>
-                  <td>{{ row.data.qty }}</td>
-                  <td>{{ row.data.qtyQCSew }}</td>
-                  <td>{{ row.data.qtyPack }}</td>
-                  <td>{{ row.data.status }}</td>
-                  <td>
-                    <span
-                      :class="{
-                        'badge-success': row.data.statusName == 'Confirm',
-                        'badge-error':
-                          row.data.statusName == 'Cancel' || row.data.statusName == 'Close',
-                        'badge-info': row.data.statusName == 'Shipped',
-                      }"
-                      class="badge font-bold"
-                    >
-                      {{ row.data.statusName }}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      :class="{
-                        'badge-success': row.data.processNameStatus == 'Complete',
-                        'badge-warning': row.data.processNameStatus == 'Waiting',
-                        'badge-info': row.data.processNameStatus == 'InProgress',
-                      }"
-                      class="badge font-bold"
-                    >
-                      {{ row.data.processNameStatus }}
-                    </span>
-                  </td>
+                  {{ data.shipDate.toString().split('T')[0] }}
+                </div>
+              </template>
+            </Column>
 
-                  <td>{{ row.data.progressPct }}</td>
-                  <td>{{ row.data.qtyBundle }}</td>
-                  <td>{{ row.data.qtyCut }}</td>
-                  <td>{{ row.data.qtyEMB }}</td>
-                  <td>{{ row.data.qtyEmboss }}</td>
-                  <td>{{ row.data.qtyPrint }}</td>
-                  <td>{{ row.data.qtyHeat }}</td>
-                  <td>{{ row.data.qtyPRPad }}</td>
-                  <td>{{ row.data.qtyFusing }}</td>
-                  <td>{{ row.data.qtyBonding }}</td>
-                  <td>{{ row.data.qtyLaserCut }}</td>
-                  <td>{{ row.data.qtyQc }}</td>
-                  <td>{{ row.data.qtyMatch }}</td>
-                  <td>{{ row.data.qtyOut }}</td>
-                  <td>{{ row.data.qtySew }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <!-- end overflow -->
-        <div class="flex flex-row justify-between items-center mt-4 w-full">
-          <div>
-            <label for="">Total rows : {{ pagInModel.totalRows }}</label>
-          </div>
-          <div class="flex flex-row">
-            <div class="flex flex-row items-center gap-2">
-              <button
-                @click="pagInModel.pageNumber = 1"
-                class="btn btn-sm bg-base-200"
-                :class="
-                  pagInModel.pageNumber > 1 ? 'btn btn-sm bg-base-200' : 'btn btn-sm btn-disabled'
-                "
-              >
-                <<
-              </button>
-              <button
-                @click="
-                  pagInModel.pageNumber > 1 ? pagInModel.pageNumber-- : (pagInModel.pageNumber = 1)
-                "
-                :class="
-                  pagInModel.pageNumber > 1 ? 'btn btn-sm bg-base-200' : 'btn btn-sm btn-disabled'
-                "
-                class="btn btn-sm bg-base-200"
-              >
-                <
-              </button>
-              {{ pagInModel.pageNumber }} of {{ pagInModel.totalPage }}
-              <button
-                @click="
-                  pagInModel.pageNumber < pagInModel.totalPage
-                    ? pagInModel.pageNumber++
-                    : (pagInModel.pageNumber = pagInModel.totalPage)
-                "
-                :class="
-                  pagInModel.pageNumber < pagInModel.totalPage
-                    ? 'btn btn-sm bg-base-200'
-                    : 'btn btn-sm btn-disabled'
-                "
-                class="btn btn-sm bg-base-200"
-              >
-                >
-              </button>
-              <button
-                @click="pagInModel.pageNumber = pagInModel.totalPage"
-                class="btn btn-sm bg-base-200"
-                :class="
-                  pagInModel.pageNumber < pagInModel.totalPage
-                    ? 'btn btn-sm bg-base-200'
-                    : 'btn btn-sm btn-disabled'
-                "
-              >
-                >>
-              </button>
-              <select v-model="pagInModel.pageSize" class="select w-20 select-ghost">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
+            <!-- Quantity Columns -->
+            <Column field="qty" header="Qty" sortable style="min-width: 80px" />
+            <Column field="qtyQCSew" header="Qty QC Sew" sortable style="min-width: 100px" />
+            <Column field="qtyPack" header="Qty Pack" sortable style="min-width: 90px" />
+            <Column field="status" header="Status" sortable style="min-width: 80px" />
+
+            <!-- Status Name Column -->
+            <Column
+              field="statusName"
+              header="Status Name"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 120px"
+            >
+              <template #body="{ data }">
+                <Tag
+                  :value="data.statusName"
+                  :severity="getStatusSeverity(data.statusName)"
+                  class="font-bold"
+                />
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.statusName))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
+
+            <!-- Process Name Status Column -->
+            <Column
+              field="processNameStatus"
+              header="Process Status"
+              sortable
+              filter
+              :showFilterMenu="false"
+              style="min-width: 140px"
+            >
+              <template #body="{ data }">
+                <Tag
+                  :value="data.processNameStatus"
+                  :severity="getProcessSeverity(data.processNameStatus)"
+                  class="font-bold"
+                />
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <MultiSelect
+                  v-model="filterModel.value"
+                  :options="[...new Set(masterFiltered.map((item) => item.processNameStatus))]"
+                  placeholder="Any"
+                  display="chip"
+                  @change="filterCallback"
+                  class="p-column-filter"
+                />
+              </template>
+            </Column>
+
+            <!-- Additional Quantity Columns -->
+            <Column field="progressPct" header="Process Pct" sortable style="min-width: 100px" />
+            <Column field="qtyBundle" header="Qty Bundle" sortable style="min-width: 100px" />
+            <Column field="qtyCut" header="Qty Cut" sortable style="min-width: 80px" />
+            <Column field="qtyEMB" header="Qty EMB" sortable style="min-width: 80px" />
+            <Column field="qtyEmboss" header="Qty Emboss" sortable style="min-width: 100px" />
+            <Column field="qtyPrint" header="Qty Print" sortable style="min-width: 90px" />
+            <Column field="qtyHeat" header="Qty Heat" sortable style="min-width: 80px" />
+            <Column field="qtyPRPad" header="Qty PR Pad" sortable style="min-width: 90px" />
+            <Column field="qtyFusing" header="Qty Fusing" sortable style="min-width: 90px" />
+            <Column field="qtyBonding" header="Qty Bonding" sortable style="min-width: 100px" />
+            <Column field="qtyLaserCut" header="Qty Laser Cut" sortable style="min-width: 110px" />
+            <Column field="qtyQc" header="Qty QC" sortable style="min-width: 80px" />
+            <Column field="qtyMatch" header="Qty Match" sortable style="min-width: 90px" />
+            <Column field="qtyOut" header="Qty Out" sortable style="min-width: 80px" />
+            <Column field="qtySew" header="Qty Sew" sortable style="min-width: 80px" />
+          </DataTable>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Toast Notification -->
   <Teleport to="body">
     <Transition
       enter-active-class="transition-opacity duration-500"
@@ -422,7 +331,7 @@
   <Modal
     :modelValue="confirmModal"
     :size="'small'"
-    @update:modelValue="(val: any) => (showModal = val)"
+    @update:modelValue="(val: any) => (confirmModal = val)"
     :closable="false"
     :persistent="true"
   >
@@ -468,9 +377,12 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
-import CustomFilterColumn from '@/components/filterComponent/CustomFilterColumn.vue'
+import { FilterMatchMode } from '@primevue/core/api'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import MultiSelect from 'primevue/multiselect'
+import Tag from 'primevue/tag'
 import Modal from '../Modal.vue'
-import { defaultDocument, useVirtualList } from '@vueuse/core'
 import { type MasterLine, type Job, type MasterData, type Line } from '@/type/types'
 import { useMaster } from '@/stores/masterStore'
 import { useCaltime } from '@/composables/useCaltime'
@@ -482,18 +394,27 @@ import { AddJob, GetPlanJob } from '@/lib/api/Masterplan'
 
 const { calTime } = useCaltime()
 
-const showModal = ref<boolean>()
 const showToast = ref<boolean>(false)
 const toastIsError = ref<boolean>(true)
 const toastMessage = ref<string>('')
 const countDownToast = ref<number>(0)
 const isEdit = ref<boolean>()
-const currentActive = ref<number>()
+const selectedRow = ref<MasterData>()
 const master = ref<MasterData[]>([])
 const masterFiltered = ref<MasterData[]>([])
-const pagingMaster = ref<MasterData[]>([])
-const openFilter = ref<string | null>(null) // 'orderNo', 'style', null
 const loadingProcess = ref<boolean>(false)
+
+// PrimeVue Filters
+const filters = ref({
+  orderNo: { value: null, matchMode: FilterMatchMode.IN },
+  style: { value: null, matchMode: FilterMatchMode.IN },
+  season: { value: null, matchMode: FilterMatchMode.IN },
+  color: { value: null, matchMode: FilterMatchMode.IN },
+  customer: { value: null, matchMode: FilterMatchMode.IN },
+  programCode: { value: null, matchMode: FilterMatchMode.IN },
+  statusName: { value: null, matchMode: FilterMatchMode.IN },
+  processNameStatus: { value: null, matchMode: FilterMatchMode.IN },
+})
 
 const modelData = reactive<{
   startDate: string
@@ -518,31 +439,14 @@ const pagInModel = reactive<{
   totalPage: number
 }>({
   pageNumber: 1,
-  pageSize: 50,
+  pageSize: 10,
   totalRows: 0,
   totalPage: 0,
 })
-const resetFilterCount = ref(0)
-const filterState = {
-  orderNo: [] as string[],
-  style: [] as string[],
-  statusName: [] as string[],
-  processNameStatus: [] as string[],
-  season: [] as string[],
-  color: [] as string[],
-  customer: [] as string[],
-  programCode: [] as string[],
-}
+
 const listLine = ref<MasterLine[]>([])
 const { user } = useAuth()
 const props = defineProps<{ defaultStartDate?: string; factoryCode?: string; lineCode?: string }>()
-const { list, containerProps, wrapperProps } = useVirtualList(
-  pagingMaster, // ข้อมูล array ที่กรองแล้ว
-  {
-    itemHeight: 40, // สูงของแต่ละ row (px)
-    overscan: 10, // preload แถวก่อน-หลัง
-  },
-)
 const STORE_MASTER = useMaster()
 const store = useScheduleStore()
 const jobs = ref<Job[]>([])
@@ -552,62 +456,93 @@ const emit = defineEmits<{
   (e: 'AddJob', value: boolean): void
 }>()
 
+// PrimeVue Event Handlers
+const onPageChange = (event: any) => {
+  pagInModel.pageNumber = Math.floor(event.first / event.rows) + 1
+  pagInModel.pageSize = event.rows
+}
+
+// Row styling
+// const getRowClass = (data: MasterData) => {
+//   return selectedRow.value?.orderNo === data.orderNo ? 'bg-base-200' : ''
+// }
+
+// Tag severity functions
+const getStatusSeverity = (status: string) => {
+  switch (status) {
+    case 'Confirm':
+      return 'success'
+    case 'Cancel':
+    case 'Close':
+      return 'danger'
+    case 'Shipped':
+      return 'info'
+    default:
+      return 'secondary'
+  }
+}
+
+const getProcessSeverity = (status: string) => {
+  switch (status) {
+    case 'Complete':
+      return 'success'
+    case 'Waiting':
+      return 'warning'
+    case 'InProgress':
+      return 'info'
+    default:
+      return 'secondary'
+  }
+}
+
 function validation() {
   if (!modelData.startDate) {
     showToast.value = true
     toastIsError.value = true
     toastMessage.value = 'startDate is required'
     showToastCountdown()
-    console.log('startDate is required')
     return false
   } else if (modelData.Line === 'Pick Line') {
     showToast.value = true
     toastIsError.value = true
     toastMessage.value = 'Line is required'
     showToastCountdown()
-    console.log('Line is required')
     return false
   } else if (!modelData.Order) {
     showToast.value = true
     toastIsError.value = true
     toastMessage.value = 'Order is required'
     showToastCountdown()
-    console.log('Order is required')
     return false
   } else if (!modelData.Color) {
     showToast.value = true
     toastIsError.value = true
     toastMessage.value = 'Color is required'
     showToastCountdown()
-    console.log('Color is required')
     return false
   } else if (!modelData.Style) {
     showToast.value = true
     toastIsError.value = true
     toastMessage.value = 'Style is required'
     showToastCountdown()
-    console.log('Style is required')
     return false
   } else if (!modelData.Season) {
     showToast.value = true
     toastIsError.value = true
     toastMessage.value = 'Season is required'
     showToastCountdown()
-    console.log('Season is required')
     return false
   } else {
     showToast.value = false
     toastIsError.value = false
-    console.log('✅ All fields valid')
     return true
   }
 }
+
 const submit = async (e: Event) => {
   e.preventDefault()
   loadingProcess.value = true
   if (validation()) {
-    console.log('Compare Data : ', modelData.startDate, ' : ', new Date(modelData.startDate))
-    console.log(modelData.Line)
     const newData: AddPlanJob = {
       startDate: formatLocal(new Date(modelData.startDate)),
       endDate: formatLocal(
@@ -627,12 +562,10 @@ const submit = async (e: Event) => {
     }
 
     const res = await AddJob(newData)
-    console.log(res)
     if (res.status === 200) {
       confirmModal.value = false
       toastIsError.value = false
       toastMessage.value = res.data
-
       showToastCountdown()
       emit('AddJob', true)
       await refresh()
@@ -642,42 +575,16 @@ const submit = async (e: Event) => {
     loadingProcess.value = false
   }
 }
+
 const reset = async () => {}
-function selectData(master: MasterData) {
+
+function selectData(event: any) {
+  const master = event.data
   modelData.Color = master.color
   modelData.Order = master.orderNo
   modelData.Style = master.style
   modelData.Season = master.season
-}
-function toggleFilter(column: string) {
-  if (openFilter.value === column) {
-    openFilter.value = null // คลิกซ้ำ → ปิด
-  } else {
-    openFilter.value = column // เปิด column ใหม่ → ปิดอันอื่น
-  }
-}
-// function resetFilter() {
-//   Object.keys(filterState).forEach((key) => {
-//     filterState[key as keyof typeof filterState] = []
-//   })
-//   masterFiltered.value = master.value
-//   pagInModel.pageNumber = 1
-//   resetFilterCount.value++
-// }
-function onFilterSelect(column: keyof typeof filterState, selected: string[]) {
-  filterState[column] = selected
-  // console.log(shipDate)
-  let masterArr = master.value
-
-  masterFiltered.value = masterArr.filter((item) => {
-    return (Object.entries(filterState) as [keyof typeof filterState, string[]][]).every(
-      ([key, selectedValues]) => {
-        if (!selectedValues || selectedValues.length === 0) return true
-        return selectedValues.includes(item[key])
-      },
-    )
-  })
-  pagInModel.pageNumber = 1
+  selectedRow.value = master
 }
 
 const fetchData = async () => {
@@ -689,32 +596,68 @@ const fetchData = async () => {
         : item.factoryCode) &&
       (item.sewStart == null || item.lineCode == null),
   )
-  // console.log(data)
-  // pagInModel.totalRows = res.data.totalRecords
-  // pagInModel.totalPage = res.data.totalPages
   master.value = data
   masterFiltered.value = data
+  pagInModel.totalRows = data.length
+  pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
 }
-function paginateArray(array: MasterData[], pageSize: number, pageNumber: number) {
-  const startIndex = (pageNumber - 1) * pageSize
-  const endIndex = pageNumber * pageSize
-  return array.slice(startIndex, endIndex)
+
+const refresh = async () => {
+  await fetchMasterPlan(STORE_MASTER.currentFactory)
 }
-// ฟังก์ชันตรวจสอบคลิกนอก dropdown
-function handleClickOutside(e: PointerEvent) {
-  if (!openFilter.value) return
 
-  const target = e.target as HTMLElement
-  // th ของคอลัมน์ที่เปิดอยู่ตอนนี้
-  const openTh = document.querySelector(
-    `th[data-filter="${openFilter.value}"]`,
-  ) as HTMLElement | null
+const fetchMasterPlan = async (factory?: string) => {
+  try {
+    jobs.value = []
+    const res = await GetPlanJob()
+    STORE_MASTER.planJob = res
+    store.jobStyleCache.clear()
+    const data = res
+    let filterData = []
+    filterData = data.filter((item: any) => item.sewStart != null)
 
-  // ถ้าหาไม่เจอ หรือคลิกอยู่นอก th ที่เปิดอยู่ → ปิด
-  if (!openTh || !openTh.contains(target)) {
-    openFilter.value = null
+    filterData.forEach((items: any, index: number) => {
+      jobs.value.push({
+        id: index,
+        line: items.lineCode,
+        qty: items.qty,
+        style: items.style,
+        season: items.season,
+        color: items.color,
+        typeName: items.type,
+        name: items.orderNo,
+        startDate: items.sewStart,
+        endDate: items.sewFinish,
+        duration: items.duration,
+        processStatus: items.processStatus,
+        progressPct: items.progressPct,
+      })
+    })
+    store.setJobs(jobs.value)
+
+    let arrLine = STORE_MASTER.masterLine
+    const lineMap = arrLine.map((line: any) => {
+      return {
+        name: line.lineName,
+        lineCode: line.lineCode,
+        company: line.factoryCode,
+        manpower: line.capacityMP,
+      } as Line
+    })
+    masterLine.value = lineMap
+
+    if (factory === 'ALL') {
+      store.Lines = masterLine.value
+    } else {
+      store.Lines = masterLine.value.filter((line) => line.company === factory)
+    }
+
+    store.computeAllJobStyles()
+  } catch (err: any) {
+    console.error('Error fetching test data:', err)
   }
 }
+
 onMounted(async () => {
   await fetchData()
 
@@ -735,111 +678,20 @@ onMounted(async () => {
   if (props.lineCode) {
     modelData.Line = props.lineCode
   }
+
   pagInModel.totalRows = masterFiltered.value.length
   pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
-  pagingMaster.value = paginateArray(
-    masterFiltered.value,
-    pagInModel.pageSize,
-    pagInModel.pageNumber,
-  )
-})
-watch(pagInModel, async () => {
-  pagInModel.totalRows = masterFiltered.value.length
-  pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
-  const paginatedData = paginateArray(
-    masterFiltered.value,
-    pagInModel.pageSize,
-    pagInModel.pageNumber,
-  )
-  pagingMaster.value = paginatedData
-  // console.log(paginatedData)
 })
 
-watch(masterFiltered, () => {
-  pagInModel.totalRows = masterFiltered.value.length
-  pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
-})
 watch(
   () => modelData.Line,
   (newVal) => {
-    console.log(newVal)
     let factoryCode = STORE_MASTER.masterLine.find((item) => item.lineCode == newVal)?.factoryCode
     masterFiltered.value = master.value.filter((item) => item.factoryCode == factoryCode)
     pagInModel.totalRows = masterFiltered.value.length
     pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
-    pagingMaster.value = paginateArray(
-      masterFiltered.value,
-      pagInModel.pageSize,
-      pagInModel.pageNumber,
-    )
   },
 )
-
-const refresh = async () => {
-  // store.Jobs = []
-  // store.jobUpdate = []
-  await fetchMasterPlan(STORE_MASTER.currentFactory)
-}
-const fetchMasterPlan = async (factory?: string) => {
-  try {
-    // const res = await GetPlanJob()
-    jobs.value = []
-    const res = await GetPlanJob()
-    STORE_MASTER.planJob = res
-    store.jobStyleCache.clear()
-    const data = res
-    let filterData = []
-    filterData = data.filter((item: any) => item.sewStart != null)
-
-    // console.log(data.filter((item: any) => item.sewStart != null))
-    filterData.forEach((items: any, index: number) => {
-      jobs.value.push({
-        id: index, // Assuming each item has a unique id
-        line: items.lineCode,
-        qty: items.qty,
-        style: items.style,
-        season: items.season,
-        color: items.color,
-        typeName: items.type,
-        name: items.orderNo,
-        startDate: items.sewStart,
-        endDate: items.sewFinish,
-        duration: items.duration,
-        processStatus: items.processStatus,
-        progressPct: items.progressPct,
-      })
-    })
-    store.setJobs(jobs.value) // Update the store with fetched jobs
-
-    // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
-    let arrLine = STORE_MASTER.masterLine // Convert Set to Array
-    const lineMap = arrLine.map((line: any) => {
-      return {
-        name: line.lineName,
-        lineCode: line.lineCode,
-        company: line.factoryCode,
-        manpower: line.capacityMP,
-      } as Line
-    })
-    masterLine.value = lineMap
-
-    if (factory === 'ALL') {
-      store.Lines = masterLine.value
-    } else {
-      store.Lines = masterLine.value.filter((line) => line.company === factory)
-    }
-
-    store.computeAllJobStyles()
-    // store.setMasters(filterData)
-    // store.setLine(masterLine.value) // Update the store with unique lines
-    // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
-  } catch (err: any) {
-    console.error('Error fetching test data:', err)
-  }
-}
-onMounted(() => {
-  // calTime(props.defaultStartDate)
-})
 
 let timer: any = null
 const showToastCountdown = () => {
@@ -857,4 +709,22 @@ const showToastCountdown = () => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+/* Custom DataTable Styles */
+:deep(.p-datatable-sm .p-datatable-tbody > tr > td) {
+  padding: 0.25rem 0.5rem;
+}
+
+:deep(.p-datatable-sm .p-datatable-thead > tr > th) {
+  padding: 0.5rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+:deep(.p-column-filter) {
+  width: 100%;
+}
+
+:deep(.p-multiselect-chip) {
+  font-size: 0.75rem;
+}
+</style>

@@ -314,6 +314,19 @@
             </div>
             <div>
               <div class="text-end pb-4">
+                <Select
+                  class="max-w-[150px]"
+                  v-model="targetCompany"
+                  :options="[
+                    ...new Set(STORE_MASTER.masterFactory.map((item) => item.factoryCode)),
+                  ]"
+                  placeholder="Select One"
+                  :showClear="true"
+                >
+                  <template #option="slotProps">
+                    <Tag :value="slotProps.option" />
+                  </template>
+                </Select>
                 <span class="px-3">Total : {{ viewDetailRef?.pagInModel.totalRows }} Rows</span>
                 <Button
                   icon="pi pi-external-link"
@@ -325,7 +338,7 @@
           </div>
         </TabList>
         <TabPanels class="p-0!">
-          <ViewOrderDetails :mode="mode" ref="viewDetailRef" />
+          <ViewOrderDetails :mode="mode" :targetCompany="targetCompany" ref="viewDetailRef" />
         </TabPanels>
       </Tabs>
     </div>
@@ -414,6 +427,7 @@ const allRef = ref<InstanceType<typeof ViewOrderDetails>>()
 const planedRef = ref<InstanceType<typeof ViewOrderDetails>>()
 const notRef = ref<InstanceType<typeof ViewOrderDetails>>()
 
+const targetCompany = ref('ALL')
 const mode = ref('All')
 watch(activeTab, (newVal) => {
   if (newVal === '0') {
