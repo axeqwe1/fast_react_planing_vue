@@ -285,6 +285,12 @@ const jobMenu = ref([
       }
     },
   },
+  {
+    label: 'Split (not use)',
+    icon: 'pi pi-arrows-h',
+    command: () => {},
+    disabled: true,
+  },
 ])
 const onRightClick = (
   event: MouseEvent,

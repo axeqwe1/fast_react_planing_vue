@@ -17,6 +17,7 @@
     <DataTable
       :value="masterFiltered"
       paginator
+      @filter="onFilter"
       :rows="pagInModel.pageSize"
       :rowsPerPageOptions="[10, 20, 50, 100]"
       :totalRecords="pagInModel.totalRows"
@@ -99,7 +100,11 @@
           <MultiSelect
             v-model="filterModel.value"
             @change="filterCallback()"
-            :options="[...new Set(masterFiltered.map((item) => item.color))]"
+            :options="[
+              ...new Set(
+                (filteredRows.length ? filteredRows : masterFiltered).map((item) => item.color),
+              ),
+            ]"
             placeholder="Any"
             style="min-width: 100%"
             :maxSelectedLabels="1"
@@ -184,7 +189,13 @@
             class="max-w-[150px]"
             v-model="filterModel.value"
             @change="filterCallback()"
-            :options="[...new Set(masterFiltered.map((item) => item.statusName))]"
+            :options="[
+              ...new Set(
+                (filteredRows.length ? filteredRows : masterFiltered).map(
+                  (item) => item.statusName,
+                ),
+              ),
+            ]"
             placeholder="Select One"
             :showClear="true"
           >
@@ -209,7 +220,13 @@
             class="max-w-[150px]"
             v-model="filterModel.value"
             @change="filterCallback()"
-            :options="[...new Set(masterFiltered.map((item) => item.processNameStatus))]"
+            :options="[
+              ...new Set(
+                (filteredRows.length ? filteredRows : masterFiltered).map(
+                  (item) => item.processNameStatus,
+                ),
+              ),
+            ]"
             placeholder="Select One"
             :showClear="true"
           >
@@ -381,6 +398,7 @@ const loading = ref(true)
 const dt = ref()
 const STORE_MASTER = useMaster()
 const csvFileName = ref('OrderViewExport')
+const filteredValue = ref()
 const pagInModel = reactive({
   pageNumber: 1,
   pageSize: 50,
@@ -484,6 +502,13 @@ defineExpose({
   exportCSV,
   pagInModel,
 })
+
+const filteredRows = ref([])
+
+function onFilter(event: any) {
+  filteredRows.value = event.filteredValue
+}
+
 watch(
   () => props.mode,
   (newVal) => {
