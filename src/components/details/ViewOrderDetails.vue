@@ -33,6 +33,44 @@
       :exportFilename="csvFileName"
       removableSort
     >
+      <Column field="createDate" header="Planed Date" sortable :showFilterMenu="false">
+        <template #body="{ data }">
+          <div
+            class="text-center min-w-[180px] px-2 py-1 rounded"
+            :class="data.createDate ? 'bg-green-400' : ''"
+          >
+            {{ data.createDate ? formatLocal(new Date(data.createDate)) : 'Not Plan' }}
+          </div>
+        </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <div class="flex gap-2 items-center">
+            <DatePicker
+              v-model="datePickPlan"
+              selectionMode="range"
+              placeholder="Date Range"
+              :manualInput="false"
+              style="min-width: 8rem"
+              @update:modelValue="
+                (value) => filterDateRange(value as Date[], filterModel, filterCallback)
+              "
+            />
+            <Button
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
+              @click="
+                () => {
+                  datePickPlan = null
+                  filterModel.value = null
+
+                  filterCallback()
+                }
+              "
+              :disabled="!datePickPlan"
+            />
+          </div>
+        </template>
+      </Column>
       <Column field="orderNo" header="Order No" sortable filter>
         <template #body="{ data }">
           {{ data.orderNo }}
@@ -85,7 +123,7 @@
               'bg-sky-400 text-white px-2 py-1 rounded': new Date(data.shipDate) > new Date(),
             }"
           >
-            {{ data.shipDate.split('T')[0] }}
+            {{ data.shipDate ? formatDateLocal(new Date(data.shipDate)) : 'Not Ship' }}
           </div>
         </template>
         <template #filter="{ filterModel, filterCallback }">
@@ -181,20 +219,131 @@
           </Select>
         </template>
       </Column>
-      <Column field="sewStart" header="SewStart">
+      <Column field="sewStart" header="SewStart" sortable :showFilterMenu="false">
         <template #body="{ data }">
-          <div class="w-25">
+          <div class="text-center min-w-[180px] px-2 py-1 rounded">
             {{ data.sewStart ? formatLocal(new Date(data.sewStart)) : 'Not planed' }}
           </div>
         </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <div class="flex gap-2 items-center">
+            <DatePicker
+              v-model="datePickSewStart"
+              selectionMode="range"
+              placeholder="Date Range"
+              :manualInput="false"
+              style="min-width: 8rem"
+              @update:modelValue="
+                (value) => filterDateRange(value as Date[], filterModel, filterCallback)
+              "
+            />
+            <Button
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
+              @click="
+                () => {
+                  datePickSewStart = null
+                  filterModel.value = null
+
+                  filterCallback()
+                }
+              "
+              :disabled="!datePickSewStart"
+            />
+          </div>
+        </template>
       </Column>
-      <Column field="sewFinish" header="SewFinish">
+      <Column field="sewFinish" header="SewFinish" sortable :showFilterMenu="false">
         <template #body="{ data }">
-          <div class="w-25">
+          <div class="text-center min-w-[180px] px-2 py-1 rounded">
             {{ data.sewStart ? formatLocal(new Date(data.sewFinish)) : 'Not planed' }}
           </div>
-        </template></Column
-      >
+        </template>
+
+        <template #filter="{ filterModel, filterCallback }">
+          <div class="flex gap-2 items-center">
+            <DatePicker
+              v-model="datePickSewFinish"
+              selectionMode="range"
+              placeholder="Date Range"
+              :manualInput="false"
+              style="min-width: 8rem"
+              @update:modelValue="
+                (value) => filterDateRange(value as Date[], filterModel, filterCallback)
+              "
+            />
+            <Button
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
+              @click="
+                () => {
+                  datePickSewFinish = null
+                  filterModel.value = null
+
+                  filterCallback()
+                }
+              "
+              :disabled="!datePickSewFinish"
+            />
+          </div>
+        </template>
+      </Column>
+      <Column field="updateDate" header="Update Date" sortable :showFilterMenu="false">
+        <template #body="{ data }">
+          <div
+            class="text-center min-w-[180px] px-2 py-1 rounded"
+            :class="data.updateDate ? 'bg-amber-400' : ''"
+          >
+            {{ data.updateDate ? formatLocal(new Date(data.updateDate)) : 'Never Update' }}
+          </div>
+        </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <div class="flex gap-2 items-center">
+            <DatePicker
+              v-model="datePickUpdate"
+              selectionMode="range"
+              placeholder="Date Range"
+              :manualInput="false"
+              style="min-width: 8rem"
+              @update:modelValue="
+                (value) => filterDateRange(value as Date[], filterModel, filterCallback)
+              "
+            />
+            <Button
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
+              @click="
+                () => {
+                  datePickPlan = null
+                  filterModel.value = null
+
+                  filterCallback()
+                }
+              "
+              :disabled="!datePickPlan"
+            />
+          </div>
+        </template>
+      </Column>
+      <Column field="updateBy" header="Update By" sortable :showFilterMenu="false">
+        <template #body="{ data }">
+          <div class="text-center min-w-[180px] px-2 py-1 rounded">
+            {{ data.updateBy ? data.updateBy : 'Never Update' }}
+          </div>
+        </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <InputText
+            class="max-w-[150px]"
+            v-model="filterModel.value"
+            type="text"
+            @input="filterCallback()"
+            placeholder="Search by name"
+          />
+        </template>
+      </Column>
       <!-- เพิ่ม Column อื่น ๆ ตามที่ต้องการ
       <Column #footer>
         <ColumnGroup type="footer">
@@ -238,14 +387,21 @@ const pagInModel = reactive({
   totalRows: 0,
   totalPage: 0,
 })
+
 const filters = ref({
+  createDate: { value: null, matchMode: FilterMatchMode.BETWEEN },
   orderNo: { value: null, matchMode: FilterMatchMode.CONTAINS },
   name: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
   shipDate: { value: null, matchMode: FilterMatchMode.BETWEEN },
   color: { value: null, matchMode: FilterMatchMode.IN },
   statusName: { value: null, matchMode: FilterMatchMode.EQUALS },
   processNameStatus: { value: null, matchMode: FilterMatchMode.EQUALS },
+  sewStart: { value: null, matchMode: FilterMatchMode.BETWEEN },
+  sewFinish: { value: null, matchMode: FilterMatchMode.BETWEEN },
+  updateDate: { value: null, matchMode: FilterMatchMode.BETWEEN },
+  updateBy: { value: null, matchMode: FilterMatchMode.CONTAINS },
 })
+
 async function fetchOrder() {
   loading.value = true
 
@@ -275,15 +431,19 @@ function onPageChange(e: any) {
   pagInModel.pageSize = e.rows
 }
 const datePick = ref(null)
+const datePickPlan = ref(null)
+const datePickSewStart = ref(null)
+const datePickSewFinish = ref(null)
+const datePickUpdate = ref(null)
+
 function filterDateRange(date: Date[], filterModel: any, filterCallback: any) {
-  console.table({ date: date, filterModel: filterModel })
-  if (date.length === 2) {
-    filterModel.value = date.map((date: Date) => {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    })
+  if (date && date[1]) {
+    const start = new Date(date[0])
+    const end = new Date(date[1])
+    end.setDate(end.getDate() + 1)
+    console.log(formatDateLocal(start), formatDateLocal(end))
+    // format กลับเป็น yyyy-MM-dd เหมือนเดิม
+    filterModel.value = [formatDateLocal(start), formatDateLocal(end)]
   } else {
     filterModel.value = null
   }

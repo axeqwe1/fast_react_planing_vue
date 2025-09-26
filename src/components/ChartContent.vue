@@ -142,6 +142,10 @@ const fetchMasterPlan = async (factory?: string) => {
         duration: items.duration,
         processStatus: items.processStatus,
         progressPct: items.progressPct,
+        createBy: items.createBy,
+        updateBy: items.updateBy,
+        createDate: items.createDate,
+        updateDate: items.updateDate,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs

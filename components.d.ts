@@ -12,7 +12,6 @@ declare module 'vue' {
     Calendar: typeof import('./src/components/Calendar.vue')['default']
     ChartContent: typeof import('./src/components/ChartContent.vue')['default']
     Column: typeof import('primevue/column')['default']
-    ColumnGroup: typeof import('primevue/columngroup')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
     CustomFilterColumn: typeof import('./src/components/filterComponent/CustomFilterColumn.vue')['default']
     DataTable: typeof import('primevue/datatable')['default']
@@ -31,7 +30,6 @@ declare module 'vue' {
     MultiSelect: typeof import('primevue/multiselect')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Row: typeof import('primevue/row')['default']
     ScheduleRow: typeof import('./src/components/ScheduleRow.vue')['default']
     Select: typeof import('primevue/select')['default']
     Tab: typeof import('primevue/tab')['default']
@@ -41,8 +39,5 @@ declare module 'vue' {
     Tag: typeof import('primevue/tag')['default']
     ViewCanvas: typeof import('./src/components/viewCanvas.vue')['default']
     ViewOrderDetails: typeof import('./src/components/details/ViewOrderDetails.vue')['default']
-  }
-  export interface GlobalDirectives {
-    Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

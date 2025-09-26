@@ -129,6 +129,9 @@ export const useScheduleStore = defineStore('schedule', {
       if (job.progressPct > 0) {
         bgColor = '#38ff95'
       }
+      if (job.updateDate == null) {
+        bgColor = '#fbff85'
+      }
       if (!timeIndexMap.has(startKey) || !timeIndexMap.has(endKey)) {
         // console.warn('Not found:', startKey, endKey)
         return { display: 'none' }

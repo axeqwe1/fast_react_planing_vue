@@ -12,6 +12,10 @@ export interface Job {
   duration: number
   processStatus: string
   progressPct: number
+  createDate: Date
+  updateDate: Date
+  createBy: string
+  updateBy: string
 }
 
 export interface Line {

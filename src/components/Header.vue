@@ -37,7 +37,7 @@
         class="px-4 py-2 rounded cursor-pointer"
         @click="showModal = true"
         :class="
-          store.jobUpdate.length > 0
+          store.jobUpdate.length > 0 && !loadingProcess
             ? 'bg-green-400 hover:bg-green-400/70 text-black cursor-not-allowed'
             : 'hidden'
         "
@@ -188,10 +188,21 @@
       <div class="flex flex-row-reverse gap-2">
         <button
           @click="UpdatePlans"
-          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] bg-green-500 text-white hover:bg-transparent hover:text-gray-900 hover:border-green-500 hover:border-3 text-xl transition-all ease-in duration-100"
+          :disabled="loadingProcess"
+          class="border-1 rounded-2xl w-[100px] h-[50px] hover:bg-transparent hover:text-gray-900 text-xl transition-all ease-in duration-100"
+          :class="
+            loadingProcess
+              ? 'btn-disabled opacity-50 cursor-not-allowed'
+              : 'bg-green-500 text-white hover:border-green-500 hover:border-3 hover:cursor-pointer'
+          "
         >
-          Confirm
+          <span v-show="loadingProcess">
+            <span class="loading loading-spinner"></span>
+            loading
+          </span>
+          <span v-show="!loadingProcess"> Confirm </span>
         </button>
+
         <button
           @click="showModal = false"
           class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
@@ -390,6 +401,7 @@ import { useAuth } from '@/stores/userStore'
 import ViewOrderDetails from './details/ViewOrderDetails.vue'
 import FormAddJob from './form/FormAddJob.vue'
 const { setLoading } = useLoadingStore()
+const loadingProcess = ref(false)
 const showModal = ref(false)
 const showSettingMasterLine = ref(false)
 const showSettingMasterEfficiency = ref(false)
@@ -469,7 +481,9 @@ const refresh = async () => {
   await fetchMasterPlan(STORE_MASTER.currentFactory)
 }
 const UpdatePlans = async () => {
+  loadingProcess.value = true
   const res = await UpdatePlan(store.jobUpdate)
+  await fetchMasterPlan()
   console.log(res)
   if (res.status === 200) {
     showModal.value = false
@@ -481,10 +495,8 @@ const UpdatePlans = async () => {
     toastMessage.value = res.statusText
     showToastCountdown()
   }
-
   store.jobUpdate = []
-  await fetchMasterPlan(STORE_MASTER.currentFactory)
-
+  loadingProcess.value = false
   showModal.value = false
 }
 
@@ -551,27 +563,31 @@ const fetchMasterPlan = async (factory?: string) => {
         duration: items.duration,
         processStatus: items.processStatus,
         progressPct: items.progressPct,
+        createBy: items.createBy,
+        updateBy: items.updateBy,
+        createDate: items.createDate,
+        updateDate: items.updateDate,
       })
     })
     store.setJobs(jobs.value) // Update the store with fetched jobs
 
-    // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
-    let arrLine = STORE_MASTER.masterLine // Convert Set to Array
-    const lineMap = arrLine.map((line: any) => {
-      return {
-        name: line.lineName,
-        lineCode: line.lineCode,
-        company: line.factoryCode,
-        manpower: line.capacityMP,
-      } as Line
-    })
-    masterLine.value = lineMap
+    // // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
+    // let arrLine = STORE_MASTER.masterLine // Convert Set to Array
+    // const lineMap = arrLine.map((line: any) => {
+    //   return {
+    //     name: line.lineName,
+    //     lineCode: line.lineCode,
+    //     company: line.factoryCode,
+    //     manpower: line.capacityMP,
+    //   } as Line
+    // })
+    // masterLine.value = lineMap
 
-    if (factory === 'ALL') {
-      store.Lines = masterLine.value
-    } else {
-      store.Lines = masterLine.value.filter((line) => line.company === factory)
-    }
+    // if (factory === 'ALL') {
+    //   store.Lines = masterLine.value
+    // } else {
+    //   store.Lines = masterLine.value.filter((line) => line.company === factory)
+    // }
 
     store.computeAllJobStyles()
     // store.setMasters(filterData)
