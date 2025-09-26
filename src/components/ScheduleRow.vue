@@ -561,10 +561,6 @@ function tooltipContent(job: any, line: any) {
   border-right: 2px solid #000; /* กำหนดเส้นขอบด้านขวาให้หนา */
   font-size: 12px; /* ปรับขนาดตัวอักษรให้เล็กลงถ้าจำเป็น */
   font-weight: bold;
-  transition:
-    left 0.2s ease-out,
-    top 0.2s ease-out;
-  will-change: left, top;
 }
 
 .hour-of-day {

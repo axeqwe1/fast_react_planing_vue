@@ -1,4 +1,6 @@
 // jobWorker.ts
+import { formatTimeKey } from '@/utils/formatKey'
+
 export type Job = {
   id: string
   startDate: string
@@ -7,14 +9,6 @@ export type Job = {
 }
 
 export type TimeIndexMap = Map<string, number>
-
-function formatDateKey(dateStr: string) {
-  const d = new Date(dateStr)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 onmessage = (e: MessageEvent) => {
   const { jobs, timeIndexMap, unitWidth } = e.data as {
@@ -27,8 +21,8 @@ onmessage = (e: MessageEvent) => {
   const results: Record<string, any> = {}
 
   for (const job of jobs) {
-    const startKey = formatDateKey(job.startDate)
-    const endKey = formatDateKey(job.endDate)
+    const startKey = formatTimeKey(new Date(job.startDate))
+    const endKey = formatTimeKey(new Date(job.endDate))
     const startOffset = map.get(startKey)
     const endOffset = map.get(endKey)
 
