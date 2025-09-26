@@ -399,13 +399,33 @@ function onDragStart(e: DragEvent, job: Job) {
 
   // dragImage.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)'
   dragImage.style.fontWeight = 'bold'
+  const img = new Image()
+  img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==' // transparent pixel
+  e.dataTransfer?.setDragImage(img, 0, 0)
   document.body.appendChild(dragImage)
   e.dataTransfer.setDragImage(dragImage, 0, 10) // offset เล็กน้อยเพื่อความสวยงาม
+  document.addEventListener('mousemove', handleDragMove)
   setTimeout(() => document.body.removeChild(dragImage), 0)
 }
 
-function onDragOver(linename: string, e: DragEvent) {
-  e.preventDefault()
+function onDragOver(lineCode: string, e: DragEvent) {
+  e.preventDefault() // ต้องมี ไม่งั้น drop ไม่ทำงาน
+
+  const container = draggableEl.value[lineCode]
+  if (!container) return
+
+  const relativeX = getRelativeX(container, e)
+  const unitWidth = container.offsetWidth / store.timeIndexMap.size
+  const index = Math.floor(relativeX / unitWidth)
+
+  const timeKey = [...store.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
+
+  timeOnMouse.value = timeKey ?? ''
+  emits('updatePositionDate', timeKey ?? '')
+  emits(
+    'updatePositionManpower',
+    STORE_MASTER.masterLine.find((l) => l.lineCode === lineCode)?.capacityMP ?? 0,
+  )
 }
 
 // ฟังก์ชันช่วยสำหรับ debug การคำนวณ
@@ -451,6 +471,7 @@ function onDrop(e: DragEvent, lineName: string) {
 function onDragEnd() {
   draggingJob.value = null
   dragStartPosition.value = null
+  document.removeEventListener('mousemove', handleDragMove)
 }
 
 watch(
@@ -537,6 +558,25 @@ function tooltipContent(job: any, line: any) {
     </table>
   `
 }
+
+function handleDragMove(e: MouseEvent) {
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el) return
+
+  // หา lineCode จาก container ที่ตรงกับ element
+  const lineEntry = Object.entries(draggableEl.value).find(([lineCode, container]) =>
+    container.contains(el),
+  )
+
+  if (!lineEntry) return
+
+  const [lineCode, container] = lineEntry
+  updateMouse(
+    e,
+    lineCode,
+    STORE_MASTER.masterLine.find((item) => item.lineCode == lineCode)?.capacityMP ?? 0,
+  )
+}
 </script>
 
 <style scoped>
@@ -565,10 +605,6 @@ function tooltipContent(job: any, line: any) {
   border-right: 2px solid #000; /* กำหนดเส้นขอบด้านขวาให้หนา */
   font-size: 12px; /* ปรับขนาดตัวอักษรให้เล็กลงถ้าจำเป็น */
   font-weight: bold;
-  transition:
-    left 0.2s ease-out,
-    top 0.2s ease-out;
-  will-change: left, top;
 }
 
 .hour-of-day {

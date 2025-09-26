@@ -19,19 +19,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { formatTimeKey } from '@/utils/formatKey'
+import { useMaster } from '@/stores/masterStore'
 
 const store = useScheduleStore()
 const container = ref<HTMLElement>()
 const scrollX = ref(0)
 const viewportWidth = ref(1920)
 
+const STORE_MASTER = useMaster()
 const lineName = 'LINE_1'
 const cellWidth = 40
 const canvasHeight = 70
-
+const containerHeight = ref<number | undefined>(0)
 // คำนวณ total width
 const totalWidth = computed(() => store.headerWidth || 0)
 
@@ -76,7 +78,7 @@ const timelineCells = computed(() => {
             position: 'absolute',
             left: `${leftPosition}px`,
             width: `${store.minWidthHeader / 7}px`,
-            height: '70px',
+            height: '100%',
             background: isWeekend ? '#4da8da80' : notToday ? '#ddd' : '#eee',
             borderRight: isSunday ? '1px solid red' : '',
           },
@@ -108,6 +110,23 @@ onMounted(() => {
   updateViewportWidth()
   window.addEventListener('resize', updateViewportWidth)
 })
+onMounted(async () => {
+  await nextTick(() => {
+    if (document.getElementById('gantt-wrapper')) {
+      containerHeight.value = document.getElementById('gantt-wrapper')?.scrollHeight
+    }
+  })
+})
+watch(
+  () => STORE_MASTER.currentFactory,
+  async () => {
+    await nextTick(() => {
+      if (document.getElementById('gantt-wrapper')) {
+        containerHeight.value = document.getElementById('gantt-wrapper')?.scrollHeight
+      }
+    })
+  },
+)
 </script>
 
 <style scoped>
@@ -148,7 +167,8 @@ onMounted(() => {
 }
 
 .divide-overlay {
-  position: absolute;
+  /* position: absolute; */
+  display: flex;
   top: 0;
   left: 0;
   width: 100%;
