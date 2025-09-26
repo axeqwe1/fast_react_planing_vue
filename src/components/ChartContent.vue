@@ -40,10 +40,15 @@
       <div class="text-6xl font-bold">Loading...</div>
     </template>
     <template v-else>
-      <ScheduleRow
-        @update-position-date="getPositionDate"
-        @update-position-manpower="getPositionManpower"
-      />
+      <div>
+        <div class="absolute">
+          <viewCanvas class="left-[200px]" />
+        </div>
+        <ScheduleRow
+          @update-position-date="getPositionDate"
+          @update-position-manpower="getPositionManpower"
+        />
+      </div>
     </template>
   </div>
   <div class="h-screen flex justify-center items-center w-full" v-if="weeks.length < 1">
