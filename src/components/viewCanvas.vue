@@ -1,5 +1,10 @@
 <template>
-  <div class="timeline-container" @scroll="handleScroll" ref="container">
+  <div
+    class="timeline-container"
+    :style="{ height: containerHeight + 'px' }"
+    @scroll="handleScroll"
+    ref="container"
+  >
     <!-- Timeline Grid -->
 
     <!-- Divide bars overlay -->
@@ -19,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { formatTimeKey } from '@/utils/formatKey'
 
@@ -29,6 +34,8 @@ const scrollX = ref(0)
 const viewportWidth = ref(1920)
 
 const lineName = 'LINE_1'
+const elHeight = ref(document.getElementById('gantt-wrapper'))
+const containerHeight = ref<number | undefined>(0)
 const cellWidth = 40
 const canvasHeight = 70
 
@@ -76,7 +83,7 @@ const timelineCells = computed(() => {
             position: 'absolute',
             left: `${leftPosition}px`,
             width: `${store.minWidthHeader / 7}px`,
-            height: '70px',
+            height: '100%',
             background: isWeekend ? '#4da8da80' : notToday ? '#ddd' : '#eee',
             borderRight: isSunday ? '1px solid red' : '',
           },
@@ -108,12 +115,22 @@ onMounted(() => {
   updateViewportWidth()
   window.addEventListener('resize', updateViewportWidth)
 })
+onMounted(async () => {
+  await nextTick(() => {
+    if (document.getElementById('gantt-wrapper')) {
+      containerHeight.value = document.getElementById('gantt-wrapper')?.scrollHeight
+    }
+  })
+})
+// watch(elHeight, () => {
+//   if (elHeight.value) containerHeight.value = elHeight.value.scrollHeight
+// })
 </script>
 
 <style scoped>
 .timeline-container {
   width: 100%;
-  height: 70px;
+
   position: relative;
   background: #fff;
 }
@@ -158,7 +175,7 @@ onMounted(() => {
 
 .divide-bar {
   position: absolute;
-  height: 70px;
+  height: 100%;
   /* background: #4da8da80; */
   border-right: 2px solid red;
 }
