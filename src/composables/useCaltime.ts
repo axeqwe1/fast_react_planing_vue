@@ -42,7 +42,7 @@ export function useCaltime() {
 
     while (remainMinute > 0) {
       safety++
-      if (safety == 1000) {
+      if (safety == 10) {
         break
       }
       const shiftStart = '08:00:00'
@@ -56,7 +56,15 @@ export function useCaltime() {
           formatDateLocal(currentDate).split(' ')[0]
         )
       })[0]
-
+      console.log(
+        STORE_MASTER.masterWorkDay.filter((item) => {
+          console.log(formatDateLocal(currentDate).split(' ')[0])
+          return (
+            formatDateLocal(new Date(item.workDate)).split(' ')[0] ==
+            formatDateLocal(currentDate).split(' ')[0]
+          )
+        }),
+      )
       if (WorkDay) {
         console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
         console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
@@ -157,14 +165,14 @@ export function useCaltime() {
       // console.log('Actual End IS : ', LastEndDateTime)
       // console.log('Cumulative', CUMULATIVE_QTY)
       // console.log('QtyRemainAfterThisDay', QtyRemainAfterThisDay)
-      console.table({
-        date: formatDateLocal(currentDate),
-        remainMinute,
-        CAP_MIN_TODAY,
-        AllocatedWorkMin,
-        producedQty: AllocatedWorkMin / Sam,
-        CUMULATIVE_QTY,
-      })
+      // console.table({
+      //   date: formatDateLocal(currentDate),
+      //   remainMinute,
+      //   CAP_MIN_TODAY,
+      //   AllocatedWorkMin,
+      //   producedQty: AllocatedWorkMin / Sam,
+      //   CUMULATIVE_QTY,
+      // })
       endDate = LastEndDateTime
       currentDate.setDate(currentDate.getDate() + 1)
     }

@@ -1,5 +1,5 @@
 <template>
-  <div id="gantt-wrapper" class="flex flex-col relative">
+  <div class="flex flex-col relative">
     <div
       class="flex z-0 border-b-1 border-gray-500"
       v-for="(line, i) in lines"
@@ -74,6 +74,10 @@
               {{ job.name }}
             </span>
           </div>
+        </template>
+
+        <template v-if="divideLeft">
+          <viewCanvas />
         </template>
       </div>
     </div>
