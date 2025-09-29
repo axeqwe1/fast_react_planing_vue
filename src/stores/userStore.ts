@@ -12,6 +12,7 @@ export const useAuth = defineStore('authen', {
       email: '',
       factoryId: 0,
       factoryName: '',
+      factoryCode: '',
     } as User,
     isAuthen: false as boolean,
   }),

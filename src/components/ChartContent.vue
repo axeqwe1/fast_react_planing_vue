@@ -46,7 +46,10 @@
       />
     </template>
   </div>
-  <div class="h-screen flex justify-center items-center w-full" v-if="weeks.length < 1">
+  <div
+    class="h-screen flex justify-center items-center w-full"
+    v-if="weeks.length < 1 && user.isAuthen"
+  >
     <LoadingComponent />
   </div>
 </template>
@@ -74,6 +77,7 @@ import { debounce, template } from 'lodash'
 import LoadingComponent from '@/components/LoadingComponent.vue'
 import { useRoute } from 'vue-router'
 import { useMaster } from '@/stores/masterStore'
+import { useAuth } from '@/stores/userStore'
 
 const weeks = ref([] as { start: Date; end: Date }[])
 const weeksDay = ref(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
@@ -90,6 +94,7 @@ const store = useScheduleStore()
 const isInitial = ref(false)
 const posDate = ref<string>()
 const posManpower = ref<number>()
+const user = useAuth()
 const props = defineProps<{
   // Define any props if needed
   factory: string
@@ -188,6 +193,7 @@ const fetchMasterHoliday = async () => {
 
 const initializeData = async (factory?: string) => {
   console.log('--- Mounted ---')
+  console.log('--- factory ---', factory)
   loadStore.setLoading(true)
   isInitial.value = false
   await fetchMasterPlan(factory)
@@ -271,25 +277,26 @@ function getPositionManpower(manpower: number) {
 }
 onMounted(async () => {
   console.log(STORE_MASTER.currentFactory)
-  initializeData(STORE_MASTER.currentFactory)
+  initializeData(user.user.factoryCode || STORE_MASTER.currentFactory || 'ALL')
 })
 
 onBeforeUnmount(() => {
   console.log('destroyed viewCanvas')
 })
 
-watch(
-  () => STORE_MASTER.currentFactory,
-  async (newVal) => {
-    console.log('Factory changed chart:', newVal)
+// watch(
+//   () => STORE_MASTER.currentFactory,
+//   async (newVal) => {
+//     console.log('Factory changed chart:', newVal)
 
-    if (newVal === 'ALL') {
-      store.Lines = masterLine.value
-    } else {
-      store.Lines = masterLine.value.filter((line) => line.company === newVal)
-    }
-  },
-)
+//     if (newVal === 'ALL') {
+//       store.Lines = masterLine.value
+//     } else {
+//       store.Lines = masterLine.value.filter((line) => line.company === newVal)
+//     }
+//     console.log(store.Lines)
+//   },
+// )
 </script>
 
 <style scoped></style>

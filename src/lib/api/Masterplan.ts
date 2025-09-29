@@ -269,3 +269,14 @@ export const GetPlanScheduleData = async (request: GetPlanScheduleRequestDTO) =>
     throw err
   }
 }
+
+export const GetAllJob = async () => {
+  try {
+    const API_PATH = `api/Masterplan/GetPlanJobFinish`
+    const res = await apiService.get(API_PATH)
+
+    return res
+  } catch (err: any) {
+    throw err
+  }
+}

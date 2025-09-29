@@ -24,7 +24,7 @@
       :first="(pagInModel.pageNumber - 1) * pagInModel.pageSize"
       @page="onPageChange"
       scrollable
-      scrollHeight="calc(100vh - 250px)"
+      scrollHeight="calc(100vh - 275px)"
       v-model:filters="filters"
       tableStyle="min-width: 1400px"
       size="small"
@@ -383,7 +383,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
-import { GetOrderGNX } from '@/lib/api/Masterplan'
+import { GetAllJob, GetOrderGNX } from '@/lib/api/Masterplan'
 import type { MasterData, OrderGNX } from '@/type/types'
 import MultiSelect from 'primevue/multiselect'
 import { values } from 'lodash'
@@ -421,20 +421,16 @@ const filters = ref({
 })
 
 async function fetchOrder() {
-  loading.value = true
-
-  props.mode === 'All' ? (masterFiltered.value = STORE_MASTER.planJob) : null
+  props.mode === 'All' ? (masterFiltered.value = master.value) : null
   props.mode === 'Planed'
-    ? (masterFiltered.value = STORE_MASTER.planJob.filter((item) => item.sewStart))
+    ? (masterFiltered.value = master.value.filter((item) => item.sewStart))
     : null
   props.mode === 'Not'
-    ? (masterFiltered.value = STORE_MASTER.planJob.filter((item) => !item.sewStart))
+    ? (masterFiltered.value = master.value.filter((item) => !item.sewStart))
     : null
 
   pagInModel.totalRows = masterFiltered.value.length
   pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
-  console.log(masterFiltered.value)
-  loading.value = false
 }
 
 function resetFilter() {
@@ -509,6 +505,20 @@ function onFilter(event: any) {
   filteredRows.value = event.filteredValue
 }
 
+const fetchAllPlanJob = async () => {
+  loading.value = true
+  const res = await GetAllJob()
+  if (res.status === 200) {
+    master.value = res.data
+    await fetchOrder()
+    loading.value = false
+  } else {
+    console.error('Error fetching data:', res)
+    loading.value = false
+  }
+  loading.value = false
+}
+
 watch(
   () => props.mode,
   (newVal) => {
@@ -520,15 +530,16 @@ watch(
 watch(
   () => props.targetCompany,
   (newVal) => {
-    if (newVal == 'ALL') masterFiltered.value = STORE_MASTER.planJob
-    else masterFiltered.value = STORE_MASTER.planJob.filter((item) => item.factoryCode === newVal)
+    if (newVal == 'ALL') masterFiltered.value = master.value
+    else masterFiltered.value = master.value.filter((item) => item.factoryCode === newVal)
     pagInModel.totalRows = masterFiltered.value.length
     pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
   },
 )
+onMounted(() => {})
 onMounted(() => {
   csvFileName.value = `Order-${props.mode}-${timeStamp}`.toLocaleLowerCase()
   console.log(props.mode)
 })
-onMounted(fetchOrder)
+onMounted(fetchAllPlanJob)
 </script>

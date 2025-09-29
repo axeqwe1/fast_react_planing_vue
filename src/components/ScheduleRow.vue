@@ -481,9 +481,12 @@ function onDragEnd() {
 }
 
 watch(
-  () => store.Lines, // ✅ ต้องใช้แบบนี้เพื่อติดตาม reactive props
+  () => STORE_MASTER.currentFactory, // ✅ ต้องใช้แบบนี้เพื่อติดตาม reactive props
   (newMaster) => {
-    lines.value = newMaster
+    lines.value = store.Lines.filter(
+      (line) =>
+        line.company === STORE_MASTER.currentFactory || STORE_MASTER.currentFactory === 'ALL',
+    )
     console.log('Updated lines:', newMaster)
   },
   { immediate: true }, // เรียกทันทีตอน mounted

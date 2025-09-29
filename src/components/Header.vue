@@ -385,7 +385,7 @@
 <script setup lang="ts">
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { IconCheck, IconZoomIn, IconZoomOut, IconFolder } from '@tabler/icons-vue'
-import { onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import Modal from './Modal.vue'
 import { GetMasterPlanData, GetPlanJob, UpdatePlan } from '@/lib/api/Masterplan'
 import type { Job, Line } from '@/type/types'
@@ -415,18 +415,17 @@ const showToast = ref<boolean>(false)
 const toastIsError = ref<boolean>(true)
 const countDownToast = ref<number>(0)
 const toastMessage = ref<string>('')
-
+const user = useAuth()
 const showConfirmModal = ref(false)
 const showCustomModal = ref(false)
 const store = useScheduleStore()
 const width = ref(store.minWidthHeader || 300)
 const jobs = ref([] as Job[])
-const fac = ref<string>('ALL')
+const fac = ref<string>(user.user.factoryCode || 'YPT')
 const ListFac = ref<string[]>([])
 
 const masterLine = ref<Line[]>([])
 const STORE_MASTER = useMaster()
-const user = useAuth()
 
 const totalJob = ref<number>(0)
 const viewDetailRef = ref<InstanceType<typeof ViewOrderDetails>>() // ref ของ child
@@ -439,7 +438,7 @@ const allRef = ref<InstanceType<typeof ViewOrderDetails>>()
 const planedRef = ref<InstanceType<typeof ViewOrderDetails>>()
 const notRef = ref<InstanceType<typeof ViewOrderDetails>>()
 
-const targetCompany = ref('ALL')
+const targetCompany = ref(user.user.factoryCode)
 const mode = ref('All')
 watch(activeTab, (newVal) => {
   if (newVal === '0') {
@@ -452,20 +451,6 @@ watch(activeTab, (newVal) => {
     mode.value = 'Not'
   }
 })
-function exportCSV(active: string) {
-  if (active === '0') {
-    allRef.value?.exportCSV()
-    mode.value = 'All'
-  }
-  if (active === '1') {
-    planedRef.value?.exportCSV()
-    mode.value = 'Planed'
-  }
-  if (active === '2') {
-    notRef.value?.exportCSV()
-    mode.value = 'Not'
-  }
-}
 
 const changeFac = (item: string) => {
   fac.value = item
@@ -615,10 +600,10 @@ const showToastCountdown = () => {
 watch(
   () => STORE_MASTER.masterFactory,
   (newVal) => {
-    ListFac.value = newVal.map((item) => item.factoryCode)
+    ListFac.value = newVal.map((item) => item.factoryCode).filter((item) => item != 'ALL')
     if (!ListFac.value.includes(fac.value)) {
-      fac.value = 'ALL'
-      STORE_MASTER.currentFactory = 'ALL'
+      fac.value = 'YPT'
+      STORE_MASTER.currentFactory = 'YPT'
       store.Lines = masterLine.value
     }
 
@@ -642,7 +627,27 @@ watch(
   },
 )
 
-onMounted(() => {
+watch(
+  () => [user.user.factoryCode, STORE_MASTER.masterFactory],
+  () => {
+    if (user.user.factoryCode == 'ALL') {
+      fac.value = 'YPT'
+      STORE_MASTER.currentFactory = fac.value
+      ListFac.value = STORE_MASTER.masterFactory
+        .map((item) => item.factoryCode)
+        .filter((item) => item != 'ALL')
+    } else {
+      fac.value = user.user.factoryCode || 'YPT'
+      STORE_MASTER.currentFactory = fac.value
+      ListFac.value = STORE_MASTER.masterFactory
+        .map((item) => item.factoryCode)
+        .filter((item) => item == user.user.factoryCode)
+      console.log('ListFac', ListFac.value)
+    }
+    emit('factory', fac.value)
+  },
+)
+onMounted(async () => {
   STORE_MASTER.getMasterLine()
   STORE_MASTER.getMasterEfficiency()
   STORE_MASTER.GetMasterSAM()
@@ -650,9 +655,11 @@ onMounted(() => {
   STORE_MASTER.getMasterSAMView()
   STORE_MASTER.getMasterFactory()
   STORE_MASTER.getMasterWorkDay()
-  // STORE_MASTER.getPlanJob()
 
-  emit('factory', fac.value)
+  await nextTick(() => {
+    emit('factory', fac.value)
+  })
+  // STORE_MASTER.getPlanJob()
 })
 </script>
 

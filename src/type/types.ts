@@ -138,6 +138,7 @@ export interface User {
   email: string
   factoryId: number
   factoryName: string
+  factoryCode: string
   isActive: boolean
 }
 

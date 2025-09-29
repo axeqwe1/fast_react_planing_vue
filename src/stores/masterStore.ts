@@ -11,6 +11,7 @@ import type {
   MasterWorkDay,
 } from '@/type/types'
 import {
+  GetAllJob,
   GetFactoryData,
   GetMasterEfficiency,
   GetMasterHoliday,
@@ -32,6 +33,7 @@ export const useMaster = defineStore('master', {
     masterFactory: [] as MasterFactory[],
     masterWorkDay: [] as MasterWorkDay[],
     planJob: [] as MasterData[],
+    allJob: [] as MasterData[],
     currentFactory: 'ALL' as string,
   }),
   actions: {
@@ -98,6 +100,14 @@ export const useMaster = defineStore('master', {
         const res = await GetPlanJob()
         console.log(res)
         this.planJob = res
+      }
+      fetchData()
+    },
+    GetAllJob() {
+      const fetchData = async () => {
+        const res = await GetAllJob()
+        console.log(res)
+        this.allJob = res.data
       }
       fetchData()
     },

@@ -42,7 +42,7 @@ export function useCaltime() {
 
     while (remainMinute > 0) {
       safety++
-      if (safety == 10) {
+      if (safety == 2000) {
         break
       }
       const shiftStart = '08:00:00'
