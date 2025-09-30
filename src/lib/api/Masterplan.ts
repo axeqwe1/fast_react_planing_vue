@@ -5,6 +5,7 @@ import type {
   CreateMasterSam,
   CreateMasterWorkDay,
   GetPlanScheduleRequestDTO,
+  ReturnJobPlanRequest,
   UpdatePlanJob,
 } from '@/type/requestDTO'
 
@@ -274,6 +275,17 @@ export const GetAllJob = async () => {
   try {
     const API_PATH = `api/Masterplan/GetPlanJobFinish`
     const res = await apiService.get(API_PATH)
+
+    return res
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const ReturnJobPlan = async (request: ReturnJobPlanRequest[]) => {
+  try {
+    const API_PATH = `api/Masterplan/ReturnJobPlaned`
+    const res = await apiService.post(API_PATH, request)
 
     return res
   } catch (err: any) {

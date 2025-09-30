@@ -7,6 +7,7 @@
     >
       <div
         class="flex flex-col justify-center w-full border-1 border-gray-400 p-2 sticky left-0 max-w-[200px] bg-slate-200 z-8"
+        @contextmenu="(e) => onRightClickLine(e, line.lineCode)"
       >
         <div class="flex justify-between items-center text-md">
           <span class="font-bold">
@@ -83,6 +84,156 @@
     </div>
     <ContextMenu ref="menu" :model="items" />
     <ContextMenu ref="jobmenu" :model="jobMenu" />
+    <ContextMenu ref="linemenu" :model="lineMenu" />
+    <Popover
+      ref="op"
+      @hide="
+        () => {
+          selectedOrderPlaned = []
+        }
+      "
+    >
+      <div class="flex flex-col gap-4 w-[25rem]">
+        <!-- <div>
+          <span class="font-medium block mb-2">Share this document</span>
+          <InputGroup>
+            <InputText
+              value="https://primevue.org/12323ff26t2g243g423g234gg52hy25XADXAG3"
+              readonly
+              class="w-[25rem]"
+            ></InputText>
+            <InputGroupAddon>
+              <i class="pi pi-copy"></i>
+            </InputGroupAddon>
+          </InputGroup>
+        </div> -->
+        <div>
+          <span class="font-medium block mb-2">Return Order</span>
+          <InputGroup>
+            <InputText :value="`${selectedOrderPlaned.length} Selected`" disabled />
+            <Button
+              @click="confirmReturnDialog = true"
+              label="Return"
+              icon="pi pi-caret-left"
+            ></Button>
+            <Dialog
+              v-model:visible="confirmReturnDialog"
+              modal
+              header="Return Job"
+              :style="{ width: '25rem' }"
+            >
+              <span class="text-surface-500 dark:text-surface-400 block mb-8"
+                >Are you sure to return job?.</span
+              >
+
+              <div class="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  label="Cancel"
+                  severity="secondary"
+                  @click="confirmReturnDialog = false"
+                ></Button>
+                <Button
+                  type="button"
+                  :icon="returnLoading ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+                  :label="returnLoading ? 'loading' : 'Save'"
+                  @click="handleReturnJob()"
+                ></Button>
+              </div>
+            </Dialog>
+          </InputGroup>
+        </div>
+        <div class="">
+          <span class="font-medium block mb-2">Planed List</span>
+          <ul class="list-none p-0 m-0 flex flex-col gap-4 max-h-48 overflow-y-auto">
+            <li
+              v-for="item in store.getJobsForLine(targetLineCode ? targetLineCode : '')"
+              :key="item.line + item.name + STORE_MASTER.currentFactory"
+              class="flex items-center gap-2 hover:bg-green-100 transition-all duration-150 ease-in-out rounded-lg p-2 cursor-pointer"
+              @click="
+                () => {
+                  if (
+                    selectedOrderPlaned.includes(
+                      item.name +
+                        '_' +
+                        item.color +
+                        '_' +
+                        item.style +
+                        '_' +
+                        item.season +
+                        '_' +
+                        item.typeName,
+                    ) &&
+                    selectedOrderPlaned.length > 0
+                  ) {
+                    selectedOrderPlaned = selectedOrderPlaned.filter(
+                      (i) =>
+                        i !==
+                        item.name +
+                          '_' +
+                          item.color +
+                          '_' +
+                          item.style +
+                          '_' +
+                          item.season +
+                          '_' +
+                          item.typeName,
+                    )
+                  } else {
+                    selectedOrderPlaned.push(
+                      item.name +
+                        '_' +
+                        item.color +
+                        '_' +
+                        item.style +
+                        '_' +
+                        item.season +
+                        '_' +
+                        item.typeName,
+                    )
+                    selectedOrderPlaned = [...new Set(selectedOrderPlaned)]
+                  }
+                }
+              "
+            >
+              <!-- <img
+                :src="`https://primefaces.org/cdn/primevue/images/avatar/${member.image}`"
+                style="width: 32px"
+              /> -->
+
+              <div>
+                <span class="font-medium">{{ item.name }}</span>
+                <div class="text-sm text-surface-500 dark:text-surface-400">
+                  {{ item.color }} {{ item.typeName }} {{ item.style }}
+                </div>
+              </div>
+              <div
+                class="flex items-center gap-2 text-surface-500 dark:text-surface-400 ml-auto text-sm"
+              >
+                <!-- <span>{{ member.role }}</span> -->
+                <Checkbox
+                  v-model="selectedOrderPlaned"
+                  :inputId="item.name + item.color + item.style + item.season + item.typeName"
+                  name="category"
+                  :value="
+                    item.name +
+                    '_' +
+                    item.color +
+                    '_' +
+                    item.style +
+                    '_' +
+                    item.season +
+                    '_' +
+                    item.typeName
+                  "
+                />
+                <!-- <i class="pi pi-angle-down"></i> -->
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </Popover>
     <!-- Overlay to close the menu -->
     <!-- <div class="overlay" @click="closeContextMenu" v-if="showMenu || showLineMenu" /> -->
 
@@ -194,6 +345,7 @@
         :style="floatingStyles"
       ></div>
     </Teleport>
+    <Toast position="top-center" group="tc" />
   </div>
 </template>
 
@@ -227,12 +379,17 @@ import { useTime } from '@/composables/useTime'
 import { detectDropMode } from '@/utils/detectDropMode'
 // import ContextMenu from './ContextMenu.vue'
 import ContextMenu from 'primevue/contextmenu'
-
+import Popover from 'primevue/popover'
 import Modal from './Modal.vue'
 import { useMaster } from '@/stores/masterStore'
 import FormAddJob from '@/components/form/FormAddJob.vue'
-import { GetPlanScheduleData } from '@/lib/api/Masterplan'
-import type { GetPlanScheduleRequestDTO } from '@/type/requestDTO'
+import { GetPlanJob, GetPlanScheduleData, ReturnJobPlan } from '@/lib/api/Masterplan'
+import type { GetPlanScheduleRequestDTO, ReturnJobPlanRequest } from '@/type/requestDTO'
+import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
+const toast = useToast()
+
+const confirmReturnDialog = ref(false)
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
 const contextLineMenu = ref([{ label: 'add job', action: 'addJob' }])
@@ -246,6 +403,7 @@ const dragContext = {
   containerRect: null as DOMRect | null,
   clientXStart: 0,
 }
+const jobs = ref<Job[]>([])
 const showModal = ref<boolean>(false)
 const showLineMenu = ref<boolean>(false)
 const chooseStartTime = ref<string>('')
@@ -261,9 +419,12 @@ const targetLineCode = ref<string>()
 const targetOrder = ref<string>()
 const requestPlanSchedule = ref<GetPlanScheduleRequestDTO | null>(null)
 const planSchedule = ref<PlanSchedule[]>([])
+const selectedOrderPlaned = ref<string[]>([])
 const timeOnMouse = ref('')
 const menu = ref()
 const jobmenu = ref()
+const linemenu = ref()
+const op = ref()
 const items = ref([
   {
     label: 'Add Job',
@@ -292,6 +453,94 @@ const jobMenu = ref([
     disabled: true,
   },
 ])
+const lineMenu = ref([
+  {
+    label: 'List Order',
+    icon: 'pi pi-list-check',
+    command: (e: any) => {
+      op.value.toggle(e.originalEvent)
+    },
+  },
+  {
+    label: 'EFF Manual (not use)',
+    icon: 'pi pi-bolt',
+    command: () => {},
+    disabled: true,
+  },
+  {
+    label: 'MP Manual (not use)',
+    icon: 'pi pi-users',
+    command: () => {},
+    disabled: true,
+  },
+  {
+    label: 'Config Expert Type (not use)',
+    icon: 'pi pi-cog',
+    command: () => {},
+    disabled: true,
+  },
+])
+const fetchMasterPlan = async (factory?: string) => {
+  try {
+    // const res = await GetPlanJob()
+    jobs.value = []
+    const res = await GetPlanJob()
+    STORE_MASTER.planJob = res
+    store.jobStyleCache.clear()
+    const data = res
+    let filterData = []
+    filterData = data.filter((item: any) => item.sewStart != null)
+
+    // console.log(data.filter((item: any) => item.sewStart != null))
+    filterData.forEach((items: any, index: number) => {
+      jobs.value.push({
+        id: index, // Assuming each item has a unique id
+        line: items.lineCode,
+        qty: items.qty,
+        style: items.style,
+        season: items.season,
+        color: items.color,
+        typeName: items.type,
+        name: items.orderNo,
+        startDate: items.sewStart,
+        endDate: items.sewFinish,
+        duration: items.duration,
+        processStatus: items.processStatus,
+        progressPct: items.progressPct,
+        createBy: items.createBy,
+        updateBy: items.updateBy,
+        createDate: items.createDate,
+        updateDate: items.updateDate,
+      })
+    })
+    store.setJobs(jobs.value) // Update the store with fetched jobs
+
+    // // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
+    // let arrLine = STORE_MASTER.masterLine // Convert Set to Array
+    // const lineMap = arrLine.map((line: any) => {
+    //   return {
+    //     name: line.lineName,
+    //     lineCode: line.lineCode,
+    //     company: line.factoryCode,
+    //     manpower: line.capacityMP,
+    //   } as Line
+    // })
+    // masterLine.value = lineMap
+
+    // if (factory === 'ALL') {
+    //   store.Lines = masterLine.value
+    // } else {
+    //   store.Lines = masterLine.value.filter((line) => line.company === factory)
+    // }
+
+    store.computeAllJobStyles()
+    // store.setMasters(filterData)
+    // store.setLine(masterLine.value) // Update the store with unique lines
+    // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
+  } catch (err: any) {
+    console.error('Error fetching test data:', err)
+  }
+}
 const onRightClick = (
   event: MouseEvent,
   lineCode: string,
@@ -302,7 +551,7 @@ const onRightClick = (
   showLineMenu.value = true
   targetFactoryCode.value = factoryCode
   targetLineCode.value = lineCode
-
+  op.value.hide(event)
   chooseStartTime.value = timeOnMouse.value
   console.log(lineCode)
 }
@@ -315,8 +564,16 @@ const onRightClickJob = (event: any, job: any, lineCode: string) => {
     StartDate: job.startDate,
     Respect: 1,
   }
+  op.value.hide(event)
   requestPlanSchedule.value = request
   targetOrder.value = job.name
+}
+
+const onRightClickLine = (event: any, lineCode: string) => {
+  linemenu.value.show(event)
+  op.value.hide(event)
+  targetLineCode.value = lineCode
+  console.log(lineCode)
 }
 // Tooltip state
 const tooltip = reactive({
@@ -586,6 +843,63 @@ function handleDragMove(e: MouseEvent) {
     STORE_MASTER.masterLine.find((item) => item.lineCode == lineCode)?.capacityMP ?? 0,
   )
 }
+
+const returnLoading = ref(false)
+function handleReturnJob() {
+  returnLoading.value = true
+  let arrRequest: ReturnJobPlanRequest[] = []
+  selectedOrderPlaned.value.forEach((item) => {
+    const [name, color, style, season, typeName] = item.split('_')
+    const request: ReturnJobPlanRequest = {
+      OrderNo: name,
+      Color: color,
+      Style: style,
+      Season: season,
+      TypeName: typeName,
+      LineCode: targetLineCode.value ? targetLineCode.value : '',
+    }
+    arrRequest.push(request)
+  })
+
+  ReturnJobPlan(arrRequest).then((res) => {
+    if (res.status === 200) {
+      console.log(res.data)
+      toast.add({
+        severity: 'success',
+        summary: 'Success Message',
+        detail: 'Return Order Success',
+        group: 'tc',
+        life: 5000,
+      })
+      selectedOrderPlaned.value = []
+      op.value.hide()
+      confirmReturnDialog.value = false
+      fetchMasterPlan().then((res) => {
+        toast.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Refresh Data Success',
+          group: 'tc',
+          life: 5000,
+        })
+      })
+      returnLoading.value = false
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'error',
+        detail: 'Return Order Fail',
+        group: 'tc',
+        life: 5000,
+      })
+      returnLoading.value = false
+    }
+  })
+}
+
+watch(selectedOrderPlaned, (newVal) => {
+  console.log(selectedOrderPlaned.value)
+})
 </script>
 
 <style scoped>

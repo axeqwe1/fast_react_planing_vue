@@ -44,3 +44,12 @@ export interface GetPlanScheduleRequestDTO {
   StartDate: string
   Respect: number
 }
+
+export interface ReturnJobPlanRequest {
+  OrderNo: string
+  Color: string
+  LineCode: string
+  Style: string
+  Season: string
+  TypeName: string
+}
