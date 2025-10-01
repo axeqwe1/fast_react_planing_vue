@@ -12,6 +12,7 @@ export interface CreateMasterSam {
 
 export interface UpdatePlanJob {
   id: number
+  sewId: number
   name: string
   qty: number
   style: string

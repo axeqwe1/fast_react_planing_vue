@@ -357,7 +357,7 @@ export const useScheduleStore = defineStore('schedule', {
         newStart.setDate(newStart.getDate() + 1)
         newStart.setHours(8, 0, 0, 0)
       }
-      let newEnd = calTime(newStart, job.name, job.color, targetLineId) as Date
+      let newEnd = calTime(newStart, job.name, job.color, targetLineId, job.sewId) as Date
       console.log(newEnd)
       // let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
@@ -391,7 +391,7 @@ export const useScheduleStore = defineStore('schedule', {
       // normalize start ตามเวลาทำงาน
       const startAdj = start
       // คำนวณ end ตาม duration ของ job
-      const endAdj = calTime(start, job.name, job.color, lineId) as Date
+      const endAdj = calTime(start, job.name, job.color, lineId, job.sewId) as Date
 
       const startDate = formatTimeKey(this.getNextWorkingDate(new Date(startAdj)))
       const endDate = formatTimeKey(endAdj)
@@ -431,7 +431,13 @@ export const useScheduleStore = defineStore('schedule', {
             this.Jobs.filter((i) => i.id === movingJobId).map((i) => i.duration)[0],
           )
           const currentJob = this.Jobs.find((item) => item.id == movingJobId)
-          newEnd = calTime(newStart, currentJob!.name, currentJob!.color, lineId) as Date // ✅ normalize
+          newEnd = calTime(
+            newStart,
+            currentJob!.name,
+            currentJob!.color,
+            lineId,
+            currentJob!.sewId,
+          ) as Date // ✅ normalize
           // this.jobUpdate.push(j)
           pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
           pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
@@ -455,7 +461,7 @@ export const useScheduleStore = defineStore('schedule', {
           if (offset > 0) {
             let newStart = new Date(jobStart.getTime() + offset)
             // newStart = this.getNextWorkingDate(newStart, 8)
-            let newEnd = calTime(newStart, job.name, job.color, lineId) as Date
+            let newEnd = calTime(newStart, job.name, job.color, lineId, job.sewId) as Date
             // newEnd = this.getNextWorkingDate(newEnd, 8)
             console.log('Chainnnnnnpushhhhh#######################')
             this.updateJob(job.id, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))

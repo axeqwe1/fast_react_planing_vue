@@ -1,7 +1,9 @@
 export interface Job {
   id: number
+  sewId: number
   name: string
   qty: number
+  splitQty: number
   style: string
   season: string
   color: string
@@ -192,6 +194,7 @@ export interface MasterFactory {
 }
 
 export interface MasterData {
+  sewId: number
   color: string
   customer: string
   division: string
@@ -203,6 +206,7 @@ export interface MasterData {
   progressPct: number
   psrDate: string // ISO date string
   qty: number
+  splitQty: number
   qtyBonding: number
   qtyBundle: number
   qtyCut: number

@@ -144,10 +144,21 @@
           </InputGroup>
         </div>
         <div class="">
-          <span class="font-medium block mb-2">Planed List</span>
+          <div class="flex flex-row justify-between items-center mb-2">
+            <span class="font-medium block mb-2"
+              >Planed List
+              <InputText
+                class="w-30 ml-1"
+                size="small"
+                placeholder="Search Order"
+                v-model="filterOrderList"
+            /></span>
+            <span>Total: {{ filteredJobs.length }} Jobs</span>
+          </div>
+
           <ul class="list-none p-0 m-0 flex flex-col gap-4 max-h-48 overflow-y-auto">
             <li
-              v-for="item in store.getJobsForLine(targetLineCode ? targetLineCode : '')"
+              v-for="item in filteredJobs"
               :key="item.line + item.name + STORE_MASTER.currentFactory"
               class="flex items-center gap-2 hover:bg-green-100 transition-all duration-150 ease-in-out rounded-lg p-2 cursor-pointer"
               @click="
@@ -425,6 +436,20 @@ const menu = ref()
 const jobmenu = ref()
 const linemenu = ref()
 const op = ref()
+
+const filterOrderList = ref('')
+
+const jobsForLine = computed(() =>
+  store.getJobsForLine(targetLineCode.value ? targetLineCode.value : ''),
+)
+const filteredJobs = computed(() => {
+  if (!filterOrderList.value || filterOrderList.value.trim() === '') {
+    return jobsForLine.value
+  }
+  return jobsForLine.value.filter((item) =>
+    item.name.toLowerCase().includes(filterOrderList.value.toLowerCase()),
+  )
+})
 const items = ref([
   {
     label: 'Add Job',
@@ -495,8 +520,10 @@ const fetchMasterPlan = async (factory?: string) => {
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
+        sewId: items.sewId,
         line: items.lineCode,
-        qty: items.qty,
+        qty: items.splitQty ? items.splitQty : items.qty,
+        splitQty: items.splitQty,
         style: items.style,
         season: items.season,
         color: items.color,

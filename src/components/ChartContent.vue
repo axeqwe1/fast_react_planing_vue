@@ -128,15 +128,17 @@ const fetchMasterPlan = async (factory?: string) => {
     const res = await GetPlanJob()
     STORE_MASTER.planJob = res
     const data = res
+    console.log(res.filter((item: any) => item.orderNo == 'GNSO-25-0480'))
     let filterData = []
     filterData = data.filter((item: any) => item.sewStart != null)
 
-    console.log(data.filter((item: any) => item.sewStart != null))
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index, // Assuming each item has a unique id
+        sewId: items.sewId,
         line: items.lineCode,
-        qty: items.qty,
+        qty: items.splitQty ? items.splitQty : items.qty,
+        splitQty: items.splitQty,
         style: items.style,
         season: items.season,
         color: items.color,
@@ -153,6 +155,7 @@ const fetchMasterPlan = async (factory?: string) => {
         updateDate: items.updateDate,
       })
     })
+    console.log(jobs.value.filter((item: any) => item.name == 'GNSO-25-0480'))
     store.setJobs(jobs.value) // Update the store with fetched jobs
 
     // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines

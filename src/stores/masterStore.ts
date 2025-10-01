@@ -99,7 +99,12 @@ export const useMaster = defineStore('master', {
       const fetchData = async () => {
         const res = await GetPlanJob()
         console.log(res)
-        this.planJob = res
+        this.planJob = res.map((item: any) => {
+          return {
+            ...item,
+            qty: item.splitQty ? item.splitQty : item.qty,
+          }
+        })
       }
       fetchData()
     },

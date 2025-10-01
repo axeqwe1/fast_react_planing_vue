@@ -619,8 +619,10 @@ const fetchMasterPlan = async (factory?: string) => {
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
         id: index,
+        sewId: items.sewId,
         line: items.lineCode,
-        qty: items.qty,
+        qty: items.splitQty ? items.splitQty : items.qty,
+        splitQty: items.splitQty,
         style: items.style,
         season: items.season,
         color: items.color,
