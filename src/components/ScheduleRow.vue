@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col relative">
+  <div class="flex flex-col relative" :style="[{ width: `${store.headerWidth + 200}px` }]">
     <div
-      class="flex z-0 border-b-1 border-gray-500"
+      class="flex z-0 border-b-1 border-gray-500 w-full"
       v-for="(line, i) in lines"
       :key="line.lineCode + STORE_MASTER.currentFactory"
     >
@@ -164,44 +164,14 @@
               @click="
                 () => {
                   if (
-                    selectedOrderPlaned.includes(
-                      item.name +
-                        '_' +
-                        item.color +
-                        '_' +
-                        item.style +
-                        '_' +
-                        item.season +
-                        '_' +
-                        item.typeName,
-                    ) &&
+                    selectedOrderPlaned.includes(item.sewId.toString()) &&
                     selectedOrderPlaned.length > 0
                   ) {
                     selectedOrderPlaned = selectedOrderPlaned.filter(
-                      (i) =>
-                        i !==
-                        item.name +
-                          '_' +
-                          item.color +
-                          '_' +
-                          item.style +
-                          '_' +
-                          item.season +
-                          '_' +
-                          item.typeName,
+                      (i) => i !== item.sewId.toString(),
                     )
                   } else {
-                    selectedOrderPlaned.push(
-                      item.name +
-                        '_' +
-                        item.color +
-                        '_' +
-                        item.style +
-                        '_' +
-                        item.season +
-                        '_' +
-                        item.typeName,
-                    )
+                    selectedOrderPlaned.push(item.sewId.toString())
                     selectedOrderPlaned = [...new Set(selectedOrderPlaned)]
                   }
                 }
@@ -224,19 +194,9 @@
                 <!-- <span>{{ member.role }}</span> -->
                 <Checkbox
                   v-model="selectedOrderPlaned"
-                  :inputId="item.name + item.color + item.style + item.season + item.typeName"
+                  :inputId="item.id.toString()"
                   name="category"
-                  :value="
-                    item.name +
-                    '_' +
-                    item.color +
-                    '_' +
-                    item.style +
-                    '_' +
-                    item.season +
-                    '_' +
-                    item.typeName
-                  "
+                  :value="item.sewId ? item.sewId.toString() : item.id"
                 />
                 <!-- <i class="pi pi-angle-down"></i> -->
               </div>
@@ -356,6 +316,10 @@
         :style="floatingStyles"
       ></div>
     </Teleport>
+    <modalTypeMap
+      v-model:visible="showTypeMap"
+      :line-code="targetLineCode ? targetLineCode : 'undefined'"
+    />
     <Toast position="top-center" group="tc" />
   </div>
 </template>
@@ -389,6 +353,7 @@ import { useMouseEvent } from '@/composables/useMouseEvent'
 import { useTime } from '@/composables/useTime'
 import { detectDropMode } from '@/utils/detectDropMode'
 // import ContextMenu from './ContextMenu.vue'
+import modalTypeMap from '@/components/modal/modalTypeMap.vue'
 import ContextMenu from 'primevue/contextmenu'
 import Popover from 'primevue/popover'
 import Modal from './Modal.vue'
@@ -400,6 +365,7 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 const toast = useToast()
 
+const showTypeMap = ref(false)
 const confirmReturnDialog = ref(false)
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
@@ -499,10 +465,17 @@ const lineMenu = ref([
     disabled: true,
   },
   {
-    label: 'Config Expert Type (not use)',
+    label: 'Config Expert Eff Type (not use)',
     icon: 'pi pi-cog',
     command: () => {},
     disabled: true,
+  },
+  {
+    label: 'Config Type Order',
+    icon: 'pi pi-tags',
+    command: () => {
+      showTypeMap.value = !showTypeMap.value
+    },
   },
 ])
 const fetchMasterPlan = async (factory?: string) => {
@@ -519,7 +492,9 @@ const fetchMasterPlan = async (factory?: string) => {
     // console.log(data.filter((item: any) => item.sewStart != null))
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
-        id: index, // Assuming each item has a unique id
+        id: items.sewId
+          ? items.sewId
+          : `${items.orderNo}_${items.lineCode}_${items.style}_${items.color}`, // Assuming each item has a unique id
         sewId: items.sewId,
         line: items.lineCode,
         qty: items.splitQty ? items.splitQty : items.qty,
@@ -529,6 +504,7 @@ const fetchMasterPlan = async (factory?: string) => {
         color: items.color,
         typeName: items.type,
         name: items.orderNo,
+        sam: items.sam,
         startDate: items.sewStart,
         endDate: items.sewFinish,
         duration: items.duration,
@@ -872,25 +848,32 @@ function handleDragMove(e: MouseEvent) {
 }
 
 const returnLoading = ref(false)
+
 function handleReturnJob() {
   returnLoading.value = true
   let arrRequest: ReturnJobPlanRequest[] = []
   selectedOrderPlaned.value.forEach((item) => {
-    const [name, color, style, season, typeName] = item.split('_')
+    const [sewId] = item.split('_')
     const request: ReturnJobPlanRequest = {
-      OrderNo: name,
-      Color: color,
-      Style: style,
-      Season: season,
-      TypeName: typeName,
-      LineCode: targetLineCode.value ? targetLineCode.value : '',
+      SewId: parseInt(sewId),
     }
     arrRequest.push(request)
   })
 
   ReturnJobPlan(arrRequest).then((res) => {
     if (res.status === 200) {
-      console.log(res.data)
+      const removedJobs = res.data.removedlist
+      store.Jobs = store.Jobs.filter((job) => {
+        return !removedJobs.some(
+          (r: any) =>
+            r.orderNo === job.name &&
+            r.color === job.color &&
+            r.style === job.style &&
+            r.season === job.season &&
+            r.typeName === job.typeName,
+        )
+      })
+
       toast.add({
         severity: 'success',
         summary: 'Success Message',
@@ -898,18 +881,10 @@ function handleReturnJob() {
         group: 'tc',
         life: 5000,
       })
+
       selectedOrderPlaned.value = []
       op.value.hide()
       confirmReturnDialog.value = false
-      fetchMasterPlan().then((res) => {
-        toast.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Refresh Data Success',
-          group: 'tc',
-          life: 5000,
-        })
-      })
       returnLoading.value = false
     } else {
       toast.add({

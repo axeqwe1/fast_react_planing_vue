@@ -90,6 +90,32 @@
       <Column field="division" header="Division" sortable />
       <Column field="season" header="Season" sortable filter />
       <Column field="programCode" header="Program" sortable filter />
+      <Column field="type" header="Type" sortable filter :showFilterMenu="false">
+        <template #body="{ data }">
+          {{ data.type }}
+        </template>
+        <template #filter="{ filterModel, filterCallback }">
+          <MultiSelect
+            v-model="filterModel.value"
+            @change="filterCallback()"
+            :options="[
+              ...new Set(
+                (filteredRows.length ? filteredRows : masterFiltered).map((item) => item.type),
+              ),
+            ]"
+            placeholder="Any"
+            style="min-width: 100%"
+            :maxSelectedLabels="1"
+            filter
+          >
+            <template #option="slotProps">
+              <div class="flex items-center gap-2">
+                <span>{{ slotProps.option }}</span>
+              </div>
+            </template>
+          </MultiSelect>
+        </template>
+      </Column>
       <Column field="color" header="Color" sortable filter :showFilterMenu="false">
         <template #body="{ data }">
           <div class="flex items-center gap-2">
@@ -418,6 +444,7 @@ const filters = ref({
   sewFinish: { value: null, matchMode: FilterMatchMode.BETWEEN },
   updateDate: { value: null, matchMode: FilterMatchMode.BETWEEN },
   updateBy: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  type: { value: null, matchMode: FilterMatchMode.IN },
 })
 
 async function fetchOrder() {

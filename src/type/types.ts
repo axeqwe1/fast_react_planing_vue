@@ -1,5 +1,5 @@
 export interface Job {
-  id: number
+  id: string
   sewId: number
   name: string
   qty: number
@@ -11,6 +11,7 @@ export interface Job {
   startDate: string
   endDate: string
   line: string
+  sam: number
   duration: number
   processStatus: string
   progressPct: number
@@ -240,6 +241,16 @@ export interface MasterWorkDay {
   isWorkday: boolean
   workHours: number
   holidayName: string
+}
+export interface MasterType {
+  typeId: number
+  typeCode: string
+  typeName: string
+  remark: string
+  createBy: string
+  createDate: Date
+  updateBy: string
+  updateDate: Date
 }
 
 export interface PlanSchedule {

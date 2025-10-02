@@ -1,9 +1,11 @@
 import { useMaster } from '@/stores/masterStore'
+import { useScheduleStore } from '@/stores/scheduleStore'
 import { formatDateLocal, formatTimeKey } from '@/utils/formatKey'
 import { getShiftRange } from '@/utils/utility'
 
 export function useCaltime() {
   const STORE_MASTER = useMaster()
+  const store = useScheduleStore()
   function calTime(start: Date, orderNo: string, color: string, lineCode: string, sewId?: number) {
     // param startDate orderNo color lineCode
     const Line = STORE_MASTER.masterLine.filter((item) => item.lineCode === lineCode)[0]
@@ -15,15 +17,15 @@ export function useCaltime() {
     const planJob =
       sewId == null
         ? STORE_MASTER.planJob.filter((item) => item.orderNo == orderNo && item.color == color)[0]
-        : STORE_MASTER.planJob.filter(
-            (item) => item.orderNo == orderNo && item.color == color && item.sewId == sewId,
+        : store.Jobs.filter(
+            (item) => item.name == orderNo && item.color == color && item.sewId == sewId,
           )[0]
     let endDate = new Date()
     console.log(planJob)
     const Sam = planJob.sam
 
     const qty = planJob.splitQty ? planJob.splitQty : planJob.qty
-    const order = planJob.orderNo
+    const order = orderNo
     const MINUTE_PER_HOUR = 60
 
     // Efficiency is Percent
@@ -60,7 +62,7 @@ export function useCaltime() {
       })[0]
       console.log(
         STORE_MASTER.masterWorkDay.filter((item) => {
-          console.log(formatDateLocal(currentDate).split(' ')[0])
+          // console.log(formatDateLocal(currentDate).split(' ')[0])
           return (
             formatDateLocal(new Date(item.workDate)).split(' ')[0] ==
             formatDateLocal(currentDate).split(' ')[0]
@@ -68,8 +70,8 @@ export function useCaltime() {
         }),
       )
       if (WorkDay) {
-        console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
-        console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
+        // console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
+        // console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
         defaultWorkHour = WorkDay.workHours
         isWorkDay = WorkDay.isWorkday
       } else {

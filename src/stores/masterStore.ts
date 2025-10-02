@@ -8,6 +8,7 @@ import type {
   MasterLine,
   MasterSam,
   MasterSamView,
+  MasterType,
   MasterWorkDay,
 } from '@/type/types'
 import {
@@ -22,6 +23,7 @@ import {
   GetWorkDay,
   GetWorkDayAll,
 } from '@/lib/api/Masterplan'
+import { GetMasterType } from '@/lib/api/Mastertype'
 
 export const useMaster = defineStore('master', {
   state: () => ({
@@ -32,6 +34,7 @@ export const useMaster = defineStore('master', {
     masterSamView: [] as MasterSamView[],
     masterFactory: [] as MasterFactory[],
     masterWorkDay: [] as MasterWorkDay[],
+    masterType: [] as MasterType[],
     planJob: [] as MasterData[],
     allJob: [] as MasterData[],
     currentFactory: 'ALL' as string,
@@ -94,6 +97,14 @@ export const useMaster = defineStore('master', {
         this.masterWorkDay = res
       }
       fetchData()
+    },
+    async getMasterType() {
+      const fetchData = async () => {
+        const res = await GetMasterType()
+        console.log(res.data)
+        this.masterType = res.data
+      }
+      await fetchData()
     },
     getPlanJob() {
       const fetchData = async () => {

@@ -54,6 +54,7 @@
       <div class="flex flex-col h-full max-h-[1000px] justify-start items-center p-6">
         <div class="card w-full overflow-auto h-full">
           <DataTable
+            :loading="loading"
             :value="masterFiltered"
             v-model:selection="selectedRow"
             selectionMode="single"
@@ -565,10 +566,36 @@ const submit = async (e: Event) => {
     if (res.status === 200) {
       confirmModal.value = false
       toastIsError.value = false
-      toastMessage.value = res.data
+      toastMessage.value = res.data.message
+      console.log(res)
       showToastCountdown()
       emit('AddJob', true)
-      await refresh()
+      const newData = res.data.newjob
+      const newJob: Job = {
+        id: newData.sewId,
+        sewId: newData.sewId,
+        line: newData.lineCode,
+        qty: newData.splitQty ? newData.splitQty : newData.qty,
+        splitQty: newData.splitQty,
+        style: newData.style,
+        season: newData.season,
+        color: newData.color,
+        sam: newData.sam,
+        typeName: newData.type,
+        name: newData.orderNo,
+        startDate: newData.sewStart,
+        endDate: newData.sewFinish,
+        duration: newData.duration,
+        processStatus: newData.processStatus,
+        progressPct: newData.progressPct,
+        createBy: newData.createBy,
+        updateBy: newData.updateBy,
+        createDate: newData.createDate,
+        updateDate: newData.updateDate,
+      }
+      store.Jobs.push(newJob)
+      store.jobStyleCache.set(newJob.id, store.getJobStyle(newJob))
+
       loadingProcess.value = false
     }
   } else {
@@ -606,65 +633,19 @@ const refresh = async () => {
   await fetchMasterPlan(STORE_MASTER.currentFactory)
 }
 
+const loading = ref(true)
 const fetchMasterPlan = async (factory?: string) => {
   try {
-    jobs.value = []
     const res = await GetPlanJob()
     STORE_MASTER.planJob = res
-    store.jobStyleCache.clear()
-    const data = res
-    let filterData = []
-    filterData = data.filter((item: any) => item.sewStart != null)
-
-    filterData.forEach((items: any, index: number) => {
-      jobs.value.push({
-        id: index,
-        sewId: items.sewId,
-        line: items.lineCode,
-        qty: items.splitQty ? items.splitQty : items.qty,
-        splitQty: items.splitQty,
-        style: items.style,
-        season: items.season,
-        color: items.color,
-        typeName: items.type,
-        name: items.orderNo,
-        startDate: items.sewStart,
-        endDate: items.sewFinish,
-        duration: items.duration,
-        processStatus: items.processStatus,
-        progressPct: items.progressPct,
-        createBy: items.createBy,
-        updateBy: items.updateBy,
-        createDate: items.createDate,
-        updateDate: items.updateDate,
-      })
-    })
-    store.setJobs(jobs.value)
-
-    let arrLine = STORE_MASTER.masterLine
-    const lineMap = arrLine.map((line: any) => {
-      return {
-        name: line.lineName,
-        lineCode: line.lineCode,
-        company: line.factoryCode,
-        manpower: line.capacityMP,
-      } as Line
-    })
-    masterLine.value = lineMap
-
-    if (factory === 'ALL') {
-      store.Lines = masterLine.value
-    } else {
-      store.Lines = masterLine.value.filter((line) => line.company === factory)
-    }
-
-    store.computeAllJobStyles()
   } catch (err: any) {
     console.error('Error fetching test data:', err)
   }
 }
 
 onMounted(async () => {
+  loading.value = true
+  await fetchMasterPlan(STORE_MASTER.currentFactory)
   await fetchData()
 
   if (props.factoryCode) {
@@ -685,8 +666,7 @@ onMounted(async () => {
     modelData.Line = props.lineCode
   }
 
-  pagInModel.totalRows = masterFiltered.value.length
-  pagInModel.totalPage = Math.ceil(pagInModel.totalRows / pagInModel.pageSize)
+  loading.value = false
 })
 
 watch(

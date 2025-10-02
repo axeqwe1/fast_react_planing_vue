@@ -1,56 +1,60 @@
 <template>
-  <div class="flex flex-col w-fit mt-[60px] containerY" v-if="weeks.length > 0">
-    <div class="flex w-full sticky top-[60px] bg-white z-6">
-      <div
-        class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
-      >
-        <span>{{ posDate }}</span>
-        <span>60 x 8 x {{ posManpower }} = {{ posManpower ? 60 * 8 * posManpower : '0' }}</span>
-      </div>
-
-      <div class="flex week-header" ref="headerRef">
+  <div class="flex flex-col w-full mt-[60px] containerY" v-if="weeks.length > 0">
+    <div
+      class="w-full flex flex-col xl:max-w-full lg:max-w-[1320px] md:max-w-[1024] sm:max-w-[900px] h-[calc(100vh-60px)] overflow-auto"
+    >
+      <div class="flex w-fit bg-white z-6 sticky top-0">
         <div
-          class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
-          v-for="(item, i) in weeks"
+          class="flex flex-col border-b-1 justify-between p-[5px] top-0 h-[56px] min-w-[200px] sticky border-r-1 left-0 bg-slate-100 z-6"
         >
+          <span>{{ posDate }}</span>
+          <span>60 x 8 x {{ posManpower }} = {{ posManpower ? 60 * 8 * posManpower : '0' }}</span>
+        </div>
+
+        <div class="flex week-header" ref="headerRef">
           <div
-            class="flex-1 border-r-1 min-w-[300px] pt-[5px]"
-            :style="{ minWidth: `${minWidthHeader}px` }"
-            :key="i"
+            class="flex items-center font-bold w-full sticky top-0 z-5 text-center"
+            v-for="(item, i) in weeks"
           >
-            <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
-            <div class="flex">
-              <span
-                v-for="(day, i) in weeksDay"
-                :key="day"
-                class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
-                :ref="
-                  (el) => {
-                    if (el) setMinHeadRef(el, i)
-                  }
-                "
-                >{{ day }}</span
-              >
+            <div
+              class="flex-1 border-r-1 min-w-[300px] pt-[5px]"
+              :style="{ minWidth: `${minWidthHeader}px` }"
+              :key="i"
+            >
+              <span class="">{{ formatDate(item.start) }} - {{ formatDate(item.end) }}</span>
+              <div class="flex">
+                <span
+                  v-for="(day, i) in weeksDay"
+                  :key="day"
+                  class="flex-1 border border-gray-400 min-w-[30px] text-ellipsis"
+                  :ref="
+                    (el) => {
+                      if (el) setMinHeadRef(el, i)
+                    }
+                  "
+                  >{{ day }}</span
+                >
+              </div>
             </div>
           </div>
         </div>
       </div>
+      <template v-if="LoadingRef && weeks.length > 0">
+        <div class="text-6xl font-bold">Loading...</div>
+      </template>
+      <template v-else>
+        <ScheduleRow
+          @update-position-date="getPositionDate"
+          @update-position-manpower="getPositionManpower"
+        />
+      </template>
     </div>
-    <template v-if="LoadingRef && weeks.length > 0">
-      <div class="text-6xl font-bold">Loading...</div>
-    </template>
-    <template v-else>
-      <ScheduleRow
-        @update-position-date="getPositionDate"
-        @update-position-manpower="getPositionManpower"
-      />
-    </template>
-  </div>
-  <div
-    class="h-screen flex justify-center items-center w-full"
-    v-if="weeks.length < 1 && user.isAuthen"
-  >
-    <LoadingComponent />
+    <div
+      class="h-screen flex justify-center items-center w-full"
+      v-if="weeks.length < 1 && user.isAuthen"
+    >
+      <LoadingComponent />
+    </div>
   </div>
 </template>
 
@@ -134,13 +138,16 @@ const fetchMasterPlan = async (factory?: string) => {
 
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
-        id: index, // Assuming each item has a unique id
+        id: items.sewId
+          ? items.sewId
+          : `${items.orderNo}_${items.lineCode}_${items.style}_${items.color}`, // Assuming each item has a unique id
         sewId: items.sewId,
         line: items.lineCode,
         qty: items.splitQty ? items.splitQty : items.qty,
         splitQty: items.splitQty,
         style: items.style,
         season: items.season,
+        sam: items.sam,
         color: items.color,
         typeName: items.type,
         name: items.orderNo,

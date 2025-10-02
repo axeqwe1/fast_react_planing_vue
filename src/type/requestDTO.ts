@@ -1,3 +1,5 @@
+import type { Job } from './types'
+
 export interface CreateMasterWorkDay {
   workDate: string
   workHour: number
@@ -11,7 +13,7 @@ export interface CreateMasterSam {
 }
 
 export interface UpdatePlanJob {
-  id: number
+  id: string
   sewId: number
   name: string
   qty: number
@@ -47,10 +49,20 @@ export interface GetPlanScheduleRequestDTO {
 }
 
 export interface ReturnJobPlanRequest {
-  OrderNo: string
-  Color: string
-  LineCode: string
-  Style: string
-  Season: string
+  SewId: number
+}
+
+export interface CreateMasterTypeDTO {
+  typeId?: number
+  typeName: string
+  typeCode: string
+  createBy: string
+  remark: string
+}
+
+export interface changeTypeOrderRequestDTO {
+  TypeCode: string
   TypeName: string
+  jobList: Job[]
+  createBy: string
 }

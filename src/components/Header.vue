@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex fixed w-full top-0 left-0 z-10 bg-white border-b-1 border-gray-200 h-[60px] items-center justify-between px-4"
+    class="flex fixed mx-auto w-full top-0 left-0 z-10 bg-white border-b-1 border-gray-200 h-[60px] items-center justify-between px-4"
   >
     <div class="flex items-center">
       <div class="dropdown">
@@ -27,7 +27,8 @@
       >
         <IconFolder />
         <span
-          class="absolute flex justify-center items-center text-xs font-bold w-3 h-3 p-3 bg-rose-600 text-amber-300 rounded-full top-0 right-0"
+          class="absolute flex justify-center items-center text-xs font-bold w-3 h-3 p-3 rounded-full top-0 right-0"
+          :class="totalJob > 0 ? 'bg-rose-600 text-amber-300' : 'bg-base-300 text-black'"
           >{{ totalJob > 99 ? '99+' : totalJob }}
         </span>
       </span>
@@ -68,6 +69,7 @@
         <IconZoomIn />
       </button>
 
+      <button @click="showDialog = true" class="btn btn-info">Type Map</button>
       <button
         @click="refresh"
         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
@@ -400,6 +402,7 @@ import { logout } from '@/lib/api/auth'
 import { useAuth } from '@/stores/userStore'
 import ViewOrderDetails from './details/ViewOrderDetails.vue'
 import FormAddJob from './form/FormAddJob.vue'
+import modalTypeMap from './modal/modalTypeMap.vue'
 const { setLoading } = useLoadingStore()
 const loadingProcess = ref(false)
 const showModal = ref(false)
@@ -437,6 +440,17 @@ const activeTab = ref('0')
 const allRef = ref<InstanceType<typeof ViewOrderDetails>>()
 const planedRef = ref<InstanceType<typeof ViewOrderDetails>>()
 const notRef = ref<InstanceType<typeof ViewOrderDetails>>()
+
+// modalType
+const showDialog = ref(false)
+const selectedTypeName = ref('Shrit')
+const selectedTypeCode = ref<string | null>(null)
+const selectedAliases = ref<string[]>([])
+const typeOptions = ref([
+  { label: '01 - Shirt', code: '01' },
+  { label: '02 - Pant', code: '02' },
+  { label: '03 - Jacket', code: '03' },
+])
 
 const targetCompany = ref(user.user.factoryCode)
 const mode = ref('All')
@@ -535,13 +549,16 @@ const fetchMasterPlan = async (factory?: string) => {
     // console.log(data.filter((item: any) => item.sewStart != null))
     filterData.forEach((items: any, index: number) => {
       jobs.value.push({
-        id: index, // Assuming each item has a unique id
+        id: items.sewId
+          ? items.sewId
+          : `${items.orderNo}_${items.lineCode}_${items.style}_${items.color}`, // Assuming each item has a unique id
         sewId: items.sewId,
         line: items.lineCode,
         qty: items.splitQty ? items.splitQty : items.qty,
         splitQty: items.splitQty,
         style: items.style,
         season: items.season,
+        sam: items.sam,
         color: items.color,
         typeName: items.type,
         name: items.orderNo,

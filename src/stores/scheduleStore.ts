@@ -23,7 +23,7 @@ export const useScheduleStore = defineStore('schedule', {
     timeIndexMap: new Map<string, number>(),
     WorkDuration: new Map<string, number>(), // ใช้สำหรับเก็บข้อมูลการทำงาน
     cacheWeekDay: new Map<string, Date[]>(), // ใช้สำหรับเก็บวันในแต่ละสัปดาห์
-    jobStyleCache: new Map<number, Partial<CSSStyleDeclaration>>(), // cache job styles
+    jobStyleCache: new Map<string, Partial<CSSStyleDeclaration>>(), // cache job styles
     divideCache: [] as number[], // cache divide styles
     headerWidth: 0,
     holidays: [] as Date[], // วันหยุดทั้งหมด
@@ -335,7 +335,7 @@ export const useScheduleStore = defineStore('schedule', {
     },
 
     moveJob(
-      jobId: number,
+      jobId: string,
       targetLineId: string,
       container: HTMLElement,
       e: MouseEvent,
@@ -343,6 +343,7 @@ export const useScheduleStore = defineStore('schedule', {
       dropMode: string,
       jobDuration: number,
     ) {
+      console.log(jobId)
       let job = findJobById(jobId)
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { calTime } = useCaltime()
@@ -372,7 +373,10 @@ export const useScheduleStore = defineStore('schedule', {
           this.updateJob(jobId, targetLineId, formatTimeKey(newStart), formatTimeKey(newEnd))
           break
       }
-      this.computeAllJobStyles()
+      // this.computeAllJobStyles()
+      this.jobUpdate.forEach((j) => {
+        this.jobStyleCache.set(j.id, this.getJobStyle(findJobById(j.id)))
+      })
     },
     insertAndPushJobs(
       lineId: string,
@@ -380,7 +384,7 @@ export const useScheduleStore = defineStore('schedule', {
       e: MouseEvent,
       start: Date,
       end: Date,
-      movingJobId: number,
+      movingJobId: string,
       duration: number,
     ) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
@@ -402,7 +406,7 @@ export const useScheduleStore = defineStore('schedule', {
       // chain push jobs ข้างหลัง
       this.moveAndShift(lineId, movingJobId, startDate, endDate)
     },
-    moveAndShift(lineId: string, movingJobId: number, pivotStart: string, pivotEnd: string) {
+    moveAndShift(lineId: string, movingJobId: string, pivotStart: string, pivotEnd: string) {
       const { calTime } = useCaltime()
       let pivotStartDate = toDate(pivotStart)
       console.log(lineId)
@@ -479,7 +483,7 @@ export const useScheduleStore = defineStore('schedule', {
       e: MouseEvent,
       start: Date,
       end: Date,
-      movingJobId: number,
+      movingJobId: string,
       duration: number,
     ) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
@@ -520,7 +524,7 @@ export const useScheduleStore = defineStore('schedule', {
       }
       return d
     },
-    updateJob(jobId: number, lineId: string, start: string, end: string) {
+    updateJob(jobId: string, lineId: string, start: string, end: string) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { user } = useAuth()
       let job = findJobById(jobId)

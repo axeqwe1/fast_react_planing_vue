@@ -2,6 +2,7 @@ import type { Job, MasterData, MasterEfficiency, MasterLine, MasterHoliday } fro
 import { apiService } from '../axios'
 import type {
   AddPlanJob,
+  changeTypeOrderRequestDTO,
   CreateMasterSam,
   CreateMasterWorkDay,
   GetPlanScheduleRequestDTO,
@@ -285,6 +286,17 @@ export const GetAllJob = async () => {
 export const ReturnJobPlan = async (request: ReturnJobPlanRequest[]) => {
   try {
     const API_PATH = `api/Masterplan/ReturnJobPlaned`
+    const res = await apiService.post(API_PATH, request)
+
+    return res
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const ChangeOrderType = async (request: changeTypeOrderRequestDTO) => {
+  try {
+    const API_PATH = `api/Masterplan/ChangeOrderType`
     const res = await apiService.post(API_PATH, request)
 
     return res
