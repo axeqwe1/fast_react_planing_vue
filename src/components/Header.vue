@@ -69,7 +69,7 @@
         <IconZoomIn />
       </button>
 
-      <button @click="showDialog = true" class="btn btn-info">Type Map</button>
+      <!-- <button @click="showDialog = true" class="btn btn-info">Type Map</button> -->
       <button
         @click="refresh"
         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
@@ -443,14 +443,6 @@ const notRef = ref<InstanceType<typeof ViewOrderDetails>>()
 
 // modalType
 const showDialog = ref(false)
-const selectedTypeName = ref('Shrit')
-const selectedTypeCode = ref<string | null>(null)
-const selectedAliases = ref<string[]>([])
-const typeOptions = ref([
-  { label: '01 - Shirt', code: '01' },
-  { label: '02 - Pant', code: '02' },
-  { label: '03 - Jacket', code: '03' },
-])
 
 const targetCompany = ref(user.user.factoryCode)
 const mode = ref('All')
@@ -647,7 +639,7 @@ watch(
 )
 
 watch(
-  () => [user.user.factoryCode, STORE_MASTER.masterFactory],
+  () => [user.isAuthen, user.user, user.user.factoryCode, STORE_MASTER.masterFactory],
   () => {
     if (user.user.factoryCode == 'ALL') {
       fac.value = 'YPT'

@@ -1,3 +1,4 @@
+import { CreateExpertEfficiency } from './../lib/api/ExpertEffType'
 import type { Job } from './types'
 
 export interface CreateMasterWorkDay {
@@ -65,4 +66,25 @@ export interface changeTypeOrderRequestDTO {
   TypeName: string
   jobList: Job[]
   createBy: string
+}
+
+export interface CreateExpertEfficiencyDTO {
+  typeCode: string
+  lineCode: string
+  EffPct: number
+}
+
+export interface CreateManualMPDTO {
+  id?: number
+  LineCode: string
+  CapMP: number
+  StartDate: string | null
+  EndDate: string | null
+}
+export interface CreateManualEFFDTO {
+  id?: number
+  LineCode: string
+  EffPct: number
+  StartDate: string | null
+  EndDate: string | null
 }

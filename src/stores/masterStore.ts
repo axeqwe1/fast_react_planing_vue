@@ -35,6 +35,7 @@ export const useMaster = defineStore('master', {
     masterFactory: [] as MasterFactory[],
     masterWorkDay: [] as MasterWorkDay[],
     masterType: [] as MasterType[],
+
     planJob: [] as MasterData[],
     allJob: [] as MasterData[],
     currentFactory: 'ALL' as string,

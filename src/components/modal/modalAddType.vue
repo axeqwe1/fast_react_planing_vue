@@ -19,16 +19,28 @@
               ]"
               v-model="internalTypeCode"
               placeholder="กรอก TypeCode"
+              :disabled="invalidType === false"
             />
-            <Button @click="CheckType" label="Check Type" />
+            <Button v-if="invalidType == null" @click="CheckType" label="Check Type" />
+            <Button
+              v-if="invalidType != null"
+              @click="
+                () => {
+                  invalidType = null
+                  showIcon = false
+                }
+              "
+              severity="warn"
+              label="Reset"
+            />
             <InputGroupAddon
               :class="[
                 invalidType == null ? '' : invalidType ? 'border-red-600!' : 'border-green-500!',
               ]"
             >
-              <div v-if="invalidType != null">
+              <div v-if="showIcon">
                 <template v-if="loadingCheck">
-                  <i class="pi pi-spin pi-spinner text-base-300" title="Loading" />
+                  <i class="pi pi-spin pi-spinner text-blue-600" title="Loading" />
                 </template>
                 <template v-else>
                   <i
@@ -152,8 +164,10 @@ const confirmAddTypeDialog = ref(false)
 const toast = useToast()
 
 const loadingCheck = ref(false)
+const showIcon = ref(false)
 async function CheckType() {
   // Logic to check type
+  showIcon.value = true
   loadingCheck.value = true
   await STORE_MASTER.getMasterType()
   const AllType = STORE_MASTER.masterType

@@ -145,6 +145,12 @@ export function getShiftRange(currentDate: Date, shiftStart: string, workMinutes
   return { start, end }
 }
 
+export const localToISO = (date: Date) => {
+  if (!date) return null
+  const tzOffset = date.getTimezoneOffset() * 60000 // offset in ms
+  const localISO = new Date(date.getTime() - tzOffset).toISOString().slice(0, 19)
+  return localISO // e.g. "2025-09-30T00:00:00"
+}
 // export function timeStringToDate(date: Date, timeString: string): Date {
 //   const result = new Date(date)
 //   const [h, m, s] = timeString.split(':').map(Number)

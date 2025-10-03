@@ -320,6 +320,18 @@
       v-model:visible="showTypeMap"
       :line-code="targetLineCode ? targetLineCode : 'undefined'"
     />
+    <modalConfigExpertType
+      v-model:visible="showConfigExpertType"
+      :line-code="targetLineCode ? targetLineCode : 'undefined'"
+    />
+    <modalManualMP
+      v-model:visible="showManualMP"
+      :line-code="targetLineCode ? targetLineCode : 'undefined'"
+    />
+    <modalManualEff
+      v-model:visible="showManualEFF"
+      :line-code="targetLineCode ? targetLineCode : 'undefined'"
+    />
     <Toast position="top-center" group="tc" />
   </div>
 </template>
@@ -354,6 +366,9 @@ import { useTime } from '@/composables/useTime'
 import { detectDropMode } from '@/utils/detectDropMode'
 // import ContextMenu from './ContextMenu.vue'
 import modalTypeMap from '@/components/modal/modalTypeMap.vue'
+import modalConfigExpertType from '@/components/modal/modalConfigExpertType.vue'
+import modalManualMP from '@/components/modal/modalManualMP.vue'
+import modalManualEff from '@/components/modal/modalManualEFF.vue'
 import ContextMenu from 'primevue/contextmenu'
 import Popover from 'primevue/popover'
 import Modal from './Modal.vue'
@@ -366,6 +381,9 @@ import { useToast } from 'primevue/usetoast'
 const toast = useToast()
 
 const showTypeMap = ref(false)
+const showConfigExpertType = ref(false)
+const showManualMP = ref(false)
+const showManualEFF = ref(false)
 const confirmReturnDialog = ref(false)
 const menus = reactive({ menuX: 0, menuY: 0 })
 const contextMenuActions = ref([{ label: 'plan schedule', action: 'viewplan' }])
@@ -453,22 +471,25 @@ const lineMenu = ref([
     },
   },
   {
-    label: 'EFF Manual (not use)',
+    label: 'EFF Manual ',
     icon: 'pi pi-bolt',
-    command: () => {},
-    disabled: true,
+    command: () => {
+      showManualEFF.value = !showManualEFF.value
+    },
   },
   {
-    label: 'MP Manual (not use)',
+    label: 'MP Manual ',
     icon: 'pi pi-users',
-    command: () => {},
-    disabled: true,
+    command: () => {
+      showManualMP.value = !showManualMP.value
+    },
   },
   {
-    label: 'Config Expert Eff Type (not use)',
+    label: 'Config Expert Eff Type ',
     icon: 'pi pi-cog',
-    command: () => {},
-    disabled: true,
+    command: () => {
+      showConfigExpertType.value = !showConfigExpertType.value
+    },
   },
   {
     label: 'Config Type Order',

@@ -252,6 +252,12 @@ export interface MasterType {
   updateBy: string
   updateDate: Date
 }
+export interface ExpertEfficiency {
+  id: number
+  typeCode: string
+  lineCode: string
+  effPct: number
+}
 
 export interface PlanSchedule {
   seqNo: number
@@ -264,4 +270,28 @@ export interface PlanSchedule {
   maxQtyPossibleToday: number
   qtyDoneToday: number
   cumulativeQty: number
+}
+
+export interface mergeExpertType {
+  lineCode: string
+  typeCode: string
+  typeName: string
+  EffPct: number
+}
+
+export interface manualMP {
+  id: number
+  startDate: string
+  endDate: string
+  lineCode: string
+  isActive: boolean
+  capMP: number
+}
+export interface manualEff {
+  id: number
+  startDate: string
+  endDate: string
+  lineCode: string
+  isActive: boolean
+  effPct: number
 }
