@@ -114,13 +114,20 @@ import TypeDataTable from '../datatable/Type.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useMaster } from '@/stores/masterStore'
 import modalAddType from './modalAddType.vue'
-import { type ExpertEfficiency, type MasterType, type mergeExpertType } from '@/type/types'
+import {
+  type ExpertEfficiency,
+  type Job,
+  type MasterType,
+  type mergeExpertType,
+} from '@/type/types'
 import type { changeTypeOrderRequestDTO, CreateExpertEfficiencyDTO } from '@/type/requestDTO'
 import { ChangeOrderType } from '@/lib/api/Masterplan'
 import { useAuth } from '@/stores/userStore'
 import { CreateExpertEfficiency, GetExpertEfficiencyLineCode } from '@/lib/api/ExpertEffType'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
+import { useCaltime } from '@/composables/useCaltime'
+import { formatTimeKey } from '@/utils/formatKey'
 // ✅ Props
 const props = defineProps<{
   visible: boolean
@@ -248,6 +255,8 @@ async function onSave() {
   const res = await CreateExpertEfficiency(request)
   if (res.status === 200) {
     await FetchData()
+    await STORE_MASTER.getExpertEfficiency()
+    await reCal()
     toast.add({
       severity: 'success',
       summary: 'Success',
@@ -257,6 +266,37 @@ async function onSave() {
     confirmChangeTypeDialog.value = false
   }
 }
+async function reCal() {
+  const calTime = useCaltime().calTime
+  const jobsInLine = store.getJobsForLine(internalLineCode.value)
+  const updatedJobs = new Map<number, Job>()
+
+  // เตรียม map ของ job ที่ต้อง recal
+  for (const j of jobsInLine) {
+    const endDate = calTime(new Date(j.startDate), j.name, j.color, internalLineCode.value, j.sewId)
+
+    updatedJobs.set(j.sewId, {
+      ...j,
+      endDate: endDate.toString(),
+      typeName: internalTypeCode.value,
+      typeCode: internalTypeCode.value,
+    })
+  }
+
+  console.log(updatedJobs)
+  // อัปเดต jobs ทั้งหมดในครั้งเดียว
+  store.Jobs = store.Jobs.map((job) => {
+    const updated = updatedJobs.get(job.sewId)
+    if (updated) {
+      console.log('Recalculated Job:', updated)
+
+      store.jobStyleCache.set(updated.id, store.getJobStyle(updated))
+      store.moveJob(updated.id, internalLineCode.value, new Date(updated.startDate), 'insert')
+    }
+    return updated ? updated : job
+  })
+}
+
 function onCancel() {
   resetInput()
   emit('cancel')

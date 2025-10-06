@@ -93,7 +93,7 @@ export const useScheduleStore = defineStore('schedule', {
       this.isHoliday(endDate)
       // console.log(this.isHoliday(endDate))
       if (this.isHoliday(endDate)) {
-        console.log(job)
+        // console.log(job)
       }
       // console.log(endIsHoliday)
       //   const endDate = new Date(startDate.getTime()) // clone เพื่อไม่แก้ต้นฉบับ
@@ -146,12 +146,11 @@ export const useScheduleStore = defineStore('schedule', {
       }
 
       // ปรับปรุงการหา containerWidth
-      let containerElement = (document.querySelector('.week-header') as HTMLElement) || null
-      let containerWidth = 1000 // default value
-
-      if (containerElement) {
-        containerWidth = containerElement.scrollWidth || containerElement.offsetWidth || 1000
+      // ✅ ดีกว่า - cache ใน state
+      if (!this.headerWidth) {
+        this.headerWidth = document.querySelector('.week-header')?.scrollWidth || 1000
       }
+      let containerWidth = this.headerWidth
 
       // ถ้า containerWidth ยังเล็กเกินไป ให้ใช้ค่าที่เหมาะสม
       if (containerWidth < 500) {
@@ -334,15 +333,7 @@ export const useScheduleStore = defineStore('schedule', {
       return leftPosition
     },
 
-    moveJob(
-      jobId: string,
-      targetLineId: string,
-      container: HTMLElement,
-      e: MouseEvent,
-      newStart: Date,
-      dropMode: string,
-      jobDuration: number,
-    ) {
+    moveJob(jobId: string, targetLineId: string, newStart: Date, dropMode: string) {
       console.log(jobId)
       let job = findJobById(jobId)
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
@@ -363,10 +354,10 @@ export const useScheduleStore = defineStore('schedule', {
       // let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
         case 'insert':
-          this.insertAndPushJobs(targetLineId, container, e, newStart, newEnd, jobId, jobDuration)
+          this.insertAndPushJobs(targetLineId, newStart, jobId)
           break
         case 'merge':
-          this.pushJobForward(targetLineId, container, e, newStart, newEnd, jobId, jobDuration)
+          this.pushJobForward(targetLineId, newStart, newEnd, jobId)
           break
         case 'normal':
         default:
@@ -380,12 +371,10 @@ export const useScheduleStore = defineStore('schedule', {
     },
     insertAndPushJobs(
       lineId: string,
-      container: HTMLElement,
-      e: MouseEvent,
+
       start: Date,
-      end: Date,
+
       movingJobId: string,
-      duration: number,
     ) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
@@ -407,6 +396,7 @@ export const useScheduleStore = defineStore('schedule', {
       this.moveAndShift(lineId, movingJobId, startDate, endDate)
     },
     moveAndShift(lineId: string, movingJobId: string, pivotStart: string, pivotEnd: string) {
+      console.log('Start Move and Shift')
       const { calTime } = useCaltime()
       let pivotStartDate = toDate(pivotStart)
       console.log(lineId)
@@ -477,15 +467,7 @@ export const useScheduleStore = defineStore('schedule', {
         }
       }
     },
-    pushJobForward(
-      lineId: string,
-      container: HTMLElement,
-      e: MouseEvent,
-      start: Date,
-      end: Date,
-      movingJobId: string,
-      duration: number,
-    ) {
+    pushJobForward(lineId: string, start: Date, end: Date, movingJobId: string) {
       const { adjustTimeForIndex, adjustToWorkingHours, addWorkingDuration } = useTime()
       const { getRelativeX, getInsertIndexInLine } = useMouseEvent()
       // update job ที่ลากมาก่อน
@@ -495,15 +477,6 @@ export const useScheduleStore = defineStore('schedule', {
       // ปรับเวลาให้ตรงกับช่วงเวลาที่มีใน timeIndexMap
       let startDate = formatTimeKey(start)
       let endDate = formatTimeKey(end)
-      // this.updateJob(movingJobId, lineId, startDate, endDate)
-      const index = getInsertIndexInLine(container, e)
-      const timeKey = [...this.timeIndexMap.entries()].find(([k, v]) => v === index)?.[0]
-      if (!timeKey) return
-      console.log(timeKey, 'timeIndex compare start', startDate, 'end', endDate)
-
-      // const newStart = new Date(timeKey)
-      // const dur = this.getDuration(newStart, endDate)
-      // const newEnd = new Date(newStart.getTime() + dur)
 
       console.log(startDate, endDate)
 

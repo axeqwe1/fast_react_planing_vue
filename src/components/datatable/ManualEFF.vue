@@ -185,6 +185,7 @@ import {
 } from '@/lib/api/ManualEFFMP'
 import { localToISO } from '@/utils/utility'
 import modalAddManualEFF from '../modal/modalAddManualEFF.vue'
+import { useMaster } from '@/stores/masterStore'
 const props = defineProps<{
   lineCode: string
   data: manualEff[]
@@ -207,6 +208,7 @@ const editingField = ref<'startDate' | 'endDate'>('startDate')
 const tempDate = ref<Date | null>(null)
 const tempMpCap = ref<number>(0)
 
+const STORE_MASTER = useMaster()
 const internalLineCode = ref('')
 
 function opModal() {
@@ -295,6 +297,7 @@ async function deleteItem() {
 async function UpdateData(newData: manualEff) {
   const res = await UpdateManualEff(newData)
   if (res.status === 200) {
+    await STORE_MASTER.getManualEFF()
     console.log('Update successful:', res.data)
   } else {
     console.error('Update failed:', res)

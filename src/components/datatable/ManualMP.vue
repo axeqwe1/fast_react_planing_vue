@@ -177,6 +177,7 @@ import { ref, onMounted, watch } from 'vue'
 import type { manualMP } from '@/type/types'
 import { DeleteManualMP, ToggleActive, UpdateManualMP } from '@/lib/api/ManualEFFMP'
 import { localToISO } from '@/utils/utility'
+import { useMaster } from '@/stores/masterStore'
 
 const props = defineProps<{
   lineCode: string
@@ -200,6 +201,8 @@ const tempDate = ref<Date | null>(null)
 const tempMpCap = ref<number>(0)
 
 const internalLineCode = ref('')
+
+const STORE_MASTER = useMaster()
 
 function opModal() {
   showModal.value = !showModal.value
@@ -287,6 +290,7 @@ async function deleteItem() {
 async function UpdateData(newData: manualMP) {
   const res = await UpdateManualMP(newData)
   if (res.status === 200) {
+    await STORE_MASTER.getManualMP()
     console.log('Update successful:', res.data)
   } else {
     console.error('Update failed:', res)

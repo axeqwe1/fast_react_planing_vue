@@ -553,6 +553,7 @@ const fetchMasterPlan = async (factory?: string) => {
         sam: items.sam,
         color: items.color,
         typeName: items.type,
+        typeCode: items.typeCode,
         name: items.orderNo,
         startDate: items.sewStart,
         endDate: items.sewFinish,
@@ -658,6 +659,7 @@ watch(
     emit('factory', fac.value)
   },
 )
+// Fetch Master Data
 onMounted(async () => {
   STORE_MASTER.getMasterLine()
   STORE_MASTER.getMasterEfficiency()
@@ -666,7 +668,9 @@ onMounted(async () => {
   STORE_MASTER.getMasterSAMView()
   STORE_MASTER.getMasterFactory()
   STORE_MASTER.getMasterWorkDay()
-
+  STORE_MASTER.getExpertEfficiency()
+  STORE_MASTER.getManualMP()
+  STORE_MASTER.getManualEFF()
   await nextTick(() => {
     emit('factory', fac.value)
   })

@@ -111,11 +111,12 @@ import OrderFromLine from '../datatable/OrderFromLine.vue'
 import { useScheduleStore } from '@/stores/scheduleStore'
 import { useMaster } from '@/stores/masterStore'
 import modalAddType from './modalAddType.vue'
-import type { MasterType } from '@/type/types'
+import type { Job, MasterData, MasterType } from '@/type/types'
 import type { changeTypeOrderRequestDTO } from '@/type/requestDTO'
 import { ChangeOrderType } from '@/lib/api/Masterplan'
 import { useAuth } from '@/stores/userStore'
-
+import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 // ✅ Props
 const props = defineProps<{
   visible: boolean
@@ -180,6 +181,34 @@ async function onSave() {
   console.log(request)
   const res = await ChangeOrderType(request)
   if (res.status === 200) {
+    console.log(res.data.results)
+    const newData = res.data.results as any[]
+    newData.forEach((item) => {
+      STORE_MASTER.planJob = STORE_MASTER.planJob.map((job) => {
+        if (job.sewId === item.sewId) {
+          return {
+            ...job,
+            typeName: item.typeName,
+            typeCode: item.typeCode,
+          }
+        }
+        return job
+      })
+      store.Jobs = store.Jobs.map((job) => {
+        if (job.sewId === item.sewId) {
+          return {
+            ...job,
+            typeName: item.typeName,
+            typeCode: item.typeCode,
+          }
+        }
+        return job
+      })
+
+      console.log(store.Jobs.filter((job) => job.sewId === item.sewId))
+    })
+
+    console.log(res.data)
     alert('บันทึกสำเร็จ')
     confirmChangeTypeDialog.value = false
   } else {

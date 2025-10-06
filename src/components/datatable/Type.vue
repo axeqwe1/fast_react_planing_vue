@@ -7,6 +7,8 @@
             :value="data"
             scrollable
             scrollHeight="calc(80vh - 250px)"
+            selectionMode="single"
+            v-model:selection="selectOrder"
             size="large"
             class="text-xs"
           >

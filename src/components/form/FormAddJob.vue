@@ -581,6 +581,7 @@ const submit = async (e: Event) => {
         season: newData.season,
         color: newData.color,
         sam: newData.sam,
+        typeCode: newData.typeCode,
         typeName: newData.type,
         name: newData.orderNo,
         startDate: newData.sewStart,
@@ -593,6 +594,7 @@ const submit = async (e: Event) => {
         createDate: newData.createDate,
         updateDate: newData.updateDate,
       }
+      STORE_MASTER.planJob.push(newData)
       store.Jobs.push(newJob)
       store.jobStyleCache.set(newJob.id, store.getJobStyle(newJob))
 

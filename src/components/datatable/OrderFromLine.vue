@@ -112,6 +112,12 @@ defineExpose({
 onMounted(() => {
   data.value = store.getJobsForLine(props.lineCode)
 })
+watch(
+  () => store.Jobs,
+  () => {
+    data.value = store.getJobsForLine(props.lineCode)
+  },
+)
 watch(selectOrder, (newVal) => {
   console.log(selectOrder.value)
 })

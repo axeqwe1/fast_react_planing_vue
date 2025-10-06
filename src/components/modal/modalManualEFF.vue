@@ -1,7 +1,7 @@
 <template>
   <Dialog
     v-model:visible="internalVisible"
-    :header="`Config Manual Manpower ของ Line ${internalLineCode}`"
+    :header="`Config Manual Efficiency ของ Line ${internalLineCode}`"
     modal
     class="lg:max-w-[1000px] lg:max-h-screen w-full"
     :draggable="false"
@@ -24,7 +24,7 @@
     @update:showModalType="onCloseAddType"
     @save="saveType"
   />
-  <Dialog
+  <!-- <Dialog
     v-model:visible="confirmChangeTypeDialog"
     modal
     header="Add Type"
@@ -43,7 +43,7 @@
       ></Button>
       <Button type="button" :icon="'pi pi-check'" :label="'Save'" @click="onSave()"></Button>
     </div>
-  </Dialog>
+  </Dialog> -->
   <Toast position="top-center" />
 </template>
 

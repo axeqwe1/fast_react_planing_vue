@@ -1,6 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type {
+  ExpertEfficiency,
+  manualMP,
   MasterData,
   MasterEfficiency,
   MasterFactory,
@@ -10,6 +12,7 @@ import type {
   MasterSamView,
   MasterType,
   MasterWorkDay,
+  manualEff,
 } from '@/type/types'
 import {
   GetAllJob,
@@ -24,6 +27,9 @@ import {
   GetWorkDayAll,
 } from '@/lib/api/Masterplan'
 import { GetMasterType } from '@/lib/api/Mastertype'
+import { GetExpertEfficiency } from '@/lib/api/ExpertEffType'
+import { GetManualEffData, GetManualMpData } from '@/lib/api/ManualEFFMP'
+import { get } from 'lodash'
 
 export const useMaster = defineStore('master', {
   state: () => ({
@@ -39,6 +45,10 @@ export const useMaster = defineStore('master', {
     planJob: [] as MasterData[],
     allJob: [] as MasterData[],
     currentFactory: 'ALL' as string,
+    expertType: [] as ExpertEfficiency[],
+
+    manualMPData: [] as manualMP[],
+    manualEff: [] as manualEff[],
   }),
   actions: {
     getMasterLine() {
@@ -104,6 +114,30 @@ export const useMaster = defineStore('master', {
         const res = await GetMasterType()
         console.log(res.data)
         this.masterType = res.data
+      }
+      await fetchData()
+    },
+    async getExpertEfficiency() {
+      const fetchData = async () => {
+        const res = await GetExpertEfficiency()
+        this.expertType = res.data
+        console.log(this.expertType)
+      }
+      await fetchData()
+    },
+    async getManualMP() {
+      const fetchData = async () => {
+        const res = await GetManualMpData()
+        console.log(res)
+        this.manualMPData = res.data
+      }
+      await fetchData()
+    },
+    async getManualEFF() {
+      const fetchData = async () => {
+        const res = await GetManualEffData()
+        console.log(res)
+        this.manualEff = res.data
       }
       await fetchData()
     },

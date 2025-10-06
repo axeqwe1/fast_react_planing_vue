@@ -153,6 +153,7 @@ async function onSave() {
   const res = await CreateExpertEfficiency(request)
   if (res.status === 200) {
     await FetchData()
+    await STORE_MASTER.getManualMP()
     toast.add({
       severity: 'success',
       summary: 'Success',

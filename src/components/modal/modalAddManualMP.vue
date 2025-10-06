@@ -156,6 +156,7 @@ async function onSave() {
   if (res.status == 200) {
     toast.add({ severity: 'success', summary: 'Success', detail: 'เพิ่มข้อมูลสำเร็จ', life: 3000 })
     emits('update:showModal', false)
+    await STORE_MASTER.getManualMP()
     resetInput()
     emits('save', true)
   } else {

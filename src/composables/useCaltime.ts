@@ -1,5 +1,8 @@
+import { GetManualEffsLineCode, GetManualMpDataByLineCode } from '@/lib/api/ManualEFFMP'
+import { type ExpertEfficiency } from './../type/types'
 import { useMaster } from '@/stores/masterStore'
 import { useScheduleStore } from '@/stores/scheduleStore'
+import type { Job, manualEff, manualMP } from '@/type/types'
 import { formatDateLocal, formatTimeKey } from '@/utils/formatKey'
 import { getShiftRange } from '@/utils/utility'
 
@@ -8,22 +11,35 @@ export function useCaltime() {
   const store = useScheduleStore()
   function calTime(start: Date, orderNo: string, color: string, lineCode: string, sewId?: number) {
     // param startDate orderNo color lineCode
+
     const Line = STORE_MASTER.masterLine.filter((item) => item.lineCode === lineCode)[0]
-    const Manpower = Line.capacityMP
-    const Efficiency = STORE_MASTER.masterEfficiency
-      .filter((item) => item.lineCode == Line.lineCode)
-      .map((item) => item.efficiencyPct)[0]
-    console.log(sewId)
+    let ManualMP: manualMP[] = STORE_MASTER.manualMPData.filter(
+      (item) => item.lineCode === lineCode,
+    )
+    let ManualEff: manualEff[] = STORE_MASTER.manualEff.filter((item) => item.lineCode === lineCode)
+
     const planJob =
       sewId == null
         ? STORE_MASTER.planJob.filter((item) => item.orderNo == orderNo && item.color == color)[0]
-        : store.Jobs.filter(
-            (item) => item.name == orderNo && item.color == color && item.sewId == sewId,
+        : STORE_MASTER.planJob.filter(
+            (item) => item.orderNo == orderNo && item.color == color && item.sewId == sewId,
           )[0]
+
     let endDate = new Date()
     console.log(planJob)
-    const Sam = planJob.sam
+    const type = STORE_MASTER.masterType.find((item) => item.typeCode === planJob.typeCode)
 
+    const expertEfficiency = STORE_MASTER.expertType.find(
+      (item) => item.lineCode === lineCode && item.typeCode === type?.typeCode,
+    )
+    console.log(expertEfficiency)
+    const Sam = planJob.sam
+    const Manpower = Line.capacityMP
+    const Efficiency = expertEfficiency
+      ? expertEfficiency.effPct
+      : (STORE_MASTER.masterEfficiency.find((item) => item.lineCode === Line.lineCode)
+          ?.efficiencyPct ?? 0)
+    console.log(sewId)
     const qty = planJob.splitQty ? planJob.splitQty : planJob.qty
     const order = orderNo
     const MINUTE_PER_HOUR = 60
@@ -50,6 +66,49 @@ export function useCaltime() {
         break
       }
       const shiftStart = '08:00:00'
+      let foundEff: manualEff | undefined
+      let foundMP: manualMP | undefined
+      if (ManualEff && ManualEff.length > 0) {
+        console.log('--- ManualEff Loop ---')
+        for (const item of ManualEff) {
+          const cond = normalizeDate(currentDate) <= normalizeDate(new Date(item.endDate))
+          console.log(
+            `Check Eff: current=${normalizeDate(currentDate)} <= end=${normalizeDate(new Date(item.endDate))} → ${cond}`,
+            item,
+          )
+          if (cond) {
+            foundEff = item
+            console.log('✅ Found EFF item:', item)
+            break
+          }
+        }
+      }
+
+      if (ManualMP && ManualMP.length > 0) {
+        console.log('--- ManualMP Loop ---')
+        for (const item of ManualMP) {
+          const cond = normalizeDate(currentDate) <= normalizeDate(new Date(item.endDate))
+          console.log(
+            `Check MP: current=${normalizeDate(currentDate)} <= end=${normalizeDate(new Date(item.endDate))} → ${cond}`,
+            item,
+          )
+          if (cond) {
+            foundMP = item
+            console.log('✅ Found MP item:', item)
+            break
+          }
+        }
+      }
+
+      const EFF = foundEff?.effPct ?? Efficiency
+      const MP = foundMP?.capMP ?? Manpower
+
+      console.table({
+        ManualMP: ManualMP,
+        ManualEff: ManualEff,
+        Manpower: MP,
+        Efficiency: EFF,
+      })
       // const timeStart = startDate.toISOString().split('T')[1].split('.')[0]
       // console.log(timeStart)
       let defaultWorkHour = 8
@@ -60,15 +119,15 @@ export function useCaltime() {
           formatDateLocal(currentDate).split(' ')[0]
         )
       })[0]
-      console.log(
-        STORE_MASTER.masterWorkDay.filter((item) => {
-          // console.log(formatDateLocal(currentDate).split(' ')[0])
-          return (
-            formatDateLocal(new Date(item.workDate)).split(' ')[0] ==
-            formatDateLocal(currentDate).split(' ')[0]
-          )
-        }),
-      )
+      // console.log(
+      //   STORE_MASTER.masterWorkDay.filter((item) => {
+      //     // console.log(formatDateLocal(currentDate).split(' ')[0])
+      //     return (
+      //       formatDateLocal(new Date(item.workDate)).split(' ')[0] ==
+      //       formatDateLocal(currentDate).split(' ')[0]
+      //     )
+      //   }),
+      // )
       if (WorkDay) {
         // console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
         // console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
@@ -134,7 +193,7 @@ export function useCaltime() {
       //   console.log(avaliableMinutes)
 
       let AllocatedWorkMin = 0
-      const MP_EFF_FACTOR = Manpower * (Efficiency / 100)
+      const MP_EFF_FACTOR = MP * (EFF / 100)
       const CAP_MIN_TODAY = avaliableMinutes * MP_EFF_FACTOR
       //   console.log(CAP_MIN_TODAY)
 
@@ -353,4 +412,10 @@ export function useCaltime() {
     return endDate
   }
   return { calTime }
+}
+
+function normalizeDate(date: Date): number {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
 }

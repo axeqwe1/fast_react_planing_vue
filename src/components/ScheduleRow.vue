@@ -524,6 +524,7 @@ const fetchMasterPlan = async (factory?: string) => {
         season: items.season,
         color: items.color,
         typeName: items.type,
+        typeCode: items.typeCode,
         name: items.orderNo,
         sam: items.sam,
         startDate: items.sewStart,
@@ -740,15 +741,7 @@ function onDrop(e: DragEvent, lineName: string) {
     holidays: store.holidays,
   })
   console.log(dropMode)
-  store.moveJob(
-    draggingJob.value.id,
-    lineName,
-    container,
-    e,
-    newStart,
-    dropMode,
-    draggingJob.value.duration,
-  )
+  store.moveJob(draggingJob.value.id, lineName, newStart, dropMode)
 
   // รีเซ็ต state
   draggingJob.value = null
@@ -891,7 +884,7 @@ function handleReturnJob() {
             r.color === job.color &&
             r.style === job.style &&
             r.season === job.season &&
-            r.typeName === job.typeName,
+            r.typeCode === job.typeCode,
         )
       })
 

@@ -7,6 +7,7 @@ export interface Job {
   style: string
   season: string
   color: string
+  typeCode: string
   typeName: string
   startDate: string
   endDate: string
@@ -233,6 +234,7 @@ export interface MasterData {
   statusName: string
   style: string
   type: string
+  typeCode: string
   factoryCode: string
 }
 
