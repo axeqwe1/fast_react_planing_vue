@@ -548,6 +548,7 @@ const fetchMasterPlan = async (factory?: string) => {
         line: items.lineCode,
         qty: items.splitQty ? items.splitQty : items.qty,
         splitQty: items.splitQty,
+        qtyBal: items.qtyBal,
         style: items.style,
         season: items.season,
         sam: items.sam,

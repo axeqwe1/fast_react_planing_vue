@@ -88,3 +88,8 @@ export interface CreateManualEFFDTO {
   StartDate: string | null
   EndDate: string | null
 }
+
+export interface SplitJobRequestDTO {
+  sewId: number
+  splitQty: number
+}

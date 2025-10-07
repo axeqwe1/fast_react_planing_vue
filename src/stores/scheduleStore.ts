@@ -9,6 +9,7 @@ import { get } from 'lodash'
 import { time } from 'motion-v'
 import { defineStore } from 'pinia'
 import { useAuth } from './userStore'
+import { useMaster } from './masterStore'
 
 export const useScheduleStore = defineStore('schedule', {
   state: () => ({
@@ -92,9 +93,9 @@ export const useScheduleStore = defineStore('schedule', {
       const endDate = new Date(job.endDate)
       this.isHoliday(endDate)
       // console.log(this.isHoliday(endDate))
-      if (this.isHoliday(endDate)) {
-        // console.log(job)
-      }
+      // if (this.isHoliday(endDate)) {
+      //   console.log(job)
+      // }
       // console.log(endIsHoliday)
       //   const endDate = new Date(startDate.getTime()) // clone เพื่อไม่แก้ต้นฉบับ
       //   endDate.setHours(startDate.getHours() + workHour)
@@ -248,6 +249,7 @@ export const useScheduleStore = defineStore('schedule', {
 
       return leftPosition + 42.74
     },
+
     // Important create timeindex
     getDayIndex(workHour: number) {
       const timeIndexMap = new Map<string, number>()
@@ -350,7 +352,7 @@ export const useScheduleStore = defineStore('schedule', {
         newStart.setHours(8, 0, 0, 0)
       }
       let newEnd = calTime(newStart, job.name, job.color, targetLineId, job.sewId) as Date
-      console.log(newEnd)
+      console.log(dropMode)
       // let newEnd = this.addTime(newStart, duration)
       switch (dropMode) {
         case 'insert':
@@ -408,9 +410,20 @@ export const useScheduleStore = defineStore('schedule', {
       )
 
       // Check Left
-      const jobLeft = jobs.filter(
-        (j) => toDate(j.startDate) < pivotStartDate && j.id !== movingJobId,
-      )
+      const jobLeft = jobs.filter((j) => {
+        console.log(
+          'j.startDate',
+          toDate(j.startDate),
+          'pivotStartDate',
+          pivotStartDate,
+          toDate(j.startDate) <= toDate(pivotStartDate) && j.id !== movingJobId,
+          j.id,
+        )
+        return (
+          trimToMinutes(toDate(j.startDate)) <= trimToMinutes(toDate(pivotStartDate)) &&
+          j.id !== movingJobId
+        )
+      })
       // console.log('jobLeft', jobLeft, 'pivotStartDate', pivotStartDate)
       for (let j of jobLeft) {
         const jobStart = toDate(j.startDate)
@@ -435,14 +448,34 @@ export const useScheduleStore = defineStore('schedule', {
           // this.jobUpdate.push(j)
           pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
           pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
-          console.log('pushforward#######################')
+          console.log('pushforward#######################' + j.id)
           this.updateJob(movingJobId, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
         }
       }
       // Check Right
-      const jobRight = jobs.filter(
-        (j) => toDate(j.startDate) >= pivotStartDate && j.id !== movingJobId,
-      )
+      const jobRight = jobs.filter((j) => {
+        console.log('****************************')
+        console.log(
+          'j.startDate',
+          toDate(j.startDate),
+          'pivotStartDate',
+          pivotStartDate,
+          toDate(j.startDate) >= toDate(pivotStartDate) && j.id !== movingJobId,
+          j.id,
+        )
+        return (
+          trimToMinutes(toDate(j.startDate)) >= trimToMinutes(toDate(pivotStartDate)) &&
+          j.id !== movingJobId
+        )
+      })
+      console.log('jobRight', jobRight, 'pivotEndDate', pivotEndDate)
+      console.log('-----------------------------------')
+      console.log('pivotStartDate', pivotStartDate)
+      console.log('pivotEndDate', pivotEndDate)
+      console.log('-----------------------------------')
+      console.log(jobs)
+      console.log('-----------------------------------')
+      console.log(jobLeft)
       // 1) Chain push ทางขวา
       for (let job of jobRight) {
         const jobStart = this.getNextWorkingDate(toDate(job.startDate), 8)
@@ -667,4 +700,10 @@ function normalizeDate(date: Date): Date {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0) // reset ชั่วโมง นาที วินาที มิลลิวินาที
   return d
+}
+
+function trimToMinutes(date: Date): number {
+  const d = new Date(date)
+  d.setSeconds(0, 0)
+  return d.getTime()
 }

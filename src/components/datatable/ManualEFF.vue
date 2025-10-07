@@ -186,6 +186,7 @@ import {
 import { localToISO } from '@/utils/utility'
 import modalAddManualEFF from '../modal/modalAddManualEFF.vue'
 import { useMaster } from '@/stores/masterStore'
+import { useCaltime } from '@/composables/useCaltime'
 const props = defineProps<{
   lineCode: string
   data: manualEff[]
@@ -210,6 +211,8 @@ const tempMpCap = ref<number>(0)
 
 const STORE_MASTER = useMaster()
 const internalLineCode = ref('')
+
+const { computeManualStyle } = useCaltime()
 
 function opModal() {
   showModal.value = !showModal.value
@@ -283,6 +286,9 @@ async function deleteItem() {
   if (selectedIndex.value !== -1) {
     data.value.splice(selectedIndex.value, 1)
     const res = await DeleteManualEFF(selectedItem.value!.id)
+    STORE_MASTER.masterLine.forEach((line) => {
+      computeManualStyle(line.lineCode)
+    })
     if (res.status === 200) {
       console.log('Delete successful:', res.data)
     } else {
@@ -298,6 +304,9 @@ async function UpdateData(newData: manualEff) {
   const res = await UpdateManualEff(newData)
   if (res.status === 200) {
     await STORE_MASTER.getManualEFF()
+    STORE_MASTER.masterLine.forEach((line) => {
+      computeManualStyle(line.lineCode)
+    })
     console.log('Update successful:', res.data)
   } else {
     console.error('Update failed:', res)

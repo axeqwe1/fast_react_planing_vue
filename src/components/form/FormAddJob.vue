@@ -391,7 +391,7 @@ import type { AddPlanJob } from '@/type/requestDTO'
 import { useAuth } from '@/stores/userStore'
 import { formatDateLocal, formatLocal } from '@/utils/formatKey'
 import { useScheduleStore } from '@/stores/scheduleStore'
-import { AddJob, GetPlanJob } from '@/lib/api/Masterplan'
+import { AddJob, GetPlanJob, GetPlanJobBySewId } from '@/lib/api/Masterplan'
 
 const { calTime } = useCaltime()
 
@@ -571,30 +571,32 @@ const submit = async (e: Event) => {
       showToastCountdown()
       emit('AddJob', true)
       const newData = res.data.newjob
+      const planJob = await GetPlanJobBySewId(newData.sewId)
       const newJob: Job = {
-        id: newData.sewId,
-        sewId: newData.sewId,
-        line: newData.lineCode,
-        qty: newData.splitQty ? newData.splitQty : newData.qty,
-        splitQty: newData.splitQty,
-        style: newData.style,
-        season: newData.season,
-        color: newData.color,
-        sam: newData.sam,
-        typeCode: newData.typeCode,
-        typeName: newData.type,
-        name: newData.orderNo,
-        startDate: newData.sewStart,
-        endDate: newData.sewFinish,
-        duration: newData.duration,
-        processStatus: newData.processStatus,
-        progressPct: newData.progressPct,
-        createBy: newData.createBy,
-        updateBy: newData.updateBy,
-        createDate: newData.createDate,
-        updateDate: newData.updateDate,
+        id: planJob.sewId,
+        sewId: planJob.sewId,
+        line: planJob.lineCode,
+        qty: planJob.splitQty ? newData.splitQty : newData.qty,
+        splitQty: planJob.splitQty,
+        qtyBal: planJob.qtyBal,
+        style: planJob.style,
+        season: planJob.season,
+        color: planJob.color,
+        sam: planJob.sam,
+        typeCode: planJob.typeCode,
+        typeName: planJob.typeName,
+        name: planJob.orderNo,
+        startDate: planJob.sewStart,
+        endDate: planJob.sewFinish,
+        duration: planJob.duration,
+        processStatus: planJob.processStatus,
+        progressPct: planJob.progressPct,
+        createBy: planJob.createBy,
+        updateBy: planJob.updateBy,
+        createDate: planJob.createDate,
+        updateDate: planJob.updateDate,
       }
-      STORE_MASTER.planJob.push(newData)
+      STORE_MASTER.planJob.push(planJob)
       store.Jobs.push(newJob)
       store.jobStyleCache.set(newJob.id, store.getJobStyle(newJob))
 
@@ -619,7 +621,7 @@ function selectData(event: any) {
 const fetchData = async () => {
   const data = STORE_MASTER.planJob.filter(
     (item) =>
-      item.processNameStatus == 'Waiting' &&
+      item.processNameStatus != 'Complete' &&
       (STORE_MASTER.currentFactory != 'ALL'
         ? item.factoryCode == STORE_MASTER.currentFactory
         : item.factoryCode) &&

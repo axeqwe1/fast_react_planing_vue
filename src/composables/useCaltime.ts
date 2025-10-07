@@ -5,10 +5,88 @@ import { useScheduleStore } from '@/stores/scheduleStore'
 import type { Job, manualEff, manualMP } from '@/type/types'
 import { formatDateLocal, formatTimeKey } from '@/utils/formatKey'
 import { getShiftRange } from '@/utils/utility'
+import { ref } from 'vue'
 
 export function useCaltime() {
   const STORE_MASTER = useMaster()
   const store = useScheduleStore()
+  const manualEffCache = ref(new Map<string, any[]>())
+  const manualMpCache = ref(new Map<string, any[]>())
+  function getManualEffStyle(lineCode: string) {
+    return manualEffCache.value.get(lineCode) || []
+  }
+  function getManualMpStyle(lineCode: string) {
+    return manualMpCache.value.get(lineCode) || []
+  }
+  function computeManualStyle(lineCode: string) {
+    const manualEffList = STORE_MASTER.manualEff.filter((m) => m.lineCode === lineCode)
+    const manualMPList = STORE_MASTER.manualMPData.filter((m) => m.lineCode === lineCode)
+    const stylesEff: any[] = []
+    const stylesMp: any[] = []
+    const timeIndexMap = store.timeIndexMap
+    const totalUnits = timeIndexMap.size
+    const containerWidth = document.querySelector('.week-header')?.scrollWidth || 1000
+    const unitWidth = containerWidth / totalUnits
+
+    manualEffList.forEach((eff) => {
+      const start = new Date(eff.startDate)
+      const end = new Date(eff.endDate)
+      start.setHours(16, 0, 0, 0)
+      end.setDate(end.getDate() + 1)
+      end.setHours(16, 0, 0, 0)
+
+      // คำนวณ offset จาก map เดิม
+      const startKey = formatTimeKey(start)
+      const endKey = formatTimeKey(end)
+      console.log(startKey, endKey)
+      const startOffset = timeIndexMap.get(startKey) ?? 0
+      const endOffset = timeIndexMap.get(endKey) ?? startOffset + 1
+      console.log(startOffset, endOffset)
+      const left = (startOffset + 1) * unitWidth - unitWidth * 8 * 60
+      const width = (endOffset - startOffset) * unitWidth
+
+      stylesEff.push({
+        text: `${eff.effPct ?? ''}%`, // 🟡 เพิ่มข้อมูล text ที่อยากโชว์
+        left: `${left}px`,
+        width: `${width}px`,
+        background: 'rgba(255, 193, 7, 0.1)', // เหลืองโปร่งใส
+        position: 'absolute',
+        top: '0',
+        height: '100%',
+        border: '1px solid #ffa000',
+      })
+    })
+    manualMPList.forEach((eff) => {
+      const start = new Date(eff.startDate)
+      const end = new Date(eff.endDate)
+      start.setHours(16, 0, 0, 0)
+      end.setHours(16, 0, 0, 0)
+
+      // คำนวณ offset จาก map เดิม
+      const startKey = formatTimeKey(start)
+      const endKey = formatTimeKey(end)
+      console.log(startKey, endKey)
+      const startOffset = timeIndexMap.get(startKey) ?? 0
+      const endOffset = timeIndexMap.get(endKey) ?? startOffset + 1
+      console.log(startOffset, endOffset)
+      const left = (startOffset + 1) * unitWidth - unitWidth * 8 * 60
+      const width = (endOffset - startOffset) * unitWidth
+
+      stylesMp.push({
+        text: `${eff.capMP ?? ''}`, // 🟡 เพิ่มข้อมูล text ที่อยากโชว์
+        left: `${left}px`,
+        width: `${width}px`,
+        background: 'rgba(11, 130, 111, 0.1)', // เหลืองโปร่งใส
+        position: 'absolute',
+        top: '0',
+        height: '100%',
+        border: '1px solid rgba(11, 130, 111)',
+      })
+    })
+
+    manualEffCache.value.set(lineCode, stylesEff)
+    manualMpCache.value.set(lineCode, stylesMp)
+  }
   function calTime(start: Date, orderNo: string, color: string, lineCode: string, sewId?: number) {
     // param startDate orderNo color lineCode
 
@@ -21,9 +99,7 @@ export function useCaltime() {
     const planJob =
       sewId == null
         ? STORE_MASTER.planJob.filter((item) => item.orderNo == orderNo && item.color == color)[0]
-        : STORE_MASTER.planJob.filter(
-            (item) => item.orderNo == orderNo && item.color == color && item.sewId == sewId,
-          )[0]
+        : STORE_MASTER.planJob.filter((item) => item.sewId == sewId)[0]
 
     let endDate = new Date()
     console.log(planJob)
@@ -40,7 +116,12 @@ export function useCaltime() {
       : (STORE_MASTER.masterEfficiency.find((item) => item.lineCode === Line.lineCode)
           ?.efficiencyPct ?? 0)
     console.log(sewId)
-    const qty = planJob.splitQty ? planJob.splitQty : planJob.qty
+    const qty =
+      planJob.processStatus == 1
+        ? planJob.qtyBal
+        : planJob.splitQty
+          ? planJob.splitQty
+          : planJob.qty
     const order = orderNo
     const MINUTE_PER_HOUR = 60
 
@@ -71,7 +152,9 @@ export function useCaltime() {
       if (ManualEff && ManualEff.length > 0) {
         console.log('--- ManualEff Loop ---')
         for (const item of ManualEff) {
-          const cond = normalizeDate(currentDate) <= normalizeDate(new Date(item.endDate))
+          const cond =
+            normalizeDate(currentDate) >= normalizeDate(new Date(item.startDate)) &&
+            normalizeDate(currentDate) <= normalizeDate(new Date(item.endDate))
           console.log(
             `Check Eff: current=${normalizeDate(currentDate)} <= end=${normalizeDate(new Date(item.endDate))} → ${cond}`,
             item,
@@ -87,7 +170,9 @@ export function useCaltime() {
       if (ManualMP && ManualMP.length > 0) {
         console.log('--- ManualMP Loop ---')
         for (const item of ManualMP) {
-          const cond = normalizeDate(currentDate) <= normalizeDate(new Date(item.endDate))
+          const cond =
+            normalizeDate(currentDate) >= normalizeDate(new Date(item.startDate)) &&
+            normalizeDate(currentDate) <= normalizeDate(new Date(item.endDate))
           console.log(
             `Check MP: current=${normalizeDate(currentDate)} <= end=${normalizeDate(new Date(item.endDate))} → ${cond}`,
             item,
@@ -103,12 +188,12 @@ export function useCaltime() {
       const EFF = foundEff?.effPct ?? Efficiency
       const MP = foundMP?.capMP ?? Manpower
 
-      console.table({
-        ManualMP: ManualMP,
-        ManualEff: ManualEff,
-        Manpower: MP,
-        Efficiency: EFF,
-      })
+      // console.table({
+      //   ManualMP: ManualMP,
+      //   ManualEff: ManualEff,
+      //   Manpower: MP,
+      //   Efficiency: EFF,
+      // })
       // const timeStart = startDate.toISOString().split('T')[1].split('.')[0]
       // console.log(timeStart)
       let defaultWorkHour = 8
@@ -411,7 +496,7 @@ export function useCaltime() {
     }
     return endDate
   }
-  return { calTime }
+  return { calTime, getManualEffStyle, getManualMpStyle, computeManualStyle }
 }
 
 function normalizeDate(date: Date): number {

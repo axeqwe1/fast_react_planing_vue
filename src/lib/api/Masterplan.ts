@@ -7,6 +7,7 @@ import type {
   CreateMasterWorkDay,
   GetPlanScheduleRequestDTO,
   ReturnJobPlanRequest,
+  SplitJobRequestDTO,
   UpdatePlanJob,
 } from '@/type/requestDTO'
 
@@ -283,6 +284,17 @@ export const GetAllJob = async () => {
   }
 }
 
+export const GetPlanJobBySewId = async (sewId: number) => {
+  try {
+    const API_PATH = `api/Masterplan/GetPlanJobBySewID/${sewId}`
+    const res = await apiService.get(API_PATH)
+
+    return res.data
+  } catch (err: any) {
+    throw err
+  }
+}
+
 export const ReturnJobPlan = async (request: ReturnJobPlanRequest[]) => {
   try {
     const API_PATH = `api/Masterplan/ReturnJobPlaned`
@@ -299,6 +311,16 @@ export const ChangeOrderType = async (request: changeTypeOrderRequestDTO) => {
     const API_PATH = `api/Masterplan/ChangeOrderType`
     const res = await apiService.post(API_PATH, request)
 
+    return res
+  } catch (err: any) {
+    throw err
+  }
+}
+
+export const SplitJob = async (request: SplitJobRequestDTO) => {
+  try {
+    const API_PATH = `api/Masterplan/SplitJobPlaned`
+    const res = await apiService.post(API_PATH, request)
     return res
   } catch (err: any) {
     throw err

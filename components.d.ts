@@ -24,6 +24,7 @@ declare module 'vue' {
     FormMasterLine: typeof import('./src/components/form/FormMasterLine.vue')['default']
     FormMasterSam: typeof import('./src/components/form/FormMasterSam.vue')['default']
     FormMasterWorkday: typeof import('./src/components/form/FormMasterWorkday.vue')['default']
+    FormSplitQTY: typeof import('./src/components/form/FormSplitQTY.vue')['default']
     Header: typeof import('./src/components/Header.vue')['default']
     InputGroup: typeof import('primevue/inputgroup')['default']
     InputGroupAddon: typeof import('primevue/inputgroupaddon')['default']

@@ -3,6 +3,7 @@ export interface Job {
   sewId: number
   name: string
   qty: number
+  qtyBal: number
   splitQty: number
   style: string
   season: string
@@ -209,6 +210,7 @@ export interface MasterData {
   psrDate: string // ISO date string
   qty: number
   splitQty: number
+  qtyBal: number
   qtyBonding: number
   qtyBundle: number
   qtyCut: number

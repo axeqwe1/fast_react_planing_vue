@@ -75,6 +75,26 @@
               {{ job.name }}
             </span>
           </div>
+          <div
+            v-for="(s, index) in getManualEffStyle(line.lineCode)"
+            :key="index"
+            :style="s"
+            class="manual-eff-bar z-4"
+          >
+            <div class="flex flex-col-reverse items-start w-full h-full bottom-0 left-0">
+              EFF: {{ s.text }}
+            </div>
+          </div>
+          <div
+            v-for="(s, index) in getManualMpStyle(line.lineCode)"
+            :key="index"
+            :style="s"
+            class="manual-eff-bar z-4"
+          >
+            <div class="flex flex-col-reverse items-end w-full h-full bottom-0 left-0">
+              MP: {{ s.text }}
+            </div>
+          </div>
         </template>
 
         <template v-if="divideLeft">
@@ -316,6 +336,11 @@
         :style="floatingStyles"
       ></div>
     </Teleport>
+    <FormSplitQTY
+      :-show="dialogSplit"
+      @update:visible="onCancel"
+      :OrderJob="targetJob ? targetJob : null"
+    />
     <modalTypeMap
       v-model:visible="showTypeMap"
       :line-code="targetLineCode ? targetLineCode : 'undefined'"
@@ -378,6 +403,9 @@ import { GetPlanJob, GetPlanScheduleData, ReturnJobPlan } from '@/lib/api/Master
 import type { GetPlanScheduleRequestDTO, ReturnJobPlanRequest } from '@/type/requestDTO'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
+import FormSplitQTY from './form/FormSplitQTY.vue'
+import { useCaltime } from '@/composables/useCaltime'
+const { getManualEffStyle, getManualMpStyle, computeManualStyle } = useCaltime()
 const toast = useToast()
 
 const showTypeMap = ref(false)
@@ -398,7 +426,7 @@ const dragContext = {
   containerRect: null as DOMRect | null,
   clientXStart: 0,
 }
-const jobs = ref<Job[]>([])
+const headerWidth = ref<number>(0)
 const showModal = ref<boolean>(false)
 const showLineMenu = ref<boolean>(false)
 const chooseStartTime = ref<string>('')
@@ -412,6 +440,7 @@ const STORE_MASTER = useMaster()
 const targetFactoryCode = ref<string>()
 const targetLineCode = ref<string>()
 const targetOrder = ref<string>()
+const targetJob = ref<Job | null>(null)
 const requestPlanSchedule = ref<GetPlanScheduleRequestDTO | null>(null)
 const planSchedule = ref<PlanSchedule[]>([])
 const selectedOrderPlaned = ref<string[]>([])
@@ -420,6 +449,8 @@ const menu = ref()
 const jobmenu = ref()
 const linemenu = ref()
 const op = ref()
+
+const dialogSplit = ref(false)
 
 const filterOrderList = ref('')
 
@@ -456,10 +487,12 @@ const jobMenu = ref([
     },
   },
   {
-    label: 'Split (not use)',
+    label: 'Split',
     icon: 'pi pi-arrows-h',
-    command: () => {},
-    disabled: true,
+    command: () => {
+      dialogSplit.value = true
+      console.log(dialogSplit.value)
+    },
   },
 ])
 const lineMenu = ref([
@@ -499,73 +532,11 @@ const lineMenu = ref([
     },
   },
 ])
-const fetchMasterPlan = async (factory?: string) => {
-  try {
-    // const res = await GetPlanJob()
-    jobs.value = []
-    const res = await GetPlanJob()
-    STORE_MASTER.planJob = res
-    store.jobStyleCache.clear()
-    const data = res
-    let filterData = []
-    filterData = data.filter((item: any) => item.sewStart != null)
 
-    // console.log(data.filter((item: any) => item.sewStart != null))
-    filterData.forEach((items: any, index: number) => {
-      jobs.value.push({
-        id: items.sewId
-          ? items.sewId
-          : `${items.orderNo}_${items.lineCode}_${items.style}_${items.color}`, // Assuming each item has a unique id
-        sewId: items.sewId,
-        line: items.lineCode,
-        qty: items.splitQty ? items.splitQty : items.qty,
-        splitQty: items.splitQty,
-        style: items.style,
-        season: items.season,
-        color: items.color,
-        typeName: items.type,
-        typeCode: items.typeCode,
-        name: items.orderNo,
-        sam: items.sam,
-        startDate: items.sewStart,
-        endDate: items.sewFinish,
-        duration: items.duration,
-        processStatus: items.processStatus,
-        progressPct: items.progressPct,
-        createBy: items.createBy,
-        updateBy: items.updateBy,
-        createDate: items.createDate,
-        updateDate: items.updateDate,
-      })
-    })
-    store.setJobs(jobs.value) // Update the store with fetched jobs
-
-    // // const filterLine = new Set(data.map((item: any) => item.line)) // Extract unique lines
-    // let arrLine = STORE_MASTER.masterLine // Convert Set to Array
-    // const lineMap = arrLine.map((line: any) => {
-    //   return {
-    //     name: line.lineName,
-    //     lineCode: line.lineCode,
-    //     company: line.factoryCode,
-    //     manpower: line.capacityMP,
-    //   } as Line
-    // })
-    // masterLine.value = lineMap
-
-    // if (factory === 'ALL') {
-    //   store.Lines = masterLine.value
-    // } else {
-    //   store.Lines = masterLine.value.filter((line) => line.company === factory)
-    // }
-
-    store.computeAllJobStyles()
-    // store.setMasters(filterData)
-    // store.setLine(masterLine.value) // Update the store with unique lines
-    // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging
-  } catch (err: any) {
-    console.error('Error fetching test data:', err)
-  }
+const onCancel = (bool: boolean) => {
+  dialogSplit.value = bool
 }
+
 const onRightClick = (
   event: MouseEvent,
   lineCode: string,
@@ -591,6 +562,7 @@ const onRightClickJob = (event: any, job: any, lineCode: string) => {
   }
   op.value.hide(event)
   requestPlanSchedule.value = request
+  targetJob.value = job
   targetOrder.value = job.name
 }
 
@@ -768,9 +740,15 @@ watch(
 watch(
   () => [store.weeks, store.minWidthHeader, store.headerWidth],
   () => {
+    console.log('Weeks or header width changed, recomputing styles...')
+    headerWidth.value = store.headerWidth
     store.getDayIndex(8)
     store.computeAllJobStyles()
     store.computeDivideStyle()
+    STORE_MASTER.masterLine.forEach((line) => {
+      computeManualStyle(line.lineCode)
+    })
+
     setLoading(false)
   },
   { immediate: true },
@@ -826,18 +804,76 @@ const fetchPlanSchedule = async (request: GetPlanScheduleRequestDTO) => {
 }
 function tooltipContent(job: any, line: any) {
   return `
-    <table style='border-collapse: collapse; font-size: 12px;'>
-      <tr><td><b>Line</b></td><td>${line.name}</td></tr>
-      <tr><td><b>Order</b></td><td>${job.name}</td></tr>
-      <tr><td><b>Start</b></td><td>${formatTimeKey(new Date(job.startDate))}</td></tr>
-      <tr><td><b>End</b></td><td>${formatTimeKey(new Date(job.endDate))}</td></tr>
-      <tr><td><b>Style</b></td><td>${job.style}</td></tr>
-      <tr><td><b>Color</b></td><td>${job.color}</td></tr>
-      <tr><td><b>Type</b></td><td>${job.typeName}</td></tr>
-      <tr><td><b>SAM</b></td><td>${STORE_MASTER.planJob.filter((item) => item.color == job.color && item.orderNo == job.name).map((item) => item.sam)[0]}</td></tr>
-      <tr><td><b>Status</b></td><td>${job.processStatus == '1' ? 'InProcess' : 'Waiting'}</td></tr>
-      <tr><td><b>Progres</b></td><td>${job.progressPct}</td></tr>
-      <tr><td><b>QTY</b></td><td><b>${job.qty}</b></td></tr>
+    <table style='
+      border-collapse: collapse; 
+      font-size: 12px;
+      min-width: 250px;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-radius: 4px;
+    '>
+      <tr>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Line</td>
+        <td style='padding: 6px 12px; color: #333;'>${line.name}</td>
+      </tr>
+      <tr style='background: #f8f9fa;'>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Order</td>
+        <td style='padding: 6px 12px; color: #333;'>${job.name}</td>
+      </tr>
+      <tr>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Start</td>
+        <td style='padding: 6px 12px; color: #333;'>${formatTimeKey(new Date(job.startDate))}</td>
+      </tr>
+      <tr style='background: #f8f9fa;'>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>End</td>
+        <td style='padding: 6px 12px; color: #333;'>${formatTimeKey(new Date(job.endDate))}</td>
+      </tr>
+      <tr>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Style</td>
+        <td style='padding: 6px 12px; color: #333;'>${job.style}</td>
+      </tr>
+      <tr style='background: #f8f9fa;'>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Color</td>
+        <td style='padding: 6px 12px; color: #333;'>${job.color}</td>
+      </tr>
+      <tr>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Type</td>
+        <td style='padding: 6px 12px; color: #333;'>${job.typeName}</td>
+      </tr>
+      <tr style='background: #f8f9fa;'>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>SAM</td>
+        <td style='padding: 6px 12px; color: #333;'>${STORE_MASTER.planJob.filter((item) => item.color == job.color && item.orderNo == job.name).map((item) => item.sam)[0]}</td>
+      </tr>
+      <tr>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Status</td>
+        <td style='padding: 6px 12px;'>
+          <span style='
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            font-size: 11px;
+            font-weight: 500;
+            ${
+              job.processStatus == '1'
+                ? 'background: #d4edda; color: #155724;'
+                : 'background: #fff3cd; color: #856404;'
+            }
+          '>
+            ${job.processStatus == '1' ? 'InProcess' : 'Waiting'}
+          </span>
+        </td>
+      </tr>
+      <tr style='background: #f8f9fa;'>
+        <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Progress</td>
+        <td style='padding: 6px 12px; color: #333;'>${job.progressPct}%</td>
+      </tr>
+      <tr style='border-top: 2px solid #dee2e6;'>
+        <td style='padding: 8px 12px; font-weight: 700; color: #495057; white-space: nowrap;'>QTY</td>
+        <td style='padding: 8px 12px; font-weight: 700; color: #007bff; font-size: 13px;'>${job.qty}</td>
+      </tr>
+      <tr style='background: #f8f9fa;'>
+        <td style='padding: 8px 12px; font-weight: 700; color: #495057; white-space: nowrap;'>QTY Balance</td>
+        <td style='padding: 8px 12px; font-weight: 700; color: #dc3545; font-size: 13px;'>${job.qtyBal}</td>
+      </tr>
     </table>
   `
 }

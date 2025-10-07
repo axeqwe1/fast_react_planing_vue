@@ -113,11 +113,10 @@ watch(
 )
 
 watch(
-  () => headerRef.value?.scrollWidth,
-  (val) => {
-    if (val) {
-      store.headerWidth = val
-    }
+  () => store.minWidthHeader,
+  async (val) => {
+    await nextTick()
+    store.headerWidth = headerRef.value?.scrollWidth || 0
   },
 )
 
@@ -145,11 +144,13 @@ const fetchMasterPlan = async (factory?: string) => {
         line: items.lineCode,
         qty: items.splitQty ? items.splitQty : items.qty,
         splitQty: items.splitQty,
+        qtyBal: items.qtyBal,
         style: items.style,
         season: items.season,
         sam: items.sam,
         color: items.color,
         typeName: items.type,
+        typeCode: items.typeCode,
         name: items.orderNo,
         startDate: items.sewStart,
         endDate: items.sewFinish,

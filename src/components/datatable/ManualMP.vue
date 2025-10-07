@@ -178,6 +178,7 @@ import type { manualMP } from '@/type/types'
 import { DeleteManualMP, ToggleActive, UpdateManualMP } from '@/lib/api/ManualEFFMP'
 import { localToISO } from '@/utils/utility'
 import { useMaster } from '@/stores/masterStore'
+import { useCaltime } from '@/composables/useCaltime'
 
 const props = defineProps<{
   lineCode: string
@@ -199,6 +200,8 @@ const editingItem = ref<manualMP | null>(null)
 const editingField = ref<'startDate' | 'endDate'>('startDate')
 const tempDate = ref<Date | null>(null)
 const tempMpCap = ref<number>(0)
+
+const { computeManualStyle } = useCaltime()
 
 const internalLineCode = ref('')
 
@@ -277,6 +280,9 @@ async function deleteItem() {
     data.value.splice(selectedIndex.value, 1)
     const res = await DeleteManualMP(selectedItem.value!.id)
     if (res.status === 200) {
+      STORE_MASTER.masterLine.forEach((line) => {
+        computeManualStyle(line.lineCode)
+      })
       console.log('Delete successful:', res.data)
     } else {
       console.error('Delete failed:', res)
@@ -291,6 +297,9 @@ async function UpdateData(newData: manualMP) {
   const res = await UpdateManualMP(newData)
   if (res.status === 200) {
     await STORE_MASTER.getManualMP()
+    STORE_MASTER.masterLine.forEach((line) => {
+      computeManualStyle(line.lineCode)
+    })
     console.log('Update successful:', res.data)
   } else {
     console.error('Update failed:', res)
