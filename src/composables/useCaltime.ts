@@ -51,8 +51,8 @@ export function useCaltime() {
         width: `${width}px`,
         background: 'rgba(255, 193, 7, 0.1)', // เหลืองโปร่งใส
         position: 'absolute',
-        top: '0',
-        height: '100%',
+        bottom: '0',
+        height: '50%',
         border: '1px solid #ffa000',
       })
     })
@@ -79,7 +79,7 @@ export function useCaltime() {
         background: 'rgba(11, 130, 111, 0.1)', // เหลืองโปร่งใส
         position: 'absolute',
         top: '0',
-        height: '100%',
+        height: '50%',
         border: '1px solid rgba(11, 130, 111)',
       })
     })

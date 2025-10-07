@@ -81,7 +81,9 @@
             :style="s"
             class="manual-eff-bar z-4"
           >
-            <div class="flex flex-col-reverse items-start w-full h-full bottom-0 left-0">
+            <div
+              class="flex flex-col-reverse items-start w-full h-full bottom-0 left-0 text-[8.5px]"
+            >
               EFF: {{ s.text }}
             </div>
           </div>
@@ -91,7 +93,7 @@
             :style="s"
             class="manual-eff-bar z-4"
           >
-            <div class="flex flex-col-reverse items-end w-full h-full bottom-0 left-0">
+            <div class="flex flex-col items-end w-full h-full top-0 text-[8.5px]">
               MP: {{ s.text }}
             </div>
           </div>
