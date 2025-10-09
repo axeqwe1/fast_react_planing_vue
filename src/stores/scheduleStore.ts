@@ -449,6 +449,7 @@ export const useScheduleStore = defineStore('schedule', {
           pivotStartDate = newStart // อัปเดต pivotStartDate เพื่อไม่ให้ชนกันอีก
           pivotEndDate = newEnd // อัปเดต pivotEndDate เพื่อไม่ให้ชนกันอีก
           console.log('pushforward#######################' + j.id)
+
           this.updateJob(movingJobId, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
         }
       }
@@ -492,7 +493,7 @@ export const useScheduleStore = defineStore('schedule', {
             // newEnd = this.getNextWorkingDate(newEnd, 8)
             console.log('Chainnnnnnpushhhhh#######################')
             this.updateJob(job.id, lineId, formatTimeKey(newStart), formatTimeKey(newEnd))
-
+            this.jobStyleCache.set(job.id, this.getJobStyle(job))
             // อัปเดต pivot เป็น job ที่เพิ่งเลื่อน
             pivotStartDate = newStart
             pivotEndDate = newEnd

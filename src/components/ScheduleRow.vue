@@ -1,5 +1,9 @@
 <template>
-  <div class="flex flex-col relative" :style="[{ width: `${store.headerWidth + 200}px` }]">
+  <div
+    class="flex flex-col relative select-none"
+    :style="[{ width: `${store.headerWidth + 200}px` }]"
+  >
+    <FooterRowSchedule />
     <div
       class="flex z-0 border-b-1 border-gray-500 w-full"
       v-for="(line, i) in lines"
@@ -45,7 +49,8 @@
           >
         </div>
       </div>
-
+      <!-- Line UI -->
+      <!--         @mousemove="(e) => updateMouse(e, line.lineCode, line.manpower)"          @mouseleave="() => (selecting = false)"-->
       <div
         class="relative h-[70px] w-full border-b-1 border-gray-200 z-0"
         :ref="
@@ -56,7 +61,9 @@
         @dragover="onDragOver(line.lineCode, $event)"
         @drop="(e) => onDrop(e, line.lineCode)"
         @contextmenu="(e) => onRightClick(e, line.lineCode, line.company, line.name)"
-        @mousemove="(e) => updateMouse(e, line.lineCode, line.manpower)"
+        @mousedown="onSelectStart(line.lineCode, $event)"
+        @mousemove="onSelectMove(line.lineCode, $event)"
+        @mouseup="onSelectEnd(selectLine, $event)"
       >
         <template v-if="lines.length > 0 && store.timeIndexMap.size > 0">
           <div
@@ -71,10 +78,11 @@
             @mouseleave="hideTooltip"
             :style="[store.getJobStyleFromCache(job)] as StyleValue"
           >
-            <span class="bg-slate-800/50 p-1 rounded-sm">
+            <label class="bg-slate-800/50 p-1 rounded-sm">
               {{ job.name }}
-            </span>
+            </label>
           </div>
+          <!-- Manual -->
           <div
             v-for="(s, index) in getManualEffStyle(line.lineCode)"
             :key="index"
@@ -82,7 +90,7 @@
             class="manual-eff-bar z-4"
           >
             <div
-              class="flex flex-col-reverse items-start w-full h-full bottom-0 left-0 text-[8.5px]"
+              class="flex flex-col-reverse items-start w-full h-full bottom-0 left-0 text-[8.5px] select-none"
             >
               EFF: {{ s.text }}
             </div>
@@ -93,10 +101,32 @@
             :style="s"
             class="manual-eff-bar z-4"
           >
-            <div class="flex flex-col items-end w-full h-full top-0 text-[8.5px]">
+            <div class="flex flex-col items-end w-full h-full top-0 text-[8.5px] select-none">
               MP: {{ s.text }}
             </div>
           </div>
+
+          <!-- Select -->
+          <div
+            v-if="selecting && selectLine == line.lineCode"
+            class="absolute top-0 h-full bg-blue-300/30 border border-blue-500 z-[2]"
+            :style="{
+              left: Math.min(selectStartX, selectEndX) + 'px',
+              width: Math.abs(selectEndX - selectStartX) + 'px',
+            }"
+          ></div>
+
+          <!-- และถ้ามี range ที่เลือกแล้ว -->
+          <div
+            v-if="selecting && selectedRange && selectedRange[line.lineCode]"
+            v-for="(range, key) in selectedRange"
+            :key="key"
+            class="absolute top-0 h-full bg-blue-500/20 border border-blue-400 z-[1]"
+            :style="{
+              left: range.start + 'px',
+              width: range.end - range.start + 'px',
+            }"
+          ></div>
         </template>
 
         <template v-if="divideLeft">
@@ -104,6 +134,7 @@
         </template>
       </div>
     </div>
+
     <ContextMenu ref="menu" :model="items" />
     <ContextMenu ref="jobmenu" :model="jobMenu" />
     <ContextMenu ref="linemenu" :model="lineMenu" />
@@ -116,19 +147,6 @@
       "
     >
       <div class="flex flex-col gap-4 w-[25rem]">
-        <!-- <div>
-          <span class="font-medium block mb-2">Share this document</span>
-          <InputGroup>
-            <InputText
-              value="https://primevue.org/12323ff26t2g243g423g234gg52hy25XADXAG3"
-              readonly
-              class="w-[25rem]"
-            ></InputText>
-            <InputGroupAddon>
-              <i class="pi pi-copy"></i>
-            </InputGroupAddon>
-          </InputGroup>
-        </div> -->
         <div>
           <span class="font-medium block mb-2">Return Order</span>
           <InputGroup>
@@ -199,11 +217,6 @@
                 }
               "
             >
-              <!-- <img
-                :src="`https://primefaces.org/cdn/primevue/images/avatar/${member.image}`"
-                style="width: 32px"
-              /> -->
-
               <div>
                 <span class="font-medium">{{ item.name }}</span>
                 <div class="text-sm text-surface-500 dark:text-surface-400">
@@ -227,25 +240,7 @@
         </div>
       </div>
     </Popover>
-    <!-- Overlay to close the menu -->
-    <!-- <div class="overlay" @click="closeContextMenu" v-if="showMenu || showLineMenu" /> -->
 
-    <!-- Custom Context Menu -->
-    <!-- <ContextMenu
-      v-if="showMenu"
-      :actions="contextMenuActions"
-      @action-clicked="handleActionClick"
-      :x="menus.menuX"
-      :y="menus.menuY"
-    />
-
-    <ContextMenu
-      v-if="showLineMenu"
-      :actions="contextLineMenu"
-      @action-clicked="handleActionClick"
-      :x="menus.menuX"
-      :y="menus.menuY"
-    /> -->
     <!-- Custom Modal -->
     <Modal v-model="showModal" size="large" :closable="false" :persistent="true">
       <template #header>
@@ -321,14 +316,7 @@
         </div>
       </template>
     </Modal>
-    <!-- <template v-if="divideLeft">
-      <viewCanvas />
-    </template> -->
 
-    <!-- <div v-for="divide in divideLeft" class="absolute" :style="{ left: divide + 'px' }">
-      <div class="week-break-background"></div>
-    </div> -->
-    <!-- Tooltip single instance -->
     <Teleport to="body">
       <div
         v-if="tooltip.visible"
@@ -407,7 +395,8 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import FormSplitQTY from './form/FormSplitQTY.vue'
 import { useCaltime } from '@/composables/useCaltime'
-const { getManualEffStyle, getManualMpStyle, computeManualStyle } = useCaltime()
+import FooterRowSchedule from './FooterRowSchedule.vue'
+const { getManualEffStyle, getManualMpStyle, computeManualStyle, strip } = useCaltime()
 const toast = useToast()
 
 const showTypeMap = ref(false)
@@ -455,6 +444,7 @@ const op = ref()
 const dialogSplit = ref(false)
 
 const filterOrderList = ref('')
+const stripMode = ref(false) // true = เลือก stripe, false = ปกติ drag job
 
 const jobsForLine = computed(() =>
   store.getJobsForLine(targetLineCode.value ? targetLineCode.value : ''),
@@ -467,12 +457,28 @@ const filteredJobs = computed(() => {
     item.name.toLowerCase().includes(filterOrderList.value.toLowerCase()),
   )
 })
-const items = ref([
+const items = computed(() => [
   {
     label: 'Add Job',
     icon: 'pi pi-briefcase',
     command: () => {
       showModalAddJob.value = true
+    },
+  },
+  {
+    label: stripMode.value ? 'Disable Stripe Mode' : 'Enable Stripe Mode',
+    icon: stripMode.value ? 'pi pi-unlock ' : 'pi pi-lock-open',
+    command: () => {
+      stripMode.value = !stripMode.value
+      if (!stripMode.value) {
+        resetOnSelect()
+      }
+      toast.add({
+        severity: 'info',
+        summary: 'Info',
+        detail: stripMode.value ? 'Stripe Mode Enabled' : 'Stripe Mode Disabled',
+        life: 3000,
+      })
     },
   },
 ])
@@ -633,7 +639,10 @@ const showContextMenu = async (event: MouseEvent, job: Job, linename: string) =>
 // Drag and Drop Handlers
 function onDragStart(e: DragEvent, job: Job) {
   if (!e.dataTransfer) return
-
+  if (stripMode.value) {
+    e.preventDefault()
+    return
+  }
   // เก็บข้อมูล job ที่กำลังลาก
   draggingJob.value = job
 
@@ -779,6 +788,9 @@ function AddJob(success: boolean) {
   showModalAddJob.value = !success
 }
 
+// Select Range Handlers
+const selectStartDisplay = ref()
+const selectEndDisplay = ref()
 function updateMouse(e: MouseEvent, lineCode: string, manpower: number) {
   const container = draggableEl.value[lineCode]
   if (!container) return
@@ -807,7 +819,7 @@ const fetchPlanSchedule = async (request: GetPlanScheduleRequestDTO) => {
 function tooltipContent(job: any, line: any) {
   return `
     <table style='
-      border-collapse: collapse; 
+      border-collapse: collapse;
       font-size: 12px;
       min-width: 250px;
       background: white;
@@ -850,8 +862,8 @@ function tooltipContent(job: any, line: any) {
         <td style='padding: 6px 12px; font-weight: 600; color: #666; white-space: nowrap;'>Status</td>
         <td style='padding: 6px 12px;'>
           <span style='
-            padding: 2px 8px; 
-            border-radius: 12px; 
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 11px;
             font-weight: 500;
             ${
@@ -918,6 +930,7 @@ function handleReturnJob() {
       store.Jobs = store.Jobs.filter((job) => {
         return !removedJobs.some(
           (r: any) =>
+            r.sewId === job.sewId &&
             r.orderNo === job.name &&
             r.color === job.color &&
             r.style === job.style &&
@@ -953,6 +966,100 @@ function handleReturnJob() {
 
 watch(selectedOrderPlaned, (newVal) => {
   console.log(selectedOrderPlaned.value)
+})
+
+// x----------------------------------------------- Select Event -----------------------------------------------x
+const selecting = ref(false)
+const selectLine = ref('')
+const selectStartX = ref(0)
+const selectEndX = ref(0)
+const selectedRange = ref<Record<string, { start: number; end: number }> | null>(null)
+function onSelectStart(lineCode: string, e: MouseEvent) {
+  if (e.button !== 0) return // เฉพาะคลิกซ้าย
+  if (!stripMode.value) return
+  selecting.value = true
+  selectLine.value = lineCode
+  selectedRange.value = null // ล้างช่วงที่เลือกก่อนหน้า
+  const container = draggableEl.value[lineCode]
+  if (!container) return
+
+  const relativeX = getRelativeX(container, e)
+  selectStartX.value = relativeX
+  selectEndX.value = relativeX
+}
+
+function onSelectMove(lineCode: string, e: MouseEvent) {
+  if (!selecting.value) {
+    // ✅ ให้ยังทำงานกับฟังก์ชัน updateMouse ได้ตามปกติ
+    updateMouse(e, lineCode, 0)
+    return
+  }
+
+  const container = draggableEl.value[lineCode]
+  if (!container) return
+
+  selectEndX.value = getRelativeX(container, e)
+}
+
+function onSelectEnd(lineCode: string, e: MouseEvent) {
+  if (!selecting.value) return
+  selecting.value = false
+
+  const container = draggableEl.value[lineCode]
+  if (!container) return
+
+  const start = Math.min(selectStartX.value, selectEndX.value)
+  const end = Math.max(selectStartX.value, selectEndX.value)
+
+  if (!selectedRange.value) selectedRange.value = {}
+  selectedRange.value[lineCode] = { start, end }
+
+  // 🕒 แปลง pixel → time
+  const unitWidth = container.offsetWidth / store.timeIndexMap.size
+  const startIndex = Math.floor(start / unitWidth)
+  const endIndex = Math.floor(end / unitWidth)
+  const timeKeys = [...store.timeIndexMap.keys()]
+  const startTime = timeKeys[startIndex]
+  const endTime = timeKeys[endIndex]
+
+  console.log(`Selected range on ${lineCode}:`, startTime, endTime)
+  console.log(selectedRange.value[lineCode])
+
+  const job = store
+    .getJobsForLine(lineCode)
+    .filter(
+      (j) =>
+        (new Date(j.startDate) >= new Date(startTime) &&
+          new Date(j.endDate) <= new Date(endTime)) ||
+        (new Date(j.startDate) <= new Date(startTime) &&
+          new Date(j.endDate) >= new Date(endTime)) ||
+        (new Date(j.startDate) <= new Date(startTime) &&
+          new Date(j.endDate) >= new Date(startTime)) ||
+        (new Date(j.startDate) <= new Date(endTime) && new Date(j.endDate) >= new Date(endTime)),
+    )
+  strip(new Date(startTime), job, lineCode)
+  console.log(job)
+
+  // สามารถ emit หรือส่งไป store ได้
+  // emits('selectRange', { lineCode, startTime, endTime })
+}
+function resetOnSelect() {
+  selecting.value = false
+  selectLine.value = ''
+  selectStartX.value = 0
+  selectEndX.value = 0
+  selectedRange.value = null
+}
+
+watch(
+  () => stripMode.value,
+  (newVal) => {
+    STORE_MASTER.stripMode = newVal
+  },
+)
+// onMounted
+onMounted(() => {
+  STORE_MASTER.stripMode = stripMode.value
 })
 </script>
 

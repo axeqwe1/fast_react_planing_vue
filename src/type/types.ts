@@ -299,3 +299,17 @@ export interface manualEff {
   isActive: boolean
   effPct: number
 }
+
+export type GenQtyWorkerPayload = {
+  factory: string
+  days: Date[]
+  masterLine: MasterLine[]
+  masterFactory: MasterFactory[]
+  manualMPData: manualMP[]
+  manualEff: manualEff[]
+  masterType: MasterType[]
+  expertType: ExpertEfficiency[]
+  masterEfficiency: MasterEfficiency[]
+  planJob: MasterData[]
+  jobs: Job[] // หรือ map lineCode -> Job[]
+}

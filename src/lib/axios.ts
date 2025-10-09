@@ -70,7 +70,6 @@ Axios.interceptors.response.use(
         const res = await refresh()
         console.log(res)
         // ไม่ต้องเก็บ token ใน localStorage เพราะใช้ cookie
-        // แค่ retry original request
         return Axios(originalRequest)
       } catch (refreshError) {
         console.error('Refresh token failed:', refreshError)

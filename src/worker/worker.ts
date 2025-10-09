@@ -1,122 +1,167 @@
-import type { Job } from '@/type/types'
-import { formatTimeKey } from '@/utils/formatKey'
+import { useCaltime } from '@/composables/useCaltime'
+import type {
+  Job,
+  manualEff,
+  ExpertEfficiency,
+  GenQtyWorkerPayload,
+  manualMP,
+  MasterData,
+  MasterEfficiency,
+  MasterLine,
+  MasterType,
+} from '@/type/types'
+import { formatTimeKey, normalizeDate } from '@/utils/formatKey'
 
-// worker.ts
+let cacheQty: Map<string, number> = new Map<string, number>()
+// calcWorker.ts
 self.onmessage = (e) => {
-  const { jobs, timeIndexMaps, containerWidths } = e.data
-  const results = jobs.map((job: Job) => {
-    // คำนวณเหมือนใน getJobStyle
-    let workHour = 8
-    const BREAK_DURATION = 1 // ชั่วโมงพัก
-    let timeIndexMap = timeIndexMaps
-    const startDate = new Date(job.startDate)
-    const endDate = new Date(job.endDate)
-    //   const endDate = new Date(startDate.getTime()) // clone เพื่อไม่แก้ต้นฉบับ
-    //   endDate.setHours(startDate.getHours() + workHour)
+  const { days, payload } = e.data as {
+    days: Date[]
+    payload: GenQtyWorkerPayload
+  }
 
-    // adjust hour and minute
-    let startHour = Math.max(8, startDate.getHours())
-    let startMinute = Math.floor(startDate.getMinutes() / 15) * 15
-    if (startHour === 8 && startMinute === 0) startMinute = 0
-    let endHour = Math.min(17, endDate.getHours())
-    let endMinute = Math.floor(endDate.getMinutes() / 15) * 15
-    if (endHour === 8 + workHour + BREAK_DURATION && endMinute > 0)
-      endHour = 8 + workHour + BREAK_DURATION
+  // ตัวอย่าง logic ที่กิน CPU
+  function generateQty(date: Date[]) {
+    const newQtyMap = new Map<string, number>()
 
-    // ปรับเวลาให้ตรงกับช่วงเวลาที่มีใน timeIndexMap
-    startDate.setHours(startHour, startMinute, 0, 0)
-    endDate.setHours(endHour, endMinute, 0, 0)
-    // determine key datetime
-
-    const startKey = formatTimeKey(startDate)
-    const endKey = formatTimeKey(endDate)
-
-    if (!timeIndexMap.has(startKey) || !timeIndexMap.has(endKey)) {
-      console.warn('Not found:', startKey, endKey)
-      return { display: 'none' }
+    for (const d of date) {
+      const day = new Date(d)
+      const dateStr = formatTimeKey(day).split(' ')[0]
+      const qty = getQtyDoneByDayWorker(
+        d,
+        payload.factory,
+        payload.masterLine,
+        payload.manualMPData,
+        payload.manualEff,
+        payload.masterType,
+        payload.expertType,
+        payload.masterEfficiency,
+        payload.planJob,
+        payload.jobs,
+      )
+      newQtyMap.set(dateStr + '_' + payload.factory, Math.round(qty))
     }
 
-    let startOffset = timeIndexMap.get(startKey)
-    let endOffset = timeIndexMap.get(endKey)
-    let totalUnit = timeIndexMap.size // ✅ Map ใช้ `.size` แทน `.length`
-    if (startOffset === undefined || endOffset === undefined) {
-      console.warn(`No time index found for keys: ${startKey}, ${endKey}`)
-      return { display: 'none' }
-    }
+    cacheQty = newQtyMap
 
-    // ปรับปรุงการหา containerWidth
-    let containerElement = containerWidths
-    let containerWidth = 1000 // default value
+    // console.log('Updated cache for factory', factory)
+  }
+  function getQtyDoneByDayWorker(
+    date: Date,
+    factory: string,
+    masterLine: MasterLine[],
+    manualMPData: manualMP[],
+    manualEff: manualEff[],
+    masterType: MasterType[],
+    expertType: ExpertEfficiency[],
+    masterEfficiency: MasterEfficiency[],
+    planJob: MasterData[],
+    Job: Job[],
+  ) {
+    let totalDone = 0
+    const pivotStart = new Date(date)
+    pivotStart.setHours(8, 0, 0, 0)
+    const pivotEnd = new Date(date)
+    pivotEnd.setHours(16, 0, 0, 0)
 
-    if (containerElement) {
-      containerWidth = containerElement.scrollWidth || containerElement.offsetWidth || 1000
-    }
+    const manualMPMap = new Map<string, manualMP[]>()
+    manualMPData.forEach((item) => {
+      if (!manualMPMap.has(item.lineCode)) manualMPMap.set(item.lineCode, [])
+      manualMPMap.get(item.lineCode)!.push(item)
+    })
 
-    // ถ้า containerWidth ยังเล็กเกินไป ให้ใช้ค่าที่เหมาะสม
-    if (containerWidth < 500) {
-      containerWidth = 1200 // หรือค่าที่เหมาะสมกับ UI ของคุณ
-    }
+    const manualEffMap = new Map<string, manualEff[]>()
+    manualEff.forEach((item) => {
+      if (!manualEffMap.has(item.lineCode)) manualEffMap.set(item.lineCode, [])
+      manualEffMap.get(item.lineCode)!.push(item)
+    })
+    const expertTypeMap = new Map<string, ExpertEfficiency[]>()
+    expertType.forEach((item) => {
+      if (!expertTypeMap.has(item.lineCode + '_' + item.typeCode))
+        expertTypeMap.set(item.lineCode + '_' + item.typeCode, [])
+      expertTypeMap.get(item.lineCode + '_' + item.typeCode)!.push(item)
+    })
+    const typeMap = new Map<string, MasterType[]>()
+    masterType.forEach((item) => {
+      if (!typeMap.has(item.typeCode)) typeMap.set(item.typeCode, [])
+      typeMap.get(item.typeCode)!.push(item)
+    })
 
-    let unitWidth = containerWidth / totalUnit
-    // วิธีการคำนวณ totalMinutes ที่ปรับปรุงแล้ว
-    let totalMinutes = 0
-    let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
-    let finalDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
+    masterLine
+      .filter((item) => item.factoryCode == factory)
+      .forEach((line) => {
+        const jobs = Job.filter((item) => item.line == line.lineCode)
 
-    while (currentDate <= finalDate) {
-      let isStartDay = currentDate.toDateString() === startDate.toDateString()
-      let isEndDay = currentDate.toDateString() === endDate.toDateString()
+        const filter = jobs.filter((job) => {
+          const jobStart = new Date(job.startDate)
+          const jobEnd = new Date(job.endDate)
+          return (
+            (jobStart >= pivotStart && jobStart <= pivotEnd) ||
+            (jobEnd >= pivotStart && jobEnd <= pivotEnd) ||
+            (jobStart <= pivotStart && jobEnd >= pivotEnd)
+          )
+        })
 
-      let dayStart, dayEnd
+        filter
+          .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+          .forEach((job, index) => {
+            const foundEff = manualEffMap
+              .get(line.lineCode)
+              ?.find(
+                (item) =>
+                  normalizeDate(pivotStart) >= normalizeDate(new Date(item.startDate)) &&
+                  normalizeDate(pivotEnd) <= normalizeDate(new Date(item.endDate)),
+              )
+            const foundMP = manualMPMap
+              .get(line.lineCode)
+              ?.find(
+                (item) =>
+                  normalizeDate(pivotStart) >= normalizeDate(new Date(item.startDate)) &&
+                  normalizeDate(pivotEnd) <= normalizeDate(new Date(item.endDate)),
+              )
 
-      if (isStartDay && isEndDay) {
-        // Same day
-        dayStart = new Date(startDate)
-        dayEnd = new Date(endDate)
-      } else if (isStartDay) {
-        // Start day
-        dayStart = new Date(startDate)
-        dayEnd = new Date(currentDate)
-        dayEnd.setHours(17, 0, 0, 0)
-      } else if (isEndDay) {
-        // End day
-        dayStart = new Date(currentDate)
-        dayStart.setHours(8, 0, 0, 0)
-        dayEnd = new Date(endDate)
-      } else {
-        // Middle day
-        dayStart = new Date(currentDate)
-        dayStart.setHours(8, 0, 0, 0)
-        dayEnd = new Date(currentDate)
-        dayEnd.setHours(17, 0, 0, 0)
-      }
+            const type = typeMap.get(job.typeCode)
+            const expertEfficiency = expertTypeMap.get(
+              line.lineCode + '_' + (type ? type[0]?.typeCode : ''),
+            )
 
-      // ตรวจสอบว่าอยู่ในช่วงเวลาทำงาน
-      let workStart = new Date(currentDate)
-      workStart.setHours(8, 0, 0, 0)
-      let workEnd = new Date(currentDate)
-      workEnd.setHours(17, 0, 0, 0)
+            const Manpower = line.capacityMP
+            const Efficiency = expertEfficiency
+              ? expertEfficiency[0].effPct
+              : (masterEfficiency.find((item) => item.lineCode === line.lineCode)?.efficiencyPct ??
+                0)
 
-      dayStart = new Date(Math.max(dayStart.getTime(), workStart.getTime()))
-      dayEnd = new Date(Math.min(dayEnd.getTime(), workEnd.getTime()))
+            const EFF = foundEff?.effPct ?? Efficiency
+            const MP = foundMP?.capMP ?? Manpower
 
-      if (dayStart < dayEnd) {
-        let minutesInDay = (dayEnd.getTime() - dayStart.getTime()) / (1000 * 60)
-        totalMinutes += minutesInDay
-      }
+            const plan = planJob.find((p) => p.sewId === job.sewId)
+            if (!plan) return
 
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
+            const sam = plan.sam
+            const jobStart = new Date(job.startDate)
+            const jobEnd = new Date(job.endDate)
 
-    // Alternative method: ใช้ offset แทนการคำนวณ minutes
-    let totalDurationUnits = Math.max(1, endOffset - startOffset + 1)
+            let overlapStart =
+              index === 0
+                ? jobStart < pivotStart
+                  ? pivotStart
+                  : jobStart
+                : jobStart < new Date(filter[index - 1].endDate)
+                  ? new Date(filter[index - 1].endDate)
+                  : jobStart
+            const overlapEnd = jobEnd > pivotEnd ? pivotEnd : jobEnd
 
-    // ใช้วิธีที่ให้ผลลพธ์มากกว่า
-    let finalDurationUnits = Math.max(totalMinutes / 15, totalDurationUnits)
+            const overlapMinutes = (overlapEnd.getTime() - overlapStart.getTime()) / 60000
+            const MP_EFF_FACTOR = MP * (EFF / 100)
+            totalDone += (overlapMinutes * MP_EFF_FACTOR) / sam
+          })
+      })
 
-    let leftPos = startOffset * unitWidth
-    let widthPos = finalDurationUnits * unitWidth
-    return { style: { left: leftPos, width: widthPos } }
-  })
-  self.postMessage(results)
+    return totalDone
+  }
+  generateQty(days)
+  // ส่งกลับไปให้ main thread
+  postMessage({ cacheQty })
 }
+
+export {} // บอก TypeScript ว่านี่คือ module

@@ -49,6 +49,8 @@ export const useMaster = defineStore('master', {
 
     manualMPData: [] as manualMP[],
     manualEff: [] as manualEff[],
+
+    stripMode: false as boolean,
   }),
   actions: {
     getMasterLine() {

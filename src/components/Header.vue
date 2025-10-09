@@ -32,6 +32,12 @@
           >{{ totalJob > 99 ? '99+' : totalJob }}
         </span>
       </span>
+      <span
+        class="ml-3 p-3 rounded-3xl"
+        :class="stripMode ? 'bg-green-200 text-green-900' : 'bg-blue-200 text-blue-900'"
+      >
+        {{ stripMode ? 'Stripe On' : 'Stripe Off' }}
+      </span>
     </div>
     <div class="flex items-center space-x-4">
       <button
@@ -429,7 +435,7 @@ const ListFac = ref<string[]>([])
 
 const masterLine = ref<Line[]>([])
 const STORE_MASTER = useMaster()
-
+const stripMode = ref<boolean>(true)
 const totalJob = ref<number>(0)
 const viewDetailRef = ref<InstanceType<typeof ViewOrderDetails>>() // ref ของ child
 const emit = defineEmits<{
@@ -437,12 +443,6 @@ const emit = defineEmits<{
   (e: 'openAddJobModal', value: boolean): void
 }>()
 const activeTab = ref('0')
-const allRef = ref<InstanceType<typeof ViewOrderDetails>>()
-const planedRef = ref<InstanceType<typeof ViewOrderDetails>>()
-const notRef = ref<InstanceType<typeof ViewOrderDetails>>()
-
-// modalType
-const showDialog = ref(false)
 
 const targetCompany = ref(user.user.factoryCode)
 const mode = ref('All')
@@ -660,6 +660,12 @@ watch(
     emit('factory', fac.value)
   },
 )
+watch(
+  () => STORE_MASTER.stripMode,
+  (newVal) => {
+    stripMode.value = newVal
+  },
+)
 // Fetch Master Data
 onMounted(async () => {
   STORE_MASTER.getMasterLine()
@@ -672,6 +678,7 @@ onMounted(async () => {
   STORE_MASTER.getExpertEfficiency()
   STORE_MASTER.getManualMP()
   STORE_MASTER.getManualEFF()
+  stripMode.value = STORE_MASTER.stripMode
   await nextTick(() => {
     emit('factory', fac.value)
   })

@@ -26,3 +26,9 @@ export const parseDate = (dateStr: string) => {
   const [year, month, day] = dateStr.split('-').map(Number)
   return new Date(year, month - 1, day) // month -1 เพราะ JS เริ่ม 0=Jan
 }
+
+export function normalizeDate(date: Date): number {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
