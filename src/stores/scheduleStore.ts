@@ -40,6 +40,7 @@ export const useScheduleStore = defineStore('schedule', {
     dayInWeek: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     isInitialized: false,
     initializationPromise: null as Promise<void> | null,
+    countMove: 0 as number,
   }),
   actions: {
     setLine(line: Line[]) {
@@ -92,13 +93,6 @@ export const useScheduleStore = defineStore('schedule', {
       const startDate = new Date(job.startDate)
       const endDate = new Date(job.endDate)
       this.isHoliday(endDate)
-      // console.log(this.isHoliday(endDate))
-      // if (this.isHoliday(endDate)) {
-      //   console.log(job)
-      // }
-      // console.log(endIsHoliday)
-      //   const endDate = new Date(startDate.getTime()) // clone เพื่อไม่แก้ต้นฉบับ
-      //   endDate.setHours(startDate.getHours() + workHour)
 
       // adjust hour and minute
       let startHour = Math.max(8, startDate.getHours())
@@ -370,6 +364,7 @@ export const useScheduleStore = defineStore('schedule', {
       this.jobUpdate.forEach((j) => {
         this.jobStyleCache.set(j.id, this.getJobStyle(findJobById(j.id)))
       })
+      this.countMove++
     },
     insertAndPushJobs(
       lineId: string,

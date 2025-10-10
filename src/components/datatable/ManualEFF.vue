@@ -212,7 +212,7 @@ const tempMpCap = ref<number>(0)
 const STORE_MASTER = useMaster()
 const internalLineCode = ref('')
 
-const { computeManualStyle } = useCaltime()
+const { computeManualStyle, getManualEffStyle, deleteCacheEFFStyle } = useCaltime()
 
 function opModal() {
   showModal.value = !showModal.value
@@ -286,9 +286,10 @@ async function deleteItem() {
   if (selectedIndex.value !== -1) {
     data.value.splice(selectedIndex.value, 1)
     const res = await DeleteManualEFF(selectedItem.value!.id)
-    STORE_MASTER.masterLine.forEach((line) => {
-      computeManualStyle(line.lineCode)
-    })
+    computeManualStyle(internalLineCode.value)
+    deleteCacheEFFStyle(internalLineCode.value, selectedItem.value?.id)
+    getManualEffStyle()
+
     if (res.status === 200) {
       console.log('Delete successful:', res.data)
     } else {
@@ -304,9 +305,9 @@ async function UpdateData(newData: manualEff) {
   const res = await UpdateManualEff(newData)
   if (res.status === 200) {
     await STORE_MASTER.getManualEFF()
-    STORE_MASTER.masterLine.forEach((line) => {
-      computeManualStyle(line.lineCode)
-    })
+    computeManualStyle(internalLineCode.value)
+    getManualEffStyle()
+
     console.log('Update successful:', res.data)
   } else {
     console.error('Update failed:', res)

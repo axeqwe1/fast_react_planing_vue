@@ -24,26 +24,6 @@
     @update:showModalType="onCloseAddType"
     @save="saveType"
   />
-  <!-- <Dialog
-    v-model:visible="confirmChangeTypeDialog"
-    modal
-    header="Add Type"
-    :style="{ width: '25rem' }"
-  >
-    <span class="text-surface-500 dark:text-surface-400 block mb-8"
-      >ดำเดินการเพิ่ม MasterType ลงใน System?.</span
-    >
-
-    <div class="flex justify-end gap-2">
-      <Button
-        type="button"
-        label="Cancel"
-        severity="secondary"
-        @click="confirmChangeTypeDialog = false"
-      ></Button>
-      <Button type="button" :icon="'pi pi-check'" :label="'Save'" @click="onSave()"></Button>
-    </div>
-  </Dialog> -->
   <Toast position="top-center" />
 </template>
 
@@ -153,24 +133,7 @@ onMounted(async () => {
 })
 
 // ✅ Emit กลับ
-async function onSave() {
-  const request: CreateExpertEfficiencyDTO = {
-    lineCode: internalLineCode.value,
-    typeCode: internalTypeCode.value,
-    EffPct: internalEff.value,
-  }
-  const res = await CreateExpertEfficiency(request)
-  if (res.status === 200) {
-    await FetchData()
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'เพิ่ม ExpertType สำเร็จ',
-      life: 3000,
-    })
-    confirmChangeTypeDialog.value = false
-  }
-}
+
 function onCancel() {
   resetInput()
   emit('cancel')

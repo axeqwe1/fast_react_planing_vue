@@ -20,26 +20,6 @@
     </div>
   </Dialog>
 
-  <Dialog
-    v-model:visible="confirmChangeTypeDialog"
-    modal
-    header="Add Type"
-    :style="{ width: '25rem' }"
-  >
-    <span class="text-surface-500 dark:text-surface-400 block mb-8"
-      >ดำเดินการเพิ่ม MasterType ลงใน System?.</span
-    >
-
-    <div class="flex justify-end gap-2">
-      <Button
-        type="button"
-        label="Cancel"
-        severity="secondary"
-        @click="confirmChangeTypeDialog = false"
-      ></Button>
-      <Button type="button" :icon="'pi pi-check'" :label="'Save'" @click="onSave()"></Button>
-    </div>
-  </Dialog>
   <Toast position="top-center" />
 </template>
 

@@ -24,6 +24,7 @@
     "classnames": "^2.5.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "decimal.js": "^10.6.0",
     "floating-vue": "^5.2.2",
     "lodash": "^4.17.21",
     "motion-v": "^1.7.0",

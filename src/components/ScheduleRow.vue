@@ -84,7 +84,7 @@
           </div>
           <!-- Manual -->
           <div
-            v-for="(s, index) in getManualEffStyle(line.lineCode)"
+            v-for="(s, index) in cacheStyleEFF.get(line.lineCode)"
             :key="index"
             :style="s"
             class="manual-eff-bar z-4"
@@ -96,7 +96,7 @@
             </div>
           </div>
           <div
-            v-for="(s, index) in getManualMpStyle(line.lineCode)"
+            v-for="(s, index) in cacheStyleMP.get(line.lineCode)"
             :key="index"
             :style="s"
             class="manual-eff-bar z-4"
@@ -445,6 +445,8 @@ const dialogSplit = ref(false)
 
 const filterOrderList = ref('')
 const stripMode = ref(false) // true = เลือก stripe, false = ปกติ drag job
+const cacheStyleMP = ref<Map<string, any[]>>(new Map<string, any[]>())
+const cacheStyleEFF = ref<Map<string, any[]>>(new Map<string, any[]>())
 
 const jobsForLine = computed(() =>
   store.getJobsForLine(targetLineCode.value ? targetLineCode.value : ''),
@@ -977,6 +979,7 @@ const selectedRange = ref<Record<string, { start: number; end: number }> | null>
 function onSelectStart(lineCode: string, e: MouseEvent) {
   if (e.button !== 0) return // เฉพาะคลิกซ้าย
   if (!stripMode.value) return
+
   selecting.value = true
   selectLine.value = lineCode
   selectedRange.value = null // ล้างช่วงที่เลือกก่อนหน้า
@@ -1039,7 +1042,7 @@ function onSelectEnd(lineCode: string, e: MouseEvent) {
     )
   strip(new Date(startTime), job, lineCode)
   console.log(job)
-
+  store.countMove++
   // สามารถ emit หรือส่งไป store ได้
   // emits('selectRange', { lineCode, startTime, endTime })
 }
@@ -1058,9 +1061,22 @@ watch(
   },
 )
 // onMounted
-onMounted(() => {
+onMounted(async () => {
   STORE_MASTER.stripMode = stripMode.value
+  getManualEffStyle()
+  getManualMpStyle()
+  await nextTick(() => {
+    cacheStyleEFF.value = STORE_MASTER.styleManualEFF
+    cacheStyleMP.value = STORE_MASTER.styleManualMP
+  })
 })
+watch(
+  () => [STORE_MASTER.styleManualEFF, STORE_MASTER.styleManualMP],
+  () => {
+    cacheStyleEFF.value = STORE_MASTER.styleManualEFF
+    cacheStyleMP.value = STORE_MASTER.styleManualMP
+  },
+)
 </script>
 
 <style scoped>

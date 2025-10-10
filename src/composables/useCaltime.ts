@@ -20,11 +20,32 @@ export function useCaltime() {
   const store = useScheduleStore()
   const manualEffCache = ref(new Map<string, any[]>())
   const manualMpCache = ref(new Map<string, any[]>())
-  function getManualEffStyle(lineCode: string) {
-    return manualEffCache.value.get(lineCode) || []
+  function getManualEffStyle() {
+    STORE_MASTER.styleManualEFF = manualEffCache.value || []
   }
-  function getManualMpStyle(lineCode: string) {
-    return manualMpCache.value.get(lineCode) || []
+  function getManualMpStyle() {
+    STORE_MASTER.styleManualMP = manualMpCache.value || []
+  }
+  function deleteCacheMPStyle(lineCode: string, id: any) {
+    const arr = manualEffCache.value.get(lineCode)
+    if (arr) {
+      // filter array ใหม่ แล้ว set กลับไป Map
+      manualEffCache.value.set(
+        lineCode,
+        arr.filter((item) => item.id !== id),
+      )
+    }
+  }
+
+  function deleteCacheEFFStyle(lineCode: string, id: any) {
+    const arr = manualEffCache.value.get(lineCode)
+    if (arr) {
+      // filter array ใหม่ แล้ว set กลับไป Map
+      manualEffCache.value.set(
+        lineCode,
+        arr.filter((item) => item.id !== id),
+      )
+    }
   }
   function computeManualStyle(lineCode: string) {
     const manualEffList = STORE_MASTER.manualEff.filter((m) => m.lineCode === lineCode)
@@ -39,9 +60,23 @@ export function useCaltime() {
     manualEffList.forEach((eff) => {
       const start = new Date(eff.startDate)
       const end = new Date(eff.endDate)
-      start.setHours(16, 0, 0, 0)
+      start.setDate(start.getDate() + 1)
       end.setDate(end.getDate() + 1)
-      end.setHours(16, 0, 0, 0)
+      if (start.getHours() < 8) {
+        start.setHours(8, 0, 0, 0)
+      }
+      if (start.getHours() > 16) {
+        start.setHours(16, 0, 0, 0)
+      }
+      if (end.getHours() < 8) {
+        end.setHours(16, 0, 0, 0)
+      }
+      if (end.getHours() > 16) {
+        end.setHours(16, 0, 0, 0)
+      }
+      // start.setHours(16, 0, 0, 0)
+      // end.setDate(end.getDate() + 1)
+      // end.setHours(16, 0, 0, 0)
 
       // คำนวณ offset จาก map เดิม
       const startKey = formatTimeKey(start)
@@ -54,6 +89,7 @@ export function useCaltime() {
       const width = (endOffset - startOffset) * unitWidth
 
       stylesEff.push({
+        id: eff.id,
         text: `${eff.effPct ?? ''}%`, // 🟡 เพิ่มข้อมูล text ที่อยากโชว์
         left: `${left}px`,
         width: `${width}px`,
@@ -81,6 +117,7 @@ export function useCaltime() {
       const width = (endOffset - startOffset) * unitWidth
 
       stylesMp.push({
+        id: eff.id,
         text: `${eff.capMP ?? ''}`, // 🟡 เพิ่มข้อมูล text ที่อยากโชว์
         left: `${left}px`,
         width: `${width}px`,
@@ -96,8 +133,6 @@ export function useCaltime() {
     manualMpCache.value.set(lineCode, stylesMp)
   }
   function calTime(start: Date, orderNo: string, color: string, lineCode: string, sewId?: number) {
-    // param startDate orderNo color lineCode
-
     const Line = STORE_MASTER.masterLine.filter((item) => item.lineCode === lineCode)[0]
     let ManualMP: manualMP[] = STORE_MASTER.manualMPData.filter(
       (item) => item.lineCode === lineCode,
@@ -133,7 +168,6 @@ export function useCaltime() {
     const order = orderNo
     const MINUTE_PER_HOUR = 60
 
-    // Efficiency is Percent
     console.table({
       Manpower,
       Efficiency: Efficiency,
@@ -143,10 +177,11 @@ export function useCaltime() {
     })
 
     const startDate = new Date(start)
-    let currentDate = new Date(startDate) // ใช้ clone
+    let currentDate = new Date(startDate)
 
     let remainMinute = qty * Sam
     let safety = 0
+    // ✅ เก็บ DECIMAL ไม่ round
     let CUMULATIVE_QTY = 0
 
     while (remainMinute > 0) {
@@ -196,14 +231,6 @@ export function useCaltime() {
       const EFF = foundEff?.effPct ?? Efficiency
       const MP = foundMP?.capMP ?? Manpower
 
-      // console.table({
-      //   ManualMP: ManualMP,
-      //   ManualEff: ManualEff,
-      //   Manpower: MP,
-      //   Efficiency: EFF,
-      // })
-      // const timeStart = startDate.toISOString().split('T')[1].split('.')[0]
-      // console.log(timeStart)
       let defaultWorkHour = 8
       let isWorkDay = true
       const WorkDay = STORE_MASTER.masterWorkDay.filter((item) => {
@@ -212,22 +239,12 @@ export function useCaltime() {
           formatDateLocal(currentDate).split(' ')[0]
         )
       })[0]
-      // console.log(
-      //   STORE_MASTER.masterWorkDay.filter((item) => {
-      //     // console.log(formatDateLocal(currentDate).split(' ')[0])
-      //     return (
-      //       formatDateLocal(new Date(item.workDate)).split(' ')[0] ==
-      //       formatDateLocal(currentDate).split(' ')[0]
-      //     )
-      //   }),
-      // )
+
       if (WorkDay) {
-        // console.log(formatDateLocal(new Date(WorkDay.workDate)), formatDateLocal(currentDate))
-        // console.warn('found workday', currentDate, WorkDay.workHours, WorkDay.isWorkday)
         defaultWorkHour = WorkDay.workHours
         isWorkDay = WorkDay.isWorkday
       } else {
-        const dayOfWeek = currentDate.getDay() // 0 = Sunday, 1 = Monday, ... 6 = Saturday
+        const dayOfWeek = currentDate.getDay()
         if (dayOfWeek === 0) {
           defaultWorkHour = 0
           isWorkDay = false
@@ -236,59 +253,36 @@ export function useCaltime() {
           isWorkDay = true
         }
       }
-      //   const WorkDate = WorkDay.workDate
-      //   const WorkHour = WorkDay.workHours
-      //   const isWorkDay = WorkDay.isWorkday
 
-      //   const totalMin = Manpower * WorkHour * MINUTE_PER_HOUR
-      //   const totalSam = totalMin / Sam
-      //   const sumTotal = totalSam * (Efficiency / 100)
-      //   const targetQty = qty / sumTotal
-
-      //   console.log(Math.ceil(sumTotal * 1000) / 1000) // ปัดเป็น 2 ทศนิยม
-      //   console.log(targetQty)
-
-      //   if (isWork == null) {
-      //     isWork = false
-      //   }
       const workMinute = defaultWorkHour * MINUTE_PER_HOUR
       let LastEndDateTime = currentDate
       if (workMinute <= 0 && !isWorkDay) {
-        // console.warn('Not found', WorkDay.workDate)
         currentDate.setDate(currentDate.getDate() + 1)
         continue
       }
       let actualStart
       const shift = getShiftRange(currentDate, shiftStart, workMinute)
-      //   console.log('Compare Time', currentDate, ' ', shift.start, ' ', LastEndDateTime)
 
-      // ถ้าวันใหม่ต้อง reset กลับไป shift.start
       if (remainMinute > 0 && currentDate.toDateString() !== startDate.toDateString()) {
         LastEndDateTime = shift.start
-        // console.warn('is change')
       }
 
       if (LastEndDateTime.getTime() > shift.start.getTime()) {
         actualStart = LastEndDateTime
       } else {
         actualStart = shift.start
-        // console.warn('is shift')
       }
 
       if (actualStart >= shift.end) {
-        // ข้ามไปวันถัดไป
-        // console.warn('Jump Day')
         currentDate.setDate(currentDate.getDate() + 1)
         continue
       }
 
       const avaliableMinutes = (shift.end.getTime() - actualStart.getTime()) / 60000
-      //   console.log(avaliableMinutes)
 
       let AllocatedWorkMin = 0
       const MP_EFF_FACTOR = MP * (EFF / 100)
       const CAP_MIN_TODAY = avaliableMinutes * MP_EFF_FACTOR
-      //   console.log(CAP_MIN_TODAY)
 
       if (remainMinute < CAP_MIN_TODAY) {
         AllocatedWorkMin = remainMinute
@@ -296,42 +290,42 @@ export function useCaltime() {
         AllocatedWorkMin = CAP_MIN_TODAY
       }
 
-      // Actual End
       let actualEnd: Date
       if (AllocatedWorkMin === CAP_MIN_TODAY) {
-        // ถ้าเต็มวัน → จบตรงเวลาเลิกงานพอดี
         actualEnd = shift.end
-        // console.warn('shift end')
       } else {
-        // ถ้าไม่เต็มวัน → คำนวณตามนาทีจริง
         const CLOCK_MIN_USED = MP_EFF_FACTOR > 0 ? AllocatedWorkMin / MP_EFF_FACTOR : 0
         actualEnd = new Date(actualStart)
         actualEnd.setMinutes(actualEnd.getMinutes() + CLOCK_MIN_USED)
       }
 
-      // set RemaningMinute
       remainMinute = remainMinute - AllocatedWorkMin
       LastEndDateTime = actualEnd
 
+      // ✅ สะสม DECIMAL ไม่ round
       const producedQty = AllocatedWorkMin / Sam
+      CUMULATIVE_QTY += producedQty
 
-      CUMULATIVE_QTY += Math.round(AllocatedWorkMin / Sam)
-      const QtyRemainAfterThisDay = Math.round(qty - CUMULATIVE_QTY)
-      // console.log('Actual START IS : ', actualStart)
-      // console.log('Actual End IS : ', LastEndDateTime)
-      // console.log('Cumulative', CUMULATIVE_QTY)
-      // console.log('QtyRemainAfterThisDay', QtyRemainAfterThisDay)
-      // console.table({
-      //   date: formatDateLocal(currentDate),
-      //   remainMinute,
-      //   CAP_MIN_TODAY,
-      //   AllocatedWorkMin,
-      //   producedQty: AllocatedWorkMin / Sam,
-      //   CUMULATIVE_QTY,
-      // })
+      console.table({
+        date: formatDateLocal(currentDate),
+        remainMinute: remainMinute.toFixed(2),
+        CAP_MIN_TODAY: CAP_MIN_TODAY.toFixed(2),
+        AllocatedWorkMin: AllocatedWorkMin.toFixed(2),
+        producedQty: producedQty.toFixed(4),
+        CUMULATIVE_QTY: CUMULATIVE_QTY.toFixed(4),
+      })
+
       endDate = LastEndDateTime
       currentDate.setDate(currentDate.getDate() + 1)
     }
+
+    // ✅ Round เพียงครั้งเดียวตอนท้าย
+    console.log(`=== FINAL RESULT ===`)
+    console.log(`CUMULATIVE_QTY (decimal): ${CUMULATIVE_QTY.toFixed(4)}`)
+    console.log(`CUMULATIVE_QTY (rounded): ${Math.round(CUMULATIVE_QTY)}`)
+    console.log(`Expected qty: ${qty}`)
+    console.log(`End Date: ${endDate}`)
+
     return endDate
   }
 
@@ -494,5 +488,7 @@ export function useCaltime() {
     strip,
     getQtyDoneByDay,
     CacheDayOfWeek,
+    deleteCacheMPStyle,
+    deleteCacheEFFStyle,
   }
 }

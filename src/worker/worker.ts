@@ -9,19 +9,32 @@ import type {
   MasterEfficiency,
   MasterLine,
   MasterType,
+  MasterHoliday,
 } from '@/type/types'
+import { isSameDay } from '@/utils/detectDropMode'
 import { formatTimeKey, normalizeDate } from '@/utils/formatKey'
 
 let cacheQty: Map<string, number> = new Map<string, number>()
+let remainMinCache = new Map<any, number>() // key = job.sewId
+let cacheJob = new Map<any, Job[]>()
 // calcWorker.ts
 self.onmessage = (e) => {
-  const { days, payload } = e.data as {
+  const { days, payload, holiday } = e.data as {
     days: Date[]
     payload: GenQtyWorkerPayload
+    holiday: MasterHoliday[]
+  }
+  cacheQty.clear()
+  remainMinCache.clear()
+  cacheJob.clear()
+  async function cacheData() {
+    payload.masterLine.forEach((item) => {
+      const jobInLine = payload.jobs.filter((Job) => item.lineCode == Job.line)
+      cacheJob.set(item.lineCode, jobInLine)
+    })
   }
 
-  // ตัวอย่าง logic ที่กิน CPU
-  function generateQty(date: Date[]) {
+  async function generateQty(date: Date[]) {
     const newQtyMap = new Map<string, number>()
 
     for (const d of date) {
@@ -39,7 +52,11 @@ self.onmessage = (e) => {
         payload.planJob,
         payload.jobs,
       )
-      newQtyMap.set(dateStr + '_' + payload.factory, Math.round(qty))
+      const isHoliday = holiday.some((a) => {
+        return isSameDay(new Date(a.holidayDate), d)
+      })
+
+      newQtyMap.set(dateStr + '_' + payload.factory, isHoliday ? 0 : qty)
     }
 
     cacheQty = newQtyMap
@@ -90,8 +107,8 @@ self.onmessage = (e) => {
     masterLine
       .filter((item) => item.factoryCode == factory)
       .forEach((line) => {
-        const jobs = Job.filter((item) => item.line == line.lineCode)
-
+        const jobs = cacheJob.get(line.lineCode)
+        if (!jobs) return
         const filter = jobs.filter((job) => {
           const jobStart = new Date(job.startDate)
           const jobEnd = new Date(job.endDate)
@@ -105,6 +122,11 @@ self.onmessage = (e) => {
         filter
           .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
           .forEach((job, index) => {
+            let remainMinute = remainMinCache.get(job.sewId)
+            if (remainMinute === undefined) {
+              remainMinute = job.qtyBal * job.sam
+            }
+
             const foundEff = manualEffMap
               .get(line.lineCode)
               ?.find(
@@ -150,18 +172,29 @@ self.onmessage = (e) => {
                   ? new Date(filter[index - 1].endDate)
                   : jobStart
             const overlapEnd = jobEnd > pivotEnd ? pivotEnd : jobEnd
-
-            const overlapMinutes = (overlapEnd.getTime() - overlapStart.getTime()) / 60000
+            let AllowWorkMin = 0
+            const avaliableMinutes = (pivotEnd.getTime() - overlapStart.getTime()) / 60000
             const MP_EFF_FACTOR = MP * (EFF / 100)
-            totalDone += (overlapMinutes * MP_EFF_FACTOR) / sam
+            AllowWorkMin = Math.min(remainMinute, avaliableMinutes * MP_EFF_FACTOR)
+            remainMinCache.set(job.id, remainMinute - AllowWorkMin)
+
+            console.log(MP_EFF_FACTOR)
+            totalDone += AllowWorkMin / sam
+            console.log(totalDone)
           })
       })
 
-    return totalDone
+    return Math.round(totalDone)
   }
-  generateQty(days)
-  // ส่งกลับไปให้ main thread
-  postMessage({ cacheQty })
+
+  async function initialze() {
+    await cacheData()
+    await generateQty(days)
+  }
+  initialze().then(() => {
+    // ส่งกลับไปให้ main thread
+    postMessage({ cacheQty })
+  })
 }
 
 export {} // บอก TypeScript ว่านี่คือ module

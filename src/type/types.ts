@@ -30,42 +30,6 @@ export interface Line {
   manpower: number
 }
 
-// export interface MasterData {
-//   Line: string
-//   orderNo: string
-//   color: string
-//   typeName: string
-//   style: string
-//   programCode: string
-//   shipDest: string
-//   customer: string
-//   season: string
-//   manpower: number
-//   sam: number
-//   sewStart: Date
-//   sewAssembly: Date
-//   sewFinish: Date
-//   shipDate: Date
-//   prodCfm: Date
-//   qty: number
-//   cut: number
-//   match: number
-//   out: number
-//   sew: number
-//   qc: number
-//   blQty: number
-//   blCut: number
-//   blMatch: number
-//   blOut: number
-//   blSew: number
-//   blQc: number
-//   decoration: string
-//   closeOrder: string
-//   planningNo: string
-//   cutDate: Date
-//   sewDate: Date
-// }
-
 export interface MasterHoliday {
   holidayDate: string
   holidayName: string

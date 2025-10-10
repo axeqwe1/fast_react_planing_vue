@@ -101,6 +101,7 @@ import { CreateMasterType } from '@/lib/api/Mastertype'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { CreateManualEff, CreateManualMP } from '@/lib/api/ManualEFFMP'
+import { useCaltime } from '@/composables/useCaltime'
 const internalVisible = ref(false)
 const internalLineCode = ref('')
 const props = defineProps<{ showModal: boolean; lineCode: string }>()
@@ -121,7 +122,7 @@ const dates = ref()
 
 const loadingCheck = ref(false)
 const showIcon = ref(false)
-
+const { computeManualStyle, getManualEffStyle } = useCaltime()
 watch(
   () => props.showModal,
   (newVal) => {
@@ -159,7 +160,8 @@ async function onSave() {
     emits('update:showModal', false)
     await STORE_MASTER.getManualEFF()
     resetInput()
-    emits('save', true)
+    computeManualStyle(internalLineCode.value)
+    getManualEffStyle()
   } else {
     toast.add({ severity: 'error', summary: 'Error', detail: 'เกิดข้อผิดพลาด', life: 3000 })
     console.error(res)

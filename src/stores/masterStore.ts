@@ -51,6 +51,11 @@ export const useMaster = defineStore('master', {
     manualEff: [] as manualEff[],
 
     stripMode: false as boolean,
+
+    styleManualMP: new Map<string, any[]>() as Map<string, any[]>,
+    styleManualEFF: new Map<string, any[]>() as Map<string, any[]>,
+
+    countMove: 0 as number,
   }),
   actions: {
     getMasterLine() {

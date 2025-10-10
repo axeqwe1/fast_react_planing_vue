@@ -224,6 +224,8 @@
   <Modal
     :modelValue="showSettingMasterLine"
     :size="'full'"
+    :closable="false"
+    :persistent="true"
     @update:modelValue="(val) => (showSettingMasterLine = val)"
   >
     <template #header>
@@ -235,13 +237,22 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-row-reverse gap-2"></div>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="showSettingMasterLine = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
     </template>
   </Modal>
 
   <Modal
     :modelValue="showSettingMasterEfficiency"
     :size="'full'"
+    :closable="false"
+    :persistent="true"
     @update:modelValue="(val) => (showSettingMasterEfficiency = val)"
   >
     <template #header>
@@ -253,13 +264,22 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-row-reverse gap-2"></div>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="showSettingMasterEfficiency = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
     </template>
   </Modal>
 
   <Modal
     :modelValue="showSettingMasterHoliday"
     :size="'full'"
+    :closable="false"
+    :persistent="true"
     @update:modelValue="(val) => (showSettingMasterHoliday = val)"
   >
     <template #header>
@@ -271,13 +291,22 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-row-reverse gap-2"></div>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="showSettingMasterHoliday = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
     </template>
   </Modal>
 
   <Modal
     :modelValue="showSettingMasterWorkday"
     :size="'full'"
+    :closable="false"
+    :persistent="true"
     @update:modelValue="(val) => (showSettingMasterWorkday = val)"
   >
     <template #header>
@@ -289,13 +318,22 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-row-reverse gap-2"></div>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="showSettingMasterWorkday = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
     </template>
   </Modal>
 
   <Modal
     :modelValue="showSettingMasterSam"
     :size="'full'"
+    :closable="false"
+    :persistent="true"
     @update:modelValue="(val) => (showSettingMasterSam = val)"
   >
     <template #header>
@@ -307,7 +345,14 @@
     </div>
 
     <template #footer>
-      <div class="flex flex-row-reverse gap-2"></div>
+      <div class="flex flex-row-reverse gap-2">
+        <button
+          @click="showSettingMasterSam = false"
+          class="hover:cursor-pointer border-1 rounded-2xl w-[100px] h-[50px] hover:bg-gray-500 hover:text-white text-xl transition-all ease-in duration-100"
+        >
+          Close
+        </button>
+      </div>
     </template>
   </Modal>
 
@@ -361,10 +406,6 @@
         </TabPanels>
       </Tabs>
     </div>
-
-    <!-- <template #footer>
-      <div class="flex flex-row-reverse gap-2"></div>
-    </template> -->
   </Modal>
   <!-- Modal Add Job -->
   <Modal v-model="showListJobOrder" size="full" :closable="false" :persistent="true">
@@ -469,6 +510,7 @@ const changeFac = (item: string) => {
 const refresh = async () => {
   store.Jobs = []
   store.jobUpdate = []
+
   await fetchMasterPlan(STORE_MASTER.currentFactory)
 }
 const UpdatePlans = async () => {
@@ -588,6 +630,7 @@ const fetchMasterPlan = async (factory?: string) => {
     // }
 
     store.computeAllJobStyles()
+    store.countMove++
     // store.setMasters(filterData)
     // store.setLine(masterLine.value) // Update the store with unique lines
     // console.log('Fetched jobs:', jobs.value) // Log fetched jobs for debugging

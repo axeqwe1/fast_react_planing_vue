@@ -25,27 +25,10 @@
 import { useCaltime } from '@/composables/useCaltime'
 import { useMaster } from '@/stores/masterStore'
 import { useScheduleStore } from '@/stores/scheduleStore'
-import { type GenQtyWorkerPayload } from '@/type/types'
-import { formatTimeKey, normalizeDate } from '@/utils/formatKey'
-import {
-  computed,
-  nextTick,
-  onMounted,
-  ref,
-  toRaw,
-  watch,
-  type CSSProperties,
-  type StyleValue,
-} from 'vue'
+import { formatTimeKey } from '@/utils/formatKey'
+import { onMounted, onUnmounted, ref, toRaw, watch, type StyleValue } from 'vue'
 
-const {
-  getManualEffStyle,
-  getManualMpStyle,
-  computeManualStyle,
-  strip,
-  getQtyDoneByDay,
-  CacheDayOfWeek,
-} = useCaltime()
+const { CacheDayOfWeek } = useCaltime()
 const store = useScheduleStore()
 const STORE_MASTER = useMaster()
 
@@ -95,36 +78,15 @@ onMounted(async () => {
 watch(weeks, (newVal) => {
   days.value = CacheDayOfWeek(newVal)
 })
-watch(
-  days,
-  (newDays) => {
-    const payloadData = {
-      days: toRaw(newDays),
-      factory: toRaw(STORE_MASTER.currentFactory),
-      masterLine: toRaw(STORE_MASTER.masterLine),
-      masterFactory: toRaw(STORE_MASTER.masterFactory),
-      manualMPData: toRaw(STORE_MASTER.manualMPData),
-      manualEff: toRaw(STORE_MASTER.manualEff),
-      masterType: toRaw(STORE_MASTER.masterType),
-      expertType: toRaw(STORE_MASTER.expertType),
-      masterEfficiency: toRaw(STORE_MASTER.masterEfficiency),
-      planJob: toRaw(STORE_MASTER.planJob),
-      jobs: toRaw(store.Jobs),
-    }
-    worker.postMessage({ days: toRaw(days.value), payload: payloadData })
-    generateQty(days.value)
-  },
 
-  { immediate: true },
-)
 watch(
-  () => STORE_MASTER.currentFactory,
-  (newVal) => {
+  () => [STORE_MASTER.currentFactory, days.value, store.minWidthHeader, store.countMove],
+  () => {
     if (!days.value.length) return
     console.log(STORE_MASTER.currentFactory)
     const payloadData = {
       days: toRaw(days.value),
-      factory: newVal,
+      factory: STORE_MASTER.currentFactory,
       masterLine: toRaw(STORE_MASTER.masterLine),
       masterFactory: toRaw(STORE_MASTER.masterFactory),
       manualMPData: toRaw(STORE_MASTER.manualMPData),
@@ -136,7 +98,8 @@ watch(
       jobs: toRaw(store.Jobs),
     }
 
-    worker.postMessage({ days: toRaw(days.value), payload: payloadData })
+    const holiday = toRaw(STORE_MASTER.masterHoliday)
+    worker.postMessage({ days: toRaw(days.value), payload: payloadData, holiday: holiday })
     generateQty(days.value)
   },
 )
@@ -164,6 +127,10 @@ worker.onmessage = (event) => {
   console.log('cache success *******************************')
   cacheQtyDoneByDay.value = event.data.cacheQty
 }
+
+onUnmounted(() => {
+  worker.terminate()
+})
 // ส่งข้อมูลไปให้ worker ทำงาน
 </script>
 
