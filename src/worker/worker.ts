@@ -40,6 +40,13 @@ self.onmessage = (e) => {
     for (const d of date) {
       const day = new Date(d)
       const dateStr = formatTimeKey(day).split(' ')[0]
+      const isHoliday = holiday.some((a) => {
+        return isSameDay(new Date(a.holidayDate), d)
+      })
+      if (isHoliday) {
+        newQtyMap.set(dateStr + '_' + payload.factory, 0)
+        continue
+      }
       const qty = getQtyDoneByDayWorker(
         d,
         payload.factory,
@@ -52,9 +59,6 @@ self.onmessage = (e) => {
         payload.planJob,
         payload.jobs,
       )
-      const isHoliday = holiday.some((a) => {
-        return isSameDay(new Date(a.holidayDate), d)
-      })
 
       newQtyMap.set(dateStr + '_' + payload.factory, isHoliday ? 0 : qty)
     }
